@@ -1,0 +1,54 @@
+name: pizza_boys
+description: "A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_bloc: ^9.1.1
+  flutter_screenutil: ^5.9.3
+  lottie: ^3.3.1
+  carousel_slider: ^5.1.1
+  font_awesome_flutter: ^10.8.0
+  scroll_to_hide: ^2.2.1
+  flutter_image_compress: ^2.4.0
+  http: ^1.4.0
+  cached_network_image: ^3.4.1
+  path_provider: ^2.1.5
+  shimmer: ^3.0.0
+  flutter_chat_ui: ^2.9.0
+  flutter_chat_types: ^3.6.2
+  uuid: ^4.5.1
+  flutter_platform_widgets: ^9.0.0
+  icons_launcher: ^3.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/lotties/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: fonts/Poppins-Regular.ttf
+        - asset: fonts/Poppins-Bold.ttf
+          weight: 700
+        - asset: fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: fonts/Poppins-Light.ttf
+          weight: 300
