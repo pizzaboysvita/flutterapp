@@ -110,7 +110,6 @@ class DashboardHeroSection extends StatelessWidget {
                               ],
                             ),
                           ),
-
                           SizedBox(height: 18.h),
                           Row(
                             children: List.generate(

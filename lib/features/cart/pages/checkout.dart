@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pizza_boys/core/reusable_widgets/price_summary/price_summary.dart';
 
 import 'package:pizza_boys/core/theme/app_colors.dart';
 import 'package:pizza_boys/features/cart/bloc/checkout/checkout_cubit.dart';
@@ -100,8 +101,8 @@ class _CheckoutState extends State<Checkout> {
     return Row(
       children: [
         _deliveryToggle(context, 'Home Delivery', false, state),
-        SizedBox(width: 12.w),
-        _deliveryToggle(context, 'Pick-Up Point', true, state),
+        // SizedBox(width: 12.w),
+        // _deliveryToggle(context, 'Pick-Up Point', true, state),
       ],
     );
   }
@@ -352,10 +353,13 @@ class _CheckoutState extends State<Checkout> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _priceRow('Subtotal', '\$8.99'),
-          _priceRow('Shipping Fee', '\$2.00'),
-          Divider(color: Colors.grey.shade300),
-          _priceRow('Total', '\$10.99', isBold: true, isGreen: true),
+          PriceSummaryWidget(
+            itemName: 'Cheese Lovers Pizza',
+            size: 'Small',
+            price: 14.50,
+            gst: 1.89,
+            quantity: 1,
+          ),
           SizedBox(height: 12.h),
           SizedBox(
             width: double.infinity,
@@ -385,36 +389,6 @@ class _CheckoutState extends State<Checkout> {
     );
   }
 
-  Widget _priceRow(
-    String label,
-    String amount, {
-    bool isBold = false,
-    bool isGreen = false,
-  }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13.5.sp,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          Text(
-            amount,
-            style: TextStyle(
-              fontSize: 13.5.sp,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-              color: isGreen ? AppColors.greenColor : Colors.black,
-              fontFamily: 'Poppins',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
+
 }

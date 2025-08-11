@@ -1,9 +1,9 @@
 class ImageUrls {
   static const String heroImage = 'assets/images/hero_pizza.webp';
   static const String catergoryPizza = 'assets/images/category_pizza.webp';
-  static const String comboOffer = 'assets/images/combo_offer.webp';
+  static const String comboOffer = 'assets/images/combo_offer.jpeg';
   static const String superCoins = 'assets/images/super_coins.webp';
-  static const String discountOffer = 'assets/images/discount.webp';
+  static const String discountOffer = 'assets/images/discount_offer.jpeg';
   static const String coke = 'assets/images/coke.webp';
   static const String garlicBread = 'assets/images/garlic_bread.webp';
   static const String frenchFries = 'assets/images/frech_fries.webp';
@@ -22,10 +22,9 @@ class ImageUrls {
   static const String logo = 'assets/images/pizza_boys_logo.png';
 
   // Banner Images
-  static const String banner1 = 'assets/images/banner_1.webp';
-  static const String banner2 = 'assets/images/banner_2.webp';
-  static const String banner3 = 'assets/images/banner_3.webp';
-  static const String banner4 = 'assets/images/banner_4.webp';
+  static const String banner1 = 'assets/images/banner-1.jpeg';
+  static const String banner2 = 'assets/images/banner-2.JPG';
+
 
 
   // Dummy-Map

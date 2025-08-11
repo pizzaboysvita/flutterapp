@@ -81,7 +81,7 @@ class MyApp extends StatelessWidget {
                   scaffoldBackgroundColor: AppColors.scaffoldColor,
                 ),
               ),
-              initialRoute: AppRoutes.chooseStoreLocation,
+              initialRoute: AppRoutes.splashScreen,
               onGenerateRoute: AppPages.generateRoutes,
             ),
           ),

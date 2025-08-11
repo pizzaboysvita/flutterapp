@@ -27,7 +27,7 @@ class OfferPopup extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       child: SizedBox(
         width: 1.sw,
-        height: 320.h, 
+        height: 320.h,
         child: Stack(
           children: [
             Padding(
@@ -114,19 +114,14 @@ class OfferPopup extends StatelessWidget {
 void showSequentialPopups(BuildContext context) {
   final List<Map<String, String>> popups = [
     {
-      'title': "Combo Mania!",
-      'description': "Get 2 Pizzas + Coke @ \$12.99 only!",
+      'title': "Large Trio Combo – Just \$50!",
+      'description': "3 large pizzas for just \$50 – perfect for parties!",
       'image': ImageUrls.comboOffer,
     },
     {
-      'title': "Flat 50% OFF!",
-      'description': "On all first orders above \$15",
+      'title': "Up to 40% OFF!",
+      'description': "Top flavours, limited time – don’t miss out!",
       'image': ImageUrls.discountOffer,
-    },
-    {
-      'title': "Earn SuperCoins!",
-      'description': "Earn reward coins on every purchase.",
-      'image': ImageUrls.superCoins,
     },
   ];
 

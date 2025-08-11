@@ -61,6 +61,79 @@ class _OrderDetailsState extends State<OrderDetails> {
               ),
             ),
             SizedBox(height: 16.h),
+            Container(
+              padding: EdgeInsets.all(14.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: Colors.transparent, width: 2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Glen Eden',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6.h),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 16.sp,
+                        color: AppColors.blackColor,
+                      ),
+                      SizedBox(width: 4.w),
+                      Expanded(
+                        child: Text(
+                          '5/182 West Coast Road, Glen Eden, Auckland 0602',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12.sp,
+                            color: Colors.grey[700],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6.h),
+                  Padding(
+                    padding: EdgeInsets.only(left: 3.0.w),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.call,
+                          size: 14.sp,
+                          color: AppColors.blackColor,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          "09 600 1116",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12.sp,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 16.h),
             _sectionCard(
               title: "Delivery Information",
               child: Column(
@@ -77,23 +150,12 @@ class _OrderDetailsState extends State<OrderDetails> {
             ),
             SizedBox(height: 16.h),
 
-            _sectionCard(
-              title: "Order Items",
-              child: Column(
-                children: [
-                  _orderItemTile("M and M Pizza", 1, 8.99),
-                  // _orderItemTile("Garlic Bread", 1, 2.00),
-                  // _orderItemTile("Coke", 1, 1.50),
-                ],
-              ),
-            ),
-            SizedBox(height: 16.h),
-
             PriceSummaryWidget(
-              subtotal: 8.99,
-              vat: 0.5,
-              shipping: 2.0,
-              discount: 1.5,
+              itemName: 'Cheese Lovers Pizza',
+              size: 'Small',
+              price: 14.50,
+              gst: 1.89,
+              quantity: 1,
             ),
           ],
         ),
@@ -207,13 +269,6 @@ class _OrderDetailsState extends State<OrderDetails> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,32 +316,6 @@ class _OrderDetailsState extends State<OrderDetails> {
     );
   }
 
-  Widget _orderItemTile(String name, int qty, double price) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            "$name x$qty",
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontFamily: 'Poppins',
-              color: Colors.black87,
-            ),
-          ),
-          Text(
-            "\$${(price * qty).toStringAsFixed(2)}",
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Poppins',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -317,7 +346,4 @@ class _OrderDetailsState extends State<OrderDetails> {
       ),
     );
   }
-
-
-
 }
