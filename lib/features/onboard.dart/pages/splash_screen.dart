@@ -47,6 +47,12 @@ class _SplashScreenState extends State<SplashScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     precacheImage(const AssetImage(ImageUrls.landingImage), context);
+     // Precache promotional banner images
+  precacheImage(AssetImage(ImageUrls.banner1), context);
+  precacheImage(AssetImage(ImageUrls.banner2), context);
+   // Precache popup images
+  precacheImage(AssetImage(ImageUrls.comboOffer), context);
+  precacheImage(AssetImage(ImageUrls.discountOffer), context);
   }
 
   @override

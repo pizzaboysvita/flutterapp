@@ -105,7 +105,7 @@ class SavedAddressesView extends StatelessWidget {
                   color: AppColors.blackColor,
                 ),
                 onPressed: () {
-                  // TODO: Add edit logic
+                  
                 },
               ),
               IconButton(
@@ -115,7 +115,7 @@ class SavedAddressesView extends StatelessWidget {
                   color: AppColors.redAccent,
                 ),
                 onPressed: () {
-                  // TODO: Add delete logic
+                 
                 },
               ),
             ],

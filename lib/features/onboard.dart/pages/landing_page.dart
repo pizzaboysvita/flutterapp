@@ -86,11 +86,7 @@ class LandingPage extends StatelessWidget {
                 ),
                 SizedBox(height: 24.h),
                 ElevatedButton(
-                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    AppRoutes.home,
-                    (route) => false,
-                  ),
+                  onPressed: () => Navigator.pushNamed(context, AppRoutes.chooseStoreLocation),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.redPrimary,
                     elevation: 2,

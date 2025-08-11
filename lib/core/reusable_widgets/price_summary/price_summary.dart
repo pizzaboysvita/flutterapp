@@ -3,25 +3,25 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
 
 class PriceSummaryWidget extends StatelessWidget {
-  final double subtotal;
-  final double vat;
-  final double shipping;
-  final double coinsUsed;
-  final double discount;
+  final String itemName;
+  // final String base;
+  final String size;
+  final double price;
+  final double gst; // GST amount
+  final int quantity;
 
   const PriceSummaryWidget({
     super.key,
-    required this.subtotal,
-    required this.vat,
-    required this.shipping,
-    this.coinsUsed = 0,
-    this.discount = 0,
+    required this.itemName,
+    // required this.base,
+    required this.size,
+    required this.price,
+    required this.gst,
+    this.quantity = 1,
   });
 
   @override
   Widget build(BuildContext context) {
-    final double total = subtotal + vat + shipping - discount - coinsUsed;
-
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
@@ -29,17 +29,116 @@ class PriceSummaryWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildRow('Subtotal', subtotal),
-          _buildRow('VAT', vat),
-          _buildRow('Shipping fee', shipping),
-          if (discount > 0) _buildRow('Discount', -discount, color: Colors.red),
-          if (coinsUsed > 0)
-            _buildRow('Coins Used', -coinsUsed, color: AppColors.redAccent),
+          // Header Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Qty',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'Item',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'Price',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+
+          // Product Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                quantity.toString(),
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 13.sp),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        itemName,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      // Text(
+                      //   base,
+                      //   style: TextStyle(
+                      //     fontFamily: 'Poppins',
+                      //     fontSize: 12.sp,
+                      //     color: Colors.grey[700],
+                      //   ),
+                      // ),
+                      Text(
+                        size,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12.sp,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                    ],
+                  ),
+                ),
+              ),
+              Text(
+                '\$${price.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 16.h),
+          // Cart Row
+          _buildRow('Cart', price),
+          SizedBox(height: 4.h),
+
+          // GST Row
+          Text(
+            'GST (15%) inc. in price',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12.sp,
+              color: Colors.grey[600],
+            ),
+          ),
+
           Divider(thickness: 1, height: 24.h),
+
+          // Total Row
           _buildRow(
             'Total',
-            total,
+            price,
             isBold: true,
             color: AppColors.greenColor,
             fontSize: 15.sp,
@@ -56,31 +155,27 @@ class PriceSummaryWidget extends StatelessWidget {
     Color? color,
     double? fontSize,
   }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: fontSize ?? 13.sp,
-              fontWeight: isBold ? FontWeight.w600 : FontWeight.w400,
-              color: Colors.black87,
-            ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: fontSize ?? 13.sp,
+            fontWeight: isBold ? FontWeight.w600 : FontWeight.w400,
           ),
-          Text(
-            '\$${amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: fontSize ?? 13.sp,
-              fontWeight: isBold ? FontWeight.w600 : FontWeight.w400,
-              color: color ?? Colors.black87,
-            ),
+        ),
+        Text(
+          '\$${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: fontSize ?? 13.sp,
+            fontWeight: isBold ? FontWeight.w600 : FontWeight.w400,
+            color: color ?? Colors.black87,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

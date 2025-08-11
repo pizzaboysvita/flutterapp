@@ -304,10 +304,11 @@ class _OrderTrackingState extends State<OrderTracking> {
         ),
         SizedBox(height: 10.h),
         PriceSummaryWidget(
-          subtotal: 8.99,
-          vat: 0.5,
-          shipping: 2.0,
-          discount: 1.5,
+          itemName: 'Cheese Lovers Pizza',
+          size: 'Small',
+          price: 14.50,
+          gst: 1.89,
+          quantity: 1,
         ),
       ],
     );

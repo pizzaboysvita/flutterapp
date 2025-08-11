@@ -11,7 +11,7 @@ class CouponInput extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onApply,
-    this.label = "Enter Coupon Code",
+    this.label = "Enter Promo Code",
   });
 
   @override

@@ -24,12 +24,12 @@ class PaymentPage extends StatelessWidget {
             children: [
               _buildSectionTitle('Payment Options'),
               SizedBox(height: 15.h),
-              const PaymentMethodTile(title: 'Cash on Delivery', value: 'cod'),
-              const PaymentMethodTile(title: 'PhonePe', value: 'phonepe'),
-              const PaymentMethodTile(title: 'Paytm', value: 'paytm'),
-              const PaymentMethodTile(title: 'UPI', value: 'upi'),
-              const PaymentMethodTile(title: 'WhatsApp Pay', value: 'whatsapp'),
+              const PaymentMethodTile(title: 'Card Online', value: 'card'),
+              const PaymentMethodTile(title: 'Bank Transfer', value: 'bank'),
 
+              // const PaymentMethodTile(title: 'Paytm', value: 'paytm'),
+              // const PaymentMethodTile(title: 'UPI', value: 'upi'),
+              // const PaymentMethodTile(title: 'WhatsApp Pay', value: 'whatsapp'),
               SizedBox(height: 20.h),
               CouponInput(
                 controller: couponController,
@@ -42,10 +42,11 @@ class PaymentPage extends StatelessWidget {
 
               SizedBox(height: 30.h),
               PriceSummaryWidget(
-                subtotal: 8.99,
-                vat: 0.5,
-                shipping: 2.0,
-                discount: 1.5,
+                itemName: 'Cheese Lovers Pizza',
+                size: 'Small',
+                price: 14.50,
+                gst: 1.89,
+                quantity: 1,
               ),
             ],
           ),
@@ -191,6 +192,4 @@ class PaymentPage extends StatelessWidget {
       ),
     );
   }
-
-
 }
