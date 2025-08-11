@@ -115,7 +115,7 @@ void showSequentialPopups(BuildContext context) {
   final List<Map<String, String>> popups = [
     {
       'title': "Large Trio Combo – Just \$50!",
-      'description': "3 large pizzas for just \$50 – perfect for parties!",
+      'description': "3 large pizzas for just \$50 ",
       'image': ImageUrls.comboOffer,
     },
     {
