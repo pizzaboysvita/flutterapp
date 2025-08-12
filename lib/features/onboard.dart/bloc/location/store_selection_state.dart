@@ -8,12 +8,22 @@ class StoreSelectionLoading extends StoreSelectionState {}
 
 class StoreSelectionLoaded extends StoreSelectionState {
   final List<Store> stores;
-  final String? selectedStoreId;
+  final int? selectedStoreId;
 
   StoreSelectionLoaded({
     required this.stores,
     this.selectedStoreId,
   });
+
+  StoreSelectionLoaded copyWith({
+    List<Store>? stores,
+    int? selectedStoreId,
+  }) {
+    return StoreSelectionLoaded(
+      stores: stores ?? this.stores,
+      selectedStoreId: selectedStoreId ?? this.selectedStoreId,
+    );
+  }
 }
 
 class StoreSelectionError extends StoreSelectionState {

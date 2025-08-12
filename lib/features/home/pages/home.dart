@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pizza_boys/core/reusable_widgets/dialogs/offers_popup.dart';
@@ -8,6 +9,9 @@ import 'package:pizza_boys/features/home/widgets/accordian.dart';
 import 'package:pizza_boys/features/home/widgets/dashboard_hero.dart';
 import 'package:pizza_boys/features/home/widgets/popular_picks.dart';
 import 'package:pizza_boys/features/home/widgets/promotional_banner.dart';
+import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
+import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
+import 'package:pizza_boys/features/onboard.dart/model/store_selection_model.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class Home extends StatefulWidget {
@@ -60,7 +64,6 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
 
   @override
   Widget build(BuildContext context) {
-
     super.build(context);
     return Scaffold(
       appBar: AppBar(
@@ -68,8 +71,8 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
         elevation: 0,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             RichText(
               text: TextSpan(
@@ -96,6 +99,48 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                   ),
                 ],
               ),
+            ),
+            BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+              builder: (context, state) {
+                if (state is StoreSelectionLoaded) {
+                  final selectedStore = state.stores
+                      .firstWhere(
+                        (store) => store.id == state.selectedStoreId,
+                        orElse: () => Store(
+                          id: 0,
+                          name: "Select Store",
+                          address: "",
+                          phone: "",
+                          image: '',
+                        ),
+                      )
+                      .name;
+
+                  return Row(
+                    children: [
+                      Icon(Icons.location_on),
+                      Text(
+                        selectedStore,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.white70,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return Text(
+                  "Select Store",
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.white70,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              },
             ),
           ],
         ),
