@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
 
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
+import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
@@ -107,34 +108,35 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     );
   }
 
-  Widget _buildStoreList(StoreSelectionLoaded state) {
-    return ListView.separated(
-      itemCount: state.stores.length,
-      separatorBuilder: (_, __) => SizedBox(height: 12.h),
-      itemBuilder: (context, index) {
-        final store = state.stores[index];
-        final isSelected = store.id == state.selectedStoreId;
-        return InkWell(
-          onTap: () {
-            context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
-          },
-          child: Container(
-            padding: EdgeInsets.all(14.w),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(
-                color: isSelected ? Colors.red : Colors.transparent,
-                width: 2,
-              ),
+Widget _buildStoreList(StoreSelectionLoaded state) {
+  return ListView.separated(
+    itemCount: state.stores.length,
+    separatorBuilder: (_, __) => SizedBox(height: 12.h),
+    itemBuilder: (context, index) {
+      final store = state.stores[index];
+      final isSelected = store.id == state.selectedStoreId;
+      return InkWell(
+        onTap: () {
+          context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
+        },
+        child: Container(
+          padding: EdgeInsets.all(14.w),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: isSelected ? Colors.red : Colors.transparent,
+              width: 2,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
                       store.name,
                       style: TextStyle(
                         fontFamily: 'Poppins',
@@ -142,62 +144,56 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                         fontWeight: FontWeight.w500,
                         color: Colors.black,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (isSelected)
-                      Icon(Icons.check_circle, color: Colors.red, size: 22.sp),
-                  ],
-                ),
-                SizedBox(height: 6.h),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16.sp,
-                      color: AppColors.blackColor,
-                    ),
-                    SizedBox(width: 4.w),
-                    Expanded(
-                      child: Text(
-                        store.address,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12.sp,
-                          color: Colors.grey[700],
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6.h),
-                Padding(
-                  padding: EdgeInsets.only(left: 3.0.w),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.call,
-                        size: 14.sp,
-                        color: AppColors.blackColor,
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        "09 600 1116",
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12.sp,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                    ],
                   ),
+                  if (isSelected)
+                    Icon(Icons.check_circle, color: Colors.red, size: 22.sp),
+                ],
+              ),
+              SizedBox(height: 6.h),
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 16.sp, color: AppColors.blackColor),
+                  SizedBox(width: 4.w),
+                  Expanded(
+                    child: Text(
+                      store.address,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12.sp,
+                        color: Colors.grey[700],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 6.h),
+              Padding(
+                padding: EdgeInsets.only(left: 3.0.w),
+                child: Row(
+                  children: [
+                    Icon(Icons.call, size: 14.sp, color: AppColors.blackColor),
+                    SizedBox(width: 4.w),
+                    Text(
+                      store.phone,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12.sp,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget buildBottomSummary(BuildContext context) {
     return Container(

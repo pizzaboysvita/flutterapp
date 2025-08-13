@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
@@ -137,6 +136,7 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
   }
 
   Widget _buildDishCard(DishModel dish) {
+    // Use backend URL directly, fallback if empty
     final safeImage = (dish.imageUrl.isNotEmpty)
         ? dish.imageUrl
         : "https://wallpapers.com/images/hd/error-placeholder-image-2e1q6z01rfep95v0.jpg";
@@ -152,52 +152,38 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 🍕 Rounded Pizza Image with caching & shimmer
           ClipRRect(
             borderRadius: BorderRadius.circular(50.r),
-            child: (dish.imageUrl.isEmpty)
-                ? Image.asset(
-                    ImageUrls.catergoryPizza,
-                    height: 70.w,
-                    width: 70.w,
-                    fit: BoxFit.cover,
-                  )
-                : CachedNetworkImage(
-                    height: 70.w,
-                    width: 70.w,
-                    imageUrl: 'https://via.placeholder.com/150',
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8.r),
-                        child: Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => const Icon(
-                      Icons.broken_image,
-                      size: 30,
-                      color: Colors.grey,
-                    ),
+            child: CachedNetworkImage(
+              height: 70.w,
+              width: 70.w,
+              imageUrl: safeImage, // ✅ Now uses actual backend image
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: Colors.white,
                   ),
+                ),
+              ),
+              errorWidget: (context, url, error) =>
+                  const Icon(Icons.broken_image, size: 30, color: Colors.grey),
+            ),
           ),
           SizedBox(width: 12.w),
 
-          // 📄 Dish details
           Expanded(
             child: SizedBox(
-              height: 90.w, // ✅ Locks height so card doesn't grow
+              height: 90.w,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween, // ✅ Spreads evenly
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // 📝 Dish Name + Fav Icon
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -209,7 +195,7 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                             fontWeight: FontWeight.w600,
                             fontFamily: 'Poppins',
                           ),
-                          maxLines: 1, // ✅ Prevents overflow
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -220,8 +206,6 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                       ),
                     ],
                   ),
-
-                  // 💰 Price + ⭐ Rating
                   Row(
                     children: [
                       Text(
@@ -256,8 +240,6 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                       ),
                     ],
                   ),
-
-                  // 🎟 Coupons + Add Button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

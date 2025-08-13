@@ -21,6 +21,7 @@ import 'package:pizza_boys/features/home/bloc/ui/banner/banner_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/ui/hero/animation_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/ui/nav/nav_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
+import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/search/bloc/search_bloc.dart';
 import 'package:pizza_boys/routes/app_pages.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
@@ -28,7 +29,28 @@ import 'package:pizza_boys/routes/app_routes.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  runApp(const MyApp());
+
+  final categoryBloc = CategoryBloc(CategoryRepository(CategoryService()))
+    ..add(LoadCategories(userId: 1, type: 'web'));
+
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => BikeAnimationBloc()),
+        BlocProvider(create: (_) => BannerCarouselBloc()),
+        BlocProvider(create: (_) => PizzaDetailsBloc()),
+        BlocProvider(create: (_) => NavCubit()),
+        BlocProvider(create: (_) => CheckoutCubit()),
+        BlocProvider(create: (_) => PaymentCubit()),
+        BlocProvider(create: (_) => SearchBloc()),
+        BlocProvider(create: (_) => PsObscureBloc()),
+        BlocProvider.value(value: categoryBloc), // stays alive app-wide
+        BlocProvider(create: (_) => DishBloc(DishRepository(DishService()))),
+        BlocProvider(create: (_) => StoreSelectionBloc()..add(LoadStoresEvent())),
+      ],
+      child: const MyApp(), // this no longer rebuilds providers
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -39,51 +61,28 @@ class MyApp extends StatelessWidget {
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
-      builder: (context, child) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => BikeAnimationBloc()),
-            BlocProvider(create: (_) => BannerCarouselBloc()),
-            BlocProvider(create: (_) => PizzaDetailsBloc()),
-            BlocProvider(create: (_) => NavCubit()),
-            BlocProvider(create: (_) => CheckoutCubit()),
-            BlocProvider(create: (_) => PaymentCubit()),
-            BlocProvider(create: (_) => SearchBloc()),
-            BlocProvider(create: (_) => PsObscureBloc()),
-            BlocProvider(
-              create: (_) =>
-                  CategoryBloc(CategoryRepository(CategoryService()))
-                    ..add(LoadCategories(userId: 1, type: 'web')),
-            ),
-            BlocProvider(
-              create: (_) => DishBloc(DishRepository(DishService())),
-            ),
-            BlocProvider(
-              create: (context) => StoreSelectionBloc()..add(LoadStoresEvent()),
-            ),
-          ],
-          child: PlatformProvider(
-            builder: (context) => PlatformApp(
-              debugShowCheckedModeBanner: false,
-              title: 'Pizza Boys',
-              material: (_, __) => MaterialAppData(
-                theme: ThemeData(
-                  scaffoldBackgroundColor: AppColors.scaffoldColor,
-                  appBarTheme: const AppBarTheme(
-                    scrolledUnderElevation: 0,
-                    elevation: 0,
-                    backgroundColor: AppColors.scaffoldColor,
-                  ),
+      builder: (_, __) {
+        return PlatformProvider(
+          builder: (context) => PlatformApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Pizza Boys',
+            material: (_, __) => MaterialAppData(
+              theme: ThemeData(
+                scaffoldBackgroundColor: AppColors.scaffoldColor,
+                appBarTheme: const AppBarTheme(
+                  scrolledUnderElevation: 0,
+                  elevation: 0,
+                  backgroundColor: AppColors.scaffoldColor,
                 ),
               ),
-              cupertino: (_, __) => CupertinoAppData(
-                theme: CupertinoThemeData(
-                  scaffoldBackgroundColor: AppColors.scaffoldColor,
-                ),
-              ),
-              initialRoute: AppRoutes.splashScreen,
-              onGenerateRoute: AppPages.generateRoutes,
             ),
+            cupertino: (_, __) => CupertinoAppData(
+              theme: const CupertinoThemeData(
+                scaffoldBackgroundColor: AppColors.scaffoldColor,
+              ),
+            ),
+            initialRoute: AppRoutes.splashScreen,
+            onGenerateRoute: AppPages.generateRoutes,
           ),
         );
       },
