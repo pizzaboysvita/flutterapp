@@ -187,7 +187,12 @@ class PopularPicks extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(
                                           10.r,
                                         ),
-                                        onTap: () {},
+                                        onTap: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.pizzaDetails,
+                                          );
+                                        },
                                         child: Center(
                                           child: Text(
                                             'Add to Cart',
