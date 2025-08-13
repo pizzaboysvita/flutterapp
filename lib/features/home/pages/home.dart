@@ -74,30 +74,33 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: "PIZZA ",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18.sp,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
+            Padding(
+              padding: EdgeInsets.only(left: 4.0.w),
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: "PIZZA ",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: "BOYZ",
-                    style: TextStyle(
-                      color: AppColors.redAccent,
-                      fontSize: 18.sp,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
+                    TextSpan(
+                      text: "BOYZ",
+                      style: TextStyle(
+                        color: AppColors.redAccent,
+                        fontSize: 18.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
@@ -118,7 +121,12 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
 
                   return Row(
                     children: [
-                      Icon(Icons.location_on),
+                      Icon(
+                        Icons.location_on,
+                        color: AppColors.whiteColor,
+                        size: 14.w,
+                      ),
+                      SizedBox(width: 2.0.w),
                       Text(
                         selectedStore,
                         style: TextStyle(

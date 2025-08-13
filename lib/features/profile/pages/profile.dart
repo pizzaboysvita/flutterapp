@@ -103,6 +103,15 @@ class Profile extends StatelessWidget {
         },
       ),
       _ProfileOption(
+        FontAwesomeIcons.solidHeart, // Filled heart for favorites
+        "Wishlist",
+        "View and manage your saved items",
+        ontap: () {
+          // Navigator.pushNamed(context, AppRoutes.wishlist);
+        },
+      ),
+
+      _ProfileOption(
         FontAwesomeIcons.locationDot, // Filled (solid)
         "Saved Addresses",
         "Manage your delivery locations",
