@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/dialogs/offers_popup.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
 import 'package:pizza_boys/features/home/widgets/accordian.dart';
@@ -16,7 +17,6 @@ import 'package:pizza_boys/routes/app_routes.dart';
 
 class Home extends StatefulWidget {
   final ScrollController scrollController;
-
   const Home({super.key, required this.scrollController});
 
   @override
@@ -75,34 +75,14 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: EdgeInsets.only(left: 4.0.w),
-              child: RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: "PIZZA ",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18.sp,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    TextSpan(
-                      text: "BOYZ",
-                      style: TextStyle(
-                        color: AppColors.redAccent,
-                        fontSize: 18.sp,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
+              padding: EdgeInsets.only(left: 2.0.w),
+              child: Image.asset(
+                ImageUrls.logoWhite, // replace with your image path
+                height: 22.sp, // matches your text height
+                fit: BoxFit.contain,
               ),
             ),
+
             BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
               builder: (context, state) {
                 if (state is StoreSelectionLoaded) {
