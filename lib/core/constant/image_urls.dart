@@ -20,6 +20,8 @@ class ImageUrls {
   static const String vitaLogo = 'assets/images/vitaLogo.jpg';
   static const String circleLogo = 'assets/images/logo.webp';
   static const String logo = 'assets/images/pizza_boys_logo.png';
+  static const String logoWhite = 'assets/images/pizza_boys_logo_white.png';
+
 
   // Banner Images
   static const String banner1 = 'assets/images/banner-1.jpeg';
