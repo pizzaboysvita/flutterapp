@@ -50,7 +50,7 @@ class _RegisterState extends State<Register> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Image.asset(ImageUrls.circleLogo, height: 60.h),
+                        Image.asset(ImageUrls.logoWhite, height: 30.h),
                         SizedBox(height: 12.h),
                         Text(
                           "Create Account!",
