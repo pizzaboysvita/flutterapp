@@ -23,6 +23,8 @@ class AppRoutes {
   static const String securityAndSetting = '/security_and_settings';
   static const String aiChatbot = '/ai_chatbot';
   static const String chooseStoreLocation = '/choose_location';
+  static const String googleMaps = '/googleMap';
+
   
 
 

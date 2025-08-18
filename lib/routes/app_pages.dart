@@ -9,6 +9,7 @@ import 'package:pizza_boys/features/details/pages/category_pizza_details.dart';
 import 'package:pizza_boys/features/details/pages/pizza_details.dart';
 import 'package:pizza_boys/features/home/pages/home.dart';
 import 'package:pizza_boys/features/onboard.dart/pages/choose_location.dart';
+import 'package:pizza_boys/features/onboard.dart/pages/googleMap.dart';
 import 'package:pizza_boys/features/onboard.dart/pages/landing_page.dart';
 import 'package:pizza_boys/features/onboard.dart/pages/splash_screen.dart';
 import 'package:pizza_boys/features/profile/pages/profile.dart';
@@ -84,6 +85,8 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => AIChatBot());
       case AppRoutes.chooseStoreLocation:
         return MaterialPageRoute(builder: (context) => StoreSelectionPage());
+           case AppRoutes.googleMaps:
+        return MaterialPageRoute(builder: (context) => Googlemap());
 
       default:
         return MaterialPageRoute(

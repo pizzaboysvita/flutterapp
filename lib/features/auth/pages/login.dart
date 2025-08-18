@@ -48,7 +48,7 @@ class _LoginState extends State<Login> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // SizedBox(height: 30.h),
-                        Image.asset(ImageUrls.circleLogo, height: 60.h),
+                        Image.asset(ImageUrls.logoWhite, height: 30.h),
                         SizedBox(height: 12.h),
                         Text(
                           "Login to Proceed!",

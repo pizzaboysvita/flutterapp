@@ -61,8 +61,10 @@ class PriceSummaryWidget extends StatelessWidget {
               ),
             ],
           ),
+          // SizedBox(height: 8.h),
           SizedBox(height: 8.h),
 
+          Divider(thickness: 1, height: 24.h),
           // Product Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -117,8 +119,11 @@ class PriceSummaryWidget extends StatelessWidget {
               ),
             ],
           ),
+          SizedBox(height: 8.h),
 
-          SizedBox(height: 16.h),
+          Divider(thickness: 1, height: 24.h),
+
+          SizedBox(height: 8.h),
           // Cart Row
           _buildRow('Cart', price),
           SizedBox(height: 4.h),

@@ -1,9 +1,10 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:lottie/lottie.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
-
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
@@ -17,13 +18,90 @@ class StoreSelectionPage extends StatefulWidget {
 }
 
 class _StoreSelectionPageState extends State<StoreSelectionPage> {
-  @override
+  GoogleMapController? _mapController;
+  final Set<Marker> _markers = {};
+  BitmapDescriptor? normalIcon;
+  BitmapDescriptor? highlightedIcon;
+
   @override
   void initState() {
     super.initState();
-    // Start loading stores immediately
     context.read<StoreSelectionBloc>().add(LoadStoresEvent());
+    _loadCustomMarkers();
   }
+
+  Future<void> _loadCustomMarkers() async {
+    normalIcon = await BitmapDescriptor.fromAssetImage(
+      const ImageConfiguration(size: Size(90, 90)),
+      ImageUrls.circleLogo,
+    );
+
+    highlightedIcon = await _createBorderedMarker(ImageUrls.circleLogo);
+    setState(() {});
+  }
+
+  /// Draw logo with red border for selected marker
+  Future<BitmapDescriptor> _createBorderedMarker(String assetPath) async {
+    final image = await DefaultAssetBundle.of(context).load(assetPath);
+    final codec = await ui.instantiateImageCodec(
+      image.buffer.asUint8List(),
+      targetWidth: 120,
+    );
+    final frame = await codec.getNextFrame();
+    final uiImage = frame.image;
+
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    final paint = Paint()..isAntiAlias = true;
+
+    // Border circle
+    paint.color = Colors.redAccent;
+    canvas.drawCircle(
+      Offset(uiImage.width / 2, uiImage.height / 2),
+      (uiImage.width / 2).toDouble(),
+      paint,
+    );
+
+    // Inner logo
+    final rect = Rect.fromLTWH(
+      10,
+      10,
+      uiImage.width.toDouble() - 20,
+      uiImage.height.toDouble() - 20,
+    );
+    paintImage(canvas: canvas, rect: rect, image: uiImage, fit: BoxFit.cover);
+
+    final picture = pictureRecorder.endRecording();
+    final finalImage = await picture.toImage(uiImage.width, uiImage.height);
+    final byteData = await finalImage.toByteData(format: ui.ImageByteFormat.png);
+
+    return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
+  }
+
+void _updateMarkers(List stores, String? selectedId) {
+  _markers.clear();
+  for (var store in stores) {
+    final isSelected = store.id.toString() == selectedId;
+    final storeLocation = _getStoreLocation(store.id);
+
+    _markers.add(
+      Marker(
+        markerId: MarkerId(store.id.toString()),
+        position: storeLocation,
+        icon: isSelected
+            ? highlightedIcon ?? BitmapDescriptor.defaultMarker
+            : normalIcon ?? BitmapDescriptor.defaultMarker,
+        onTap: () {
+          context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(storeLocation, 15),
+          );
+        },
+      ),
+    );
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +113,63 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Preloaded Lottie - shows instantly
-              Center(
-                child: Lottie.asset(
-                  'assets/lotties/Dlivery Map.json',
-                  height: 190.h,
+             BlocListener<StoreSelectionBloc, StoreSelectionState>(
+  listener: (context, state) {
+    if (state is StoreSelectionLoaded) {
+      _updateMarkers(state.stores, state.selectedStoreId?.toString());
+      setState(() {}); // ✅ safe, because it's outside the build process
+    }
+  },
+  child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+    builder: (context, state) {
+      if (state is StoreSelectionLoaded) {
+        return Column(
+          children: [
+            Container(
+              height: 200.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: [
+                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: GoogleMap(
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                  },
+                  initialCameraPosition: CameraPosition(
+                    target: _getStoreLocation(state.stores.first.id),
+                    zoom: 10.5,
+                  ),
+                  markers: _markers,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
                 ),
               ),
-              SizedBox(height: 10.h),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.googleMaps);
+                },
+                icon: const Icon(Icons.fullscreen, color: Colors.red),
+                label: const Text("View Full Map",
+                    style: TextStyle(color: Colors.red)),
+              ),
+            ),
+          ],
+        );
+      }
+      return Container(height: 200.h, color: Colors.grey.shade200);
+    },
+  ),
+),
 
+              SizedBox(height: 10.h),
               Text(
                 "Choose Your Nearby Store",
                 style: TextStyle(
@@ -54,7 +180,6 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                 ),
               ),
               SizedBox(height: 4.h),
-
               Text(
                 "Select the store nearest to you for pickup or delivery.",
                 style: TextStyle(
@@ -65,6 +190,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
               ),
               SizedBox(height: 20.h),
 
+              // 🔥 Store List
               Expanded(
                 child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
                   builder: (context, state) {
@@ -83,6 +209,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
           ),
         ),
       ),
+
+      // ✅ Bottom Continue Button
       bottomNavigationBar: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
         builder: (context, state) {
           if (state is StoreSelectionLoaded && state.selectedStoreId != null) {
@@ -108,71 +236,73 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     );
   }
 
-Widget _buildStoreList(StoreSelectionLoaded state) {
-  return ListView.separated(
-    itemCount: state.stores.length,
-    separatorBuilder: (_, __) => SizedBox(height: 12.h),
-    itemBuilder: (context, index) {
-      final store = state.stores[index];
-      final isSelected = store.id == state.selectedStoreId;
-      return InkWell(
-        onTap: () {
-          context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
-        },
-        child: Container(
-          padding: EdgeInsets.all(14.w),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(
-              color: isSelected ? Colors.red : Colors.transparent,
-              width: 2,
+  Widget _buildStoreList(StoreSelectionLoaded state) {
+    return ListView.separated(
+      itemCount: state.stores.length,
+      separatorBuilder: (_, __) => SizedBox(height: 12.h),
+      itemBuilder: (context, index) {
+        final store = state.stores[index];
+        final isSelected = store.id == state.selectedStoreId;
+        return InkWell(
+          onTap: () {
+            context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
+           _mapController?.animateCamera(
+  CameraUpdate.newLatLngZoom(_getStoreLocation(store.id), 15),
+);
+
+          },
+          child: Container(
+            padding: EdgeInsets.all(14.w),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: isSelected ? Colors.red : Colors.transparent,
+                width: 2,
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      store.name,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        store.name,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  if (isSelected)
-                    Icon(Icons.check_circle, color: Colors.red, size: 22.sp),
-                ],
-              ),
-              SizedBox(height: 6.h),
-              Row(
-                children: [
-                  Icon(Icons.location_on, size: 16.sp, color: AppColors.blackColor),
-                  SizedBox(width: 4.w),
-                  Expanded(
-                    child: Text(
-                      store.address,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 12.sp,
-                        color: Colors.grey[700],
+                    if (isSelected)
+                      Icon(Icons.check_circle, color: Colors.red, size: 22.sp),
+                  ],
+                ),
+                SizedBox(height: 6.h),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 16.sp, color: AppColors.blackColor),
+                    SizedBox(width: 4.w),
+                    Expanded(
+                      child: Text(
+                        store.address,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12.sp,
+                          color: Colors.grey[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 6.h),
-              Padding(
-                padding: EdgeInsets.only(left: 3.0.w),
-                child: Row(
+                  ],
+                ),
+                SizedBox(height: 6.h),
+                Row(
                   children: [
                     Icon(Icons.call, size: 14.sp, color: AppColors.blackColor),
                     SizedBox(width: 4.w),
@@ -186,14 +316,13 @@ Widget _buildStoreList(StoreSelectionLoaded state) {
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   Widget buildBottomSummary(BuildContext context) {
     return Container(
@@ -201,11 +330,7 @@ Widget _buildStoreList(StoreSelectionLoaded state) {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: Offset(0, -2),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, -2)),
         ],
       ),
       child: Column(
@@ -243,4 +368,19 @@ Widget _buildStoreList(StoreSelectionLoaded state) {
       ),
     );
   }
+
+LatLng _getStoreLocation(int storeId) {
+  switch (storeId) {
+    case 1:
+      return const LatLng(37.7749, -122.4194); // Example: San Francisco
+    case 2:
+      return const LatLng(34.0522, -118.2437); // Example: Los Angeles
+    case 3:
+      return const LatLng(40.7128, -74.0060); // Example: New York
+    default:
+      return const LatLng(37.7749, -122.4194); // fallback
+  }
+}
+
+
 }
