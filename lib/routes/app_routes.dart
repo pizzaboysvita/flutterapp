@@ -2,6 +2,7 @@ class AppRoutes {
   static const String pizzaDetails = '/pizza_details';
   static const String home = '/home';
   static const String cartView = '/cart_view';
+  static const String cartUiView = '/cart_ui_view';
   static const String checkOut = '/checkout';
   static const String payments = '/payments';
   static const String orderDetails = '/order_details';
@@ -14,6 +15,8 @@ class AppRoutes {
   static const String categoryPizzaDetails = '/category_pizza_details';
   static const String splashScreen = '/splash_screen';
   static const String orderTracking = '/order_tracking';
+  static const String favorites = '/fav_view';
+
   // Profile Sub Pages
   static const String orderHistory = '/order_history';
   static const String saveAddress = '/save_address';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
@@ -20,7 +21,6 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -38,21 +38,21 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 4), () {
-      Navigator.pushReplacementNamed(context, AppRoutes.landing);
-    });
+    // Just call SessionManager, no need to write navigation here
+    SessionManager.checkSession(context);
+   
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     precacheImage(const AssetImage(ImageUrls.landingImage), context);
-     // Precache promotional banner images
-  precacheImage(AssetImage(ImageUrls.banner1), context);
-  precacheImage(AssetImage(ImageUrls.banner2), context);
-   // Precache popup images
-  precacheImage(AssetImage(ImageUrls.comboOffer), context);
-  precacheImage(AssetImage(ImageUrls.discountOffer), context);
+    // Precache promotional banner images
+    precacheImage(AssetImage(ImageUrls.banner1), context);
+    precacheImage(AssetImage(ImageUrls.banner2), context);
+    // Precache popup images
+    precacheImage(AssetImage(ImageUrls.comboOffer), context);
+    precacheImage(AssetImage(ImageUrls.discountOffer), context);
   }
 
   @override

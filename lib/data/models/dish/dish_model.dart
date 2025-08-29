@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'addon_model.dart'; // 👈 import Addon
 
 class DishModel {
   final int id;
@@ -8,11 +9,11 @@ class DishModel {
   final double rating;
   final int dishCategoryId;
   final String description;
+  final int storeId;
 
-  // ✅ Additional fields for your nested JSON
-  final List<dynamic> optionSets; // Parsed from dish_option_set_json
-  final List<dynamic> ingredients; // Parsed from dish_ingredients_json
-  final List<dynamic> choices; // Parsed from dish_choices_json
+  final List<Addon> optionSets;
+  final List<Addon> ingredients;
+  final List<Addon> choices;
 
   DishModel({
     required this.id,
@@ -22,13 +23,28 @@ class DishModel {
     required this.rating,
     required this.dishCategoryId,
     required this.description,
+    required this.storeId,
     required this.optionSets,
     required this.ingredients,
     required this.choices,
   });
 
   factory DishModel.fromJson(Map<String, dynamic> json) {
-    print("🛠 Parsing Dish JSON: $json");
+    List<Addon> _parseAddonList(dynamic value) {
+      if (value == null) return [];
+      if (value is List) {
+        return value.map((e) => Addon.fromJson(e)).toList();
+      }
+      if (value is String) {
+        try {
+          final decoded = jsonDecode(value);
+          if (decoded is List) {
+            return decoded.map((e) => Addon.fromJson(e)).toList();
+          }
+        } catch (_) {}
+      }
+      return [];
+    }
 
     num? _parseNum(dynamic value) {
       if (value == null) return null;
@@ -37,40 +53,35 @@ class DishModel {
       return null;
     }
 
-    List<dynamic> _parseJsonList(dynamic value) {
-      if (value == null) return [];
-      if (value is List) return value;
-      if (value is String) {
-        try {
-          final decoded = jsonDecode(value);
-          if (decoded is List) return decoded;
-        } catch (_) {}
-      }
-      return [];
-    }
+    return DishModel(
+      id: _parseNum(json['dish_id'])?.toInt() ?? 0,
+      name: json['dish_name']?.toString() ?? '',
+      price: _parseNum(json['dish_price'])?.toDouble() ?? 0.0,
+      imageUrl: json['dish_image']?.toString() ?? '',
+      rating: _parseNum(json['rating'])?.toDouble() ?? 0.0,
+      dishCategoryId: _parseNum(json['dish_category_id'])?.toInt() ?? -1,
+      description: json['description']?.toString() ?? '',
+      storeId: _parseNum(json['store_id'])?.toInt() ?? 0,
+      optionSets: _parseAddonList(json['dish_option_set_json']),
+      ingredients: _parseAddonList(json['dish_ingredients_json']),
+      choices: _parseAddonList(json['dish_choices_json']),
+    );
+  }
 
-    try {
-      final model = DishModel(
-        id: _parseNum(json['dish_id'])?.toInt() ?? 0,
-        name: json['dish_name']?.toString() ?? '',
-        price: _parseNum(json['dish_price'])?.toDouble() ?? 0.0,
-        imageUrl: json['dish_image']?.toString() ?? '',
-        rating: _parseNum(json['rating'])?.toDouble() ?? 0.0,
-        dishCategoryId: _parseNum(json['dish_category_id'])?.toInt() ?? -1,
-        description: json['description']?.toString() ?? '',
-        optionSets: _parseJsonList(json['dish_option_set_json']),
-        ingredients: _parseJsonList(json['dish_ingredients_json']),
-        choices: _parseJsonList(json['dish_choices_json']),
-      );
-
-      print(
-        "✅ Parsed DishModel: ${model.name} (ID: ${model.id}, CatID: ${model.dishCategoryId})",
-      );
-      return model;
-    } catch (e, stack) {
-      print("❌ Error parsing Dish JSON: $e");
-      print(stack);
-      rethrow;
-    }
+  /// ✅ Added toJson method
+  Map<String, dynamic> toJson() {
+    return {
+      'dish_id': id,
+      'dish_name': name,
+      'dish_price': price,
+      'dish_image': imageUrl,
+      'rating': rating,
+      'dish_category_id': dishCategoryId,
+      'description': description,
+      'store_id': storeId,
+      'dish_option_set_json': optionSets.map((e) => e.toJson()).toList(),
+      'dish_ingredients_json': ingredients.map((e) => e.toJson()).toList(),
+      'dish_choices_json': choices.map((e) => e.toJson()).toList(),
+    };
   }
 }

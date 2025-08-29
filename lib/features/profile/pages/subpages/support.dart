@@ -10,7 +10,7 @@ class SupportView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topics = [
-      {'title': 'AI Chatbot', 'desc': 'Chat with our support bot.'},
+      // {'title': 'AI Chatbot', 'desc': 'Chat with our support bot.'},
       {'title': 'Contact Support', 'desc': 'Reach out via call or email.'},
       {'title': 'FAQ', 'desc': 'Browse common questions.'},
     ];
@@ -45,9 +45,9 @@ class SupportView extends StatelessWidget {
           final item = topics[index];
           return InkWell(
             onTap: () {
-              if (item['title'] == 'AI Chatbot') {
-                Navigator.pushNamed(context, AppRoutes.aiChatbot);
-              }
+              // if (item['title'] == 'AI Chatbot') {
+              //   Navigator.pushNamed(context, AppRoutes.aiChatbot);
+              // }
               // You can add more actions for other options if needed
             },
             child: Container(

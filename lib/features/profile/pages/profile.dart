@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
@@ -28,10 +29,16 @@ class Profile extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          Icon(
-            FontAwesomeIcons.powerOff,
-            color: AppColors.redPrimary,
-            size: 18.sp,
+          IconButton(
+            icon: Icon(
+              FontAwesomeIcons.powerOff,
+              color: AppColors.redPrimary,
+              size: 18.sp,
+            ),
+            onPressed: () async {
+              // 🔴 Clear session and move to Login page
+              await SessionManager.clearSession(context);
+            },
           ),
           SizedBox(width: 16.w),
         ],
@@ -107,7 +114,7 @@ class Profile extends StatelessWidget {
         "Wishlist",
         "View and manage your saved items",
         ontap: () {
-          // Navigator.pushNamed(context, AppRoutes.wishlist);
+          Navigator.pushNamed(context, AppRoutes.favorites);
         },
       ),
 

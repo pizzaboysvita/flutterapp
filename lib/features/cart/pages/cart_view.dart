@@ -1,103 +1,63 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
-import 'package:pizza_boys/features/cart/widgets/my_cart/cart_item_tile.dart';
-import 'package:pizza_boys/features/cart/widgets/my_cart/meal_addon.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_bloc.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_event.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_state.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
+import 'package:shimmer/shimmer.dart';
 
 class CartView extends StatefulWidget {
   final ScrollController scrollController;
   final bool showBackButton;
-  const CartView({super.key, required this.scrollController,  this.showBackButton = true});
+  final int userId;
+
+  const CartView({
+    super.key,
+    required this.scrollController,
+    required this.userId,
+    this.showBackButton = true,
+  });
 
   @override
   State<CartView> createState() => _CartViewState();
 }
 
 class _CartViewState extends State<CartView> {
-  List<Map<String, dynamic>> cartItems = [
-    {
-      'name': 'M and M Pizza',
-      'price': 8.99,
-      'quantity': 1,
-      'image': ImageUrls.catergoryPizza,
-    },
-  ];
-
-  List<Map<String, dynamic>> mealAddons = [
-    {
-      'name': 'Coke (500ml)',
-      'price': 1.50,
-      'added': false,
-      'image': ImageUrls.coke,
-    },
-    {
-      'name': 'Garlic Bread',
-      'price': 2.00,
-      'added': false,
-      'image': ImageUrls.garlicBread,
-    },
-    {
-      'name': 'French Fries',
-      'price': 2.50,
-      'added': false,
-      'image': ImageUrls.frenchFries,
-    },
-  ];
-
-  double discount = 0;
-  bool useSuperCoins = false;
   String deliveryNote = '';
 
-  double getTotal() {
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Always fetch latest cart for the logged-in user
+    context.read<CartGetBloc>().add(FetchCart(widget.userId));
+  }
+
+  double calculateTotal(List cartItems) {
     double total = 0;
     for (var item in cartItems) {
-      total += item['price'] * item['quantity'];
+      total += item.price * item.quantity;
     }
-    total -= discount;
-    if (useSuperCoins) total -= 2;
-    return total > 0 ? total : 0;
+    return total;
   }
 
-  void updateQuantity(int index, bool increase) {
-    setState(() {
-      if (increase) {
-        cartItems[index]['quantity']++;
-      } else if (cartItems[index]['quantity'] > 1) {
-        cartItems[index]['quantity']--;
+  String extractDishName(Map<String, dynamic> options, {String? fallback}) {
+    try {
+      if (options.containsKey("selectedOptions")) {
+        final selectedOptions = options["selectedOptions"] as List?;
+        if (selectedOptions != null && selectedOptions.isNotEmpty) {
+          final firstGroup = selectedOptions[0] as List?;
+          if (firstGroup != null && firstGroup.isNotEmpty) {
+            return firstGroup[0]["name"] ?? fallback ?? "Pizza";
+          }
+        }
       }
-    });
-  }
-
-  void applyCoupon(double value) {
-    setState(() {
-      discount = value;
-    });
-  }
-
-  void toggleSuperCoins(bool value) {
-    setState(() {
-      useSuperCoins = value;
-    });
-  }
-
-  void toggleMealAddon(int index) {
-    setState(() {
-      mealAddons[index]['added'] = !mealAddons[index]['added'];
-      if (mealAddons[index]['added']) {
-        cartItems.add({
-          'name': mealAddons[index]['name'],
-          'price': mealAddons[index]['price'],
-          'quantity': 1,
-          'image': mealAddons[index]['image'],
-        });
-      } else {
-        cartItems.removeWhere(
-          (item) => item['name'] == mealAddons[index]['name'],
-        );
-      }
-    });
+    } catch (_) {}
+    return fallback ?? "Pizza";
   }
 
   @override
@@ -105,7 +65,6 @@ class _CartViewState extends State<CartView> {
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
-        backgroundColor: AppColors.scaffoldColor,
         elevation: 0,
         automaticallyImplyLeading: widget.showBackButton,
         title: RichText(
@@ -132,128 +91,181 @@ class _CartViewState extends State<CartView> {
             ],
           ),
         ),
-
         centerTitle: true,
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
-        child: ListView(
-          controller: widget.scrollController,
-          children: [
-            SizedBox(height: 12.h),
-            ...List.generate(
-              cartItems.length,
-              (index) => CartItemTile(
-                item: cartItems[index],
-                onIncrement: () => updateQuantity(index, true),
-                onDecrement: () => updateQuantity(index, false),
-              ),
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'Complete Your Meal',
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Poppins',
-              ),
-            ),
-            SizedBox(height: 10.h),
-            SizedBox(
-              height: 140.h,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: mealAddons.length,
-                separatorBuilder: (_, __) => SizedBox(width: 12.w),
-                itemBuilder: (context, index) => MealAddonTile(
-                  addon: mealAddons[index],
-                  onToggle: () => toggleMealAddon(index),
-                ),
-              ),
-            ),
-            SizedBox(height: 16.h),
-            TextField(
-              onChanged: (value) => deliveryNote = value,
-              maxLines: 1,
-              decoration: InputDecoration(
-                labelText: 'Add Delivery Instructions (Optional)',
-                labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 12.sp),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-              ),
-            ),
-            SizedBox(height: 20.h),
-          ],
+        child: BlocBuilder<CartGetBloc, CartGetState>(
+          builder: (context, state) {
+            if (state is CartLoading) {
+              return const Center(child: LottieLoader());
+            } else if (state is CartLoaded) {
+              final cartItems = state.cartItems;
+              if (cartItems.isEmpty) {
+                return const Center(child: Text("Your cart is empty"));
+              }
+
+              return ListView.builder(
+                controller: widget.scrollController,
+                itemCount: cartItems.length,
+                itemBuilder: (context, index) {
+                  final item = cartItems[index];
+
+                  return Container(
+                    padding: EdgeInsets.all(12.w),
+                    margin: EdgeInsets.only(bottom: 12.h),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12.r),
+                      color: Colors.white,
+                    ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8.r),
+                          child: SizedBox(
+                            height: 50.h,
+                            width: 50.w,
+                            child: buildCartImage(item.dishImage),
+                          ),
+                        ),
+
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.dishName ?? "Pizza",
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                "Qty: ${item.quantity}",
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.grey.shade600,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          "\$${(item.price * item.quantity).toStringAsFixed(2)}",
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                            color: AppColors.greenColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            } else if (state is CartError) {
+              return Center(child: Text("❌ ${state.message}"));
+            }
+            return const SizedBox.shrink();
+          },
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Total:',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Poppins',
-                  ),
+      bottomNavigationBar: BlocBuilder<CartGetBloc, CartGetState>(
+        builder: (context, state) {
+          double total = 0;
+          if (state is CartLoaded) {
+            total = calculateTotal(state.cartItems);
+          }
+          return Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 8,
+                  offset: Offset(0, -2),
                 ),
-                Text(
-                  '\$${getTotal().toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.greenColor,
-                    fontFamily: 'Poppins',
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total:',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    Text(
+                      '\$${total.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.greenColor,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 14.h),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48.h,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.checkOut);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.redPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                    ),
+                    child: Text(
+                      'Proceed to Checkout',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontFamily: 'Poppins',
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 14.h),
-
-            SizedBox(
-              width: double.infinity,
-              height: 48.h,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.login);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.redPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
-                ),
-                child: Text(
-                  'Proceed to Checkout',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontFamily: 'Poppins',
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
+    );
+  }
+
+  /// 🔹 Image handler
+  Widget buildCartImage(String? imageUrl) {
+    final fallbackImage = ImageUrls.cheeseLoverPizza; // your fallback image
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl ?? fallbackImage,
+      fit: BoxFit.cover,
+      memCacheHeight: 200, // reduces memory usage
+      memCacheWidth: 200, // resizes large image
+      placeholder: (context, url) => Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Container(color: Colors.white),
+      ),
+      errorWidget: (context, url, error) =>
+          Image.asset(fallbackImage, fit: BoxFit.cover),
     );
   }
 }

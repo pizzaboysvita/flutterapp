@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:pizza_boys/features/auth/pages/login.dart';
 import 'package:pizza_boys/features/auth/pages/register.dart';
+import 'package:pizza_boys/features/cart/pages/cart_ui_view.dart';
 import 'package:pizza_boys/features/cart/pages/cart_view.dart';
 import 'package:pizza_boys/features/cart/pages/checkout.dart';
 import 'package:pizza_boys/features/cart/pages/oder_details.dart';
 import 'package:pizza_boys/features/cart/pages/payments.dart';
 import 'package:pizza_boys/features/details/pages/category_pizza_details.dart';
 import 'package:pizza_boys/features/details/pages/pizza_details.dart';
+import 'package:pizza_boys/features/favorites/pages/fav_view.dart';
 import 'package:pizza_boys/features/home/pages/home.dart';
 import 'package:pizza_boys/features/onboard.dart/pages/choose_location.dart';
 import 'package:pizza_boys/features/onboard.dart/pages/googleMap.dart';
@@ -29,14 +31,19 @@ class AppPages {
   static Route<dynamic> generateRoutes(RouteSettings setting) {
     switch (setting.name) {
       case AppRoutes.pizzaDetails:
-        return MaterialPageRoute(builder: (context) => PizzaDetailsView());
+        final dishId = setting.arguments as int;
+        return MaterialPageRoute(builder: (context) => PizzaDetailsView(dishId: dishId,));
       case AppRoutes.home:
         return MaterialPageRoute(
           builder: (context) => Home(scrollController: ScrollController()),
         );
       case AppRoutes.cartView:
         return MaterialPageRoute(
-          builder: (context) => CartView(scrollController: ScrollController()),
+          builder: (context) => CartView(scrollController: ScrollController(), userId: 101,),
+        );
+         case AppRoutes.cartUiView:
+        return MaterialPageRoute(
+          builder: (context) => CartUIView(),
         );
       case AppRoutes.checkOut:
         return MaterialPageRoute(builder: (context) => Checkout());
@@ -68,6 +75,8 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => SplashScreen());
       case AppRoutes.orderTracking:
         return MaterialPageRoute(builder: (context) => OrderTracking());
+        case AppRoutes.favorites:
+        return MaterialPageRoute(builder: (context) => FavoritesView());
       // Profile Sub Pages
       case AppRoutes.orderHistory:
         return MaterialPageRoute(builder: (context) => OrderHistoryView());
@@ -85,7 +94,7 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => AIChatBot());
       case AppRoutes.chooseStoreLocation:
         return MaterialPageRoute(builder: (context) => StoreSelectionPage());
-           case AppRoutes.googleMaps:
+      case AppRoutes.googleMaps:
         return MaterialPageRoute(builder: (context) => Googlemap());
 
       default:
