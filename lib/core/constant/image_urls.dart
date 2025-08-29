@@ -22,16 +22,14 @@ class ImageUrls {
   static const String logo = 'assets/images/pizza_boys_logo.png';
   static const String logoWhite = 'assets/images/pizza_boys_logo_white.png';
 
-
   // Banner Images
   static const String banner1 = 'assets/images/banner-1.jpeg';
   static const String banner2 = 'assets/images/banner-2.JPG';
 
-
-
   // Dummy-Map
   static const String dummyMap = 'assets/images/dummy_map.png';
-  
 
-
+  // PizzaBoyz Veg Pizza
+  static const String cheeseLoverPizza =
+      'assets/images/Cheese Lovers Pizza .webp';
 }

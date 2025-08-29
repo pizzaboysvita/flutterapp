@@ -2,7 +2,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/theme/app_colors.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_bloc.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_state.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class IconAccordion extends StatefulWidget {
@@ -40,15 +43,29 @@ class _IconAccordionState extends State<IconAccordion> {
                 _buildIcon(FontAwesomeIcons.solidBell, () {
                   Navigator.pushNamed(context, AppRoutes.notifications);
                 }, badgeCount: 3),
+
                 SizedBox(width: 11.0.w),
-                _buildIcon(FontAwesomeIcons.cartShopping, () {
-                  Navigator.pushNamed(context, AppRoutes.cartView);
-                }, badgeCount: 1),
+
+                // 🔹 Cart Badge with dynamic BlocBuilder
+                BlocBuilder<CartGetBloc, CartGetState>(
+                  builder: (context, state) {
+                    int count = 0;
+                    if (state is CartLoaded) {
+                      count = state.cartItems.length; // number of items in cart
+                    }
+                    return _buildIcon(FontAwesomeIcons.cartShopping, () {
+                      Navigator.pushNamed(context, AppRoutes.cartView);
+                    }, badgeCount: count);
+                  },
+                ),
+
                 SizedBox(width: 12.0.w),
               ],
+
               _buildIcon(FontAwesomeIcons.solidUser, () {
                 Navigator.pushNamed(context, AppRoutes.profile);
               }),
+
               _buildIcon(
                 isExpanded
                     ? FontAwesomeIcons.chevronLeft

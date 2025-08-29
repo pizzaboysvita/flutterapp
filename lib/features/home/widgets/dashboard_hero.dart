@@ -227,8 +227,20 @@ class PizzaCategoriesRow extends StatelessWidget {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8.r),
                           child: CachedNetworkImage(
-                            imageUrl: item.categoryImage,
+                            imageUrl: item.categoryImage.isNotEmpty
+                                ? item.categoryImage
+                                : "https://via.placeholder.com/150", // ✅ fallback URL
+
                             fit: BoxFit.cover,
+
+                            // ✅ Optimize memory usage
+                            memCacheHeight: (65.w * 2).toInt(),
+                            memCacheWidth: (65.w * 2).toInt(),
+
+                            // ✅ Optional disk cache optimization
+                            maxHeightDiskCache: (65.w * 2).toInt(),
+                            maxWidthDiskCache: (65.w * 2).toInt(),
+
                             placeholder: (context, url) => Shimmer.fromColors(
                               baseColor: Colors.grey[300]!,
                               highlightColor: Colors.grey[100]!,
@@ -241,14 +253,19 @@ class PizzaCategoriesRow extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.broken_image,
-                              size: 30,
-                              color: Colors.grey,
-                            ),
+
+                            errorWidget: (context, url, error) =>
+                                CachedNetworkImage(
+                                  imageUrl:
+                                      "https://via.placeholder.com/150", // ✅ fallback on error
+                                  fit: BoxFit.cover,
+                                  memCacheHeight: (65.w * 2).toInt(),
+                                  memCacheWidth: (65.w * 2).toInt(),
+                                ),
                           ),
                         ),
                       ),
+
                       SizedBox(height: 8.h),
                       SizedBox(
                         width: 80.w,
