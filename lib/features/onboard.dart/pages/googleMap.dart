@@ -1,9 +1,10 @@
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
-import 'package:pizza_boys/core/theme/app_colors.dart';
 
 class Googlemap extends StatefulWidget {
   const Googlemap({super.key});

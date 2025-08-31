@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
-import 'package:pizza_boys/core/theme/app_colors.dart';
-import 'package:pizza_boys/routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -40,7 +39,6 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Just call SessionManager, no need to write navigation here
     SessionManager.checkSession(context);
-   
   }
 
   @override

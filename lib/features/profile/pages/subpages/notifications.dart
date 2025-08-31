@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:pizza_boys/core/theme/app_colors.dart';
+import 'package:pizza_boys/core/constant/app_colors.dart';
 
 class NotificationsView extends StatelessWidget {
   const NotificationsView({super.key});
@@ -54,7 +54,11 @@ class NotificationsView extends StatelessWidget {
             ),
             child: Row(
               children: [
-                FaIcon(FontAwesomeIcons.solidBell, color: Colors.black, size: 16.sp),
+                FaIcon(
+                  FontAwesomeIcons.solidBell,
+                  color: Colors.black,
+                  size: 16.sp,
+                ),
                 SizedBox(width: 14.w),
                 Expanded(
                   child: Column(

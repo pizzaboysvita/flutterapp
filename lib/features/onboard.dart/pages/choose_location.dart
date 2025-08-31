@@ -1,12 +1,13 @@
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:lottie/lottie.dart';
+import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
-import 'package:pizza_boys/core/theme/app_colors.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
@@ -341,75 +342,76 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     );
   }
 
-Widget buildBottomSummary(BuildContext context) {
-  return BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
-    builder: (context, state) {
-      if (state is! StoreSelectionLoaded || state.selectedStoreId == null) {
-        return const SizedBox.shrink(); // don’t show button if nothing selected
-      }
+  Widget buildBottomSummary(BuildContext context) {
+    return BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+      builder: (context, state) {
+        if (state is! StoreSelectionLoaded || state.selectedStoreId == null) {
+          return const SizedBox.shrink(); // don’t show button if nothing selected
+        }
 
-      final selectedStore = state.stores.firstWhere(
-        (store) => store.id == state.selectedStoreId,
-      );
+        final selectedStore = state.stores.firstWhere(
+          (store) => store.id == state.selectedStoreId,
+        );
 
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(height: 12.h),
-            SizedBox(
-              width: double.infinity,
-              height: 48.h,
-              child: ElevatedButton(
-                onPressed: () async {
-                  // ✅ Save selected store to secure storage
-                  await TokenStorage.saveChosenLocation(
-                    storeId: selectedStore.id.toString(),
-                    locationName: selectedStore.name,
-                  );
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 6,
+                offset: Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 12.h),
+              SizedBox(
+                width: double.infinity,
+                height: 48.h,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    // ✅ Save selected store to secure storage
+                    await TokenStorage.saveChosenLocation(
+                      storeId: selectedStore.id.toString(),
+                      locationName: selectedStore.name,
+                    );
 
-                  debugPrint(
-                      "✅ Store persisted: ${selectedStore.name} (ID: ${selectedStore.id})");
+                    debugPrint(
+                      "✅ Store persisted: ${selectedStore.name} (ID: ${selectedStore.id})",
+                    );
 
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    AppRoutes.home,
-                    (route) => false,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.redPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.home,
+                      (route) => false,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.redPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
                   ),
-                ),
-                child: Text(
-                  'Continue',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontFamily: 'Poppins',
-                    color: Colors.white,
+                  child: Text(
+                    'Continue',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontFamily: 'Poppins',
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   LatLng _getStoreLocation(int storeId) {
     switch (storeId) {

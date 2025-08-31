@@ -2,19 +2,19 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pizza_boys/core/constant/app_colors.dart';
+import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_state.dart';
-import 'package:shimmer/shimmer.dart';
-import 'package:pizza_boys/core/constant/image_urls.dart';
-import 'package:pizza_boys/core/theme/app_colors.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
-import 'package:pizza_boys/data/models/dish/dish_model.dart';
+import 'package:shimmer/shimmer.dart';
 
 class PopularPicks extends StatelessWidget {
   const PopularPicks({super.key});

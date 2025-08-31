@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
+import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/lottie_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/price_summary/price_summary.dart';
-import 'package:pizza_boys/core/theme/app_colors.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class OrderDetails extends StatefulWidget {
@@ -315,7 +315,6 @@ class _OrderDetailsState extends State<OrderDetails> {
       ),
     );
   }
-
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
