@@ -2,16 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/data/repositories/auth/register_repo.dart';
 import 'package:pizza_boys/data/repositories/cart/cart_repo.dart';
+import 'package:pizza_boys/data/repositories/order/order_repo.dart';
+import 'package:pizza_boys/data/repositories/whishlist/whishlist_repo.dart';
 import 'package:pizza_boys/data/services/cart/cart_service.dart';
+import 'package:pizza_boys/data/services/order/order_service.dart';
+import 'package:pizza_boys/data/services/whishlist/whishlist_service.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/register/register_bloc.dart';
 import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/checkout/checkout_cubit.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/ui/cart_ui_bloc.dart';
+import 'package:pizza_boys/features/cart/bloc/order/get/order_get_bloc.dart';
+import 'package:pizza_boys/features/cart/bloc/order/get/order_get_event.dart';
+import 'package:pizza_boys/features/cart/bloc/order/post/order_post_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/payment/payments_cubit.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/ui/banner/banner_bloc.dart';
@@ -49,7 +57,17 @@ class BlocProviderHelper {
               CartBloc(cartRepository: CartRepository(CartService())),
         ),
         BlocProvider(create: (_) => CartGetBloc(CartRepository(CartService()))),
-        BlocProvider(create: (_) => FavoriteBloc()),
+        BlocProvider(
+          create: (_) =>
+              FavoriteBloc(repository: FavoriteRepository(FavoriteService()))..add(FetchWishlistEvent()),
+        ),
+           BlocProvider(
+          create: (_) => OrderBloc(repository: OrderRepository(OrderService())),
+        ),
+
+        BlocProvider(
+      create: (context) =>
+          OrderGetBloc(OrderRepository(OrderService()))..add(LoadOrdersEvent()),)
       ],
       child: child,
     );

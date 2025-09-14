@@ -7,6 +7,10 @@ class ApiUrls {
 
   static const String loginPost = 'http://78.142.47.247:3003/api/loginUser';
 
-  static const String storesGet = 'http://78.142.47.247:3003/api/store?type=web';
+  static const String storesGet =
+      'http://78.142.47.247:3003/api/store?type=web';
+
+  static const String whishlist = "http://78.142.47.247:3003/api/wishlist";
+  static const String postOrders = "http://78.142.47.247:3003/api/order";
 
 }

@@ -368,10 +368,9 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(height: 12.h),
+              // SizedBox(height: 12.h),
               SizedBox(
                 width: double.infinity,
-                height: 48.h,
                 child: ElevatedButton(
                   onPressed: () async {
                     // ✅ Save selected store to secure storage
@@ -395,11 +394,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.r),
                     ),
+                    padding: EdgeInsets.symmetric(
+                      vertical: 14.h,
+                    ), // ✅ Adaptive padding
                   ),
                   child: Text(
                     'Continue',
                     style: TextStyle(
-                      fontSize: 14.sp,
+                      fontSize: 14.sp, // ✅ Slightly larger font for readability
                       fontFamily: 'Poppins',
                       color: Colors.white,
                     ),
