@@ -41,9 +41,9 @@ class _IconAccordionState extends State<IconAccordion> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (isExpanded) ...[
-                _buildIcon(FontAwesomeIcons.solidBell, () {
-                  Navigator.pushNamed(context, AppRoutes.notifications);
-                }, badgeCount: 3),
+                _buildIcon(FontAwesomeIcons.solidHeart, () {
+                  Navigator.pushNamed(context, AppRoutes.favorites);
+                }),
 
                 SizedBox(width: 11.0.w),
 

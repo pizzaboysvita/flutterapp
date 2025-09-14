@@ -106,7 +106,7 @@ class Profile extends StatelessWidget {
         "Order History",
         "View past orders and reorder quickly",
         ontap: () {
-          Navigator.pushNamed(context, AppRoutes.orderHistory);
+          Navigator.pushNamed(context, AppRoutes.orderHistory,arguments: false,);
         },
       ),
       _ProfileOption(

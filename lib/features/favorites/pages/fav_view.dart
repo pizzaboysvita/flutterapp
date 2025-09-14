@@ -5,13 +5,28 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
+import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_state.dart';
 import 'package:shimmer/shimmer.dart';
 
-class FavoritesView extends StatelessWidget {
+class FavoritesView extends StatefulWidget {
   const FavoritesView({super.key});
+
+  @override
+  State<FavoritesView> createState() => _FavoritesViewState();
+}
+
+class _FavoritesViewState extends State<FavoritesView> {
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Trigger fetch event when the view is loaded
+    Future.microtask(() {
+      context.read<FavoriteBloc>().add(FetchWishlistEvent());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +71,20 @@ class FavoritesView extends StatelessWidget {
                 return const Center(child: Text("No favorites yet ❤️"));
               }
 
+              // Group by dish id
+              final groupedDishes = <int, List<DishModel>>{};
+              for (var dish in state.favorites) {
+                groupedDishes.putIfAbsent(dish.id, () => []).add(dish);
+              }
+
+              final groupedList = groupedDishes.entries.toList();
+
               return ListView.builder(
-                itemCount: state.favorites.length,
+                itemCount: groupedList.length,
                 itemBuilder: (context, index) {
-                  final dish = state.favorites[index];
+                  final entry = groupedList[index];
+                  final dish = entry.value.first; // Take one as representative
+                  // final quantity = entry.value.length;
 
                   return Container(
                     padding: EdgeInsets.all(12.w),
@@ -67,13 +92,6 @@ class FavoritesView extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12.r),
                       color: Colors.white,
-                      // boxShadow: [
-                      //   BoxShadow(
-                      //     color: Colors.black12,
-                      //     blurRadius: 6,
-                      //     offset: const Offset(0, 2),
-                      //   ),
-                      // ],
                     ),
                     child: Row(
                       children: [
@@ -86,7 +104,6 @@ class FavoritesView extends StatelessWidget {
                             child: buildCartImage(dish.imageUrl),
                           ),
                         ),
-
                         SizedBox(width: 12.w),
 
                         // Dish Info
@@ -106,7 +123,7 @@ class FavoritesView extends StatelessWidget {
                               ),
                               SizedBox(height: 4.h),
                               Text(
-                                "\$${dish.price.toStringAsFixed(2)}",
+                                "\$${dish.price.toStringAsFixed(2)} ",
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   color: AppColors.greenColor,
@@ -118,20 +135,20 @@ class FavoritesView extends StatelessWidget {
                           ),
                         ),
 
-                        // Remove Button
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () {
-                            context.read<FavoriteBloc>().add(
-                              RemoveFromFavoriteEvent(dish.id),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("💔 Removed from Favorites"),
-                              ),
-                            );
-                          },
-                        ),
+                        // // Remove Button (optional, here it removes all of them or handle differently)
+                        // IconButton(
+                        //   icon: const Icon(Icons.delete, color: Colors.red),
+                        //   onPressed: () {
+                        //     context.read<FavoriteBloc>().add(
+                        //       RemoveFromFavoriteEvent(dish.id),
+                        //     );
+                        //     ScaffoldMessenger.of(context).showSnackBar(
+                        //       const SnackBar(
+                        //         content: Text("💔 Removed from Favorites"),
+                        //       ),
+                        //     );
+                        //   },
+                        // ),
                       ],
                     ),
                   );

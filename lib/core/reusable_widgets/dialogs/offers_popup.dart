@@ -25,14 +25,17 @@ class OfferPopup extends StatelessWidget {
       backgroundColor: Colors.white,
       insetPadding: EdgeInsets.symmetric(horizontal: 24.w),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-      child: SizedBox(
-        width: 1.sw,
-        height: 320.h,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight:
+              0.8.sh, // Avoid overflow by limiting max height to 80% of screen
+        ),
         child: Stack(
           children: [
             Padding(
               padding: EdgeInsets.all(16.w),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ClipRRect(
@@ -56,38 +59,41 @@ class OfferPopup extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  Text(
-                    description,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontFamily: 'Poppins',
-                      color: Colors.black87,
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Text(
+                        description,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          color: Colors.black87,
+                        ),
+                      ),
                     ),
                   ),
                   SizedBox(height: 16.h),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 36.h,
-                    child: ElevatedButton(
-                      onPressed: onGotIt,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.redPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                      ),
-                      child: Text(
-                        'Got It!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.sp,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ),
-                  ),
+                 SizedBox(
+  width: double.infinity,
+  child: ElevatedButton(
+    onPressed: onGotIt,
+    style: ElevatedButton.styleFrom(
+      backgroundColor: AppColors.redPrimary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      padding: EdgeInsets.symmetric(vertical: 12.h), // Use padding instead of fixed height
+    ),
+    child: Text(
+      'Got It!',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 14.sp, // Slightly larger font size for readability
+        fontFamily: 'Poppins',
+      ),
+    ),
+  ),
+),
                 ],
               ),
             ),

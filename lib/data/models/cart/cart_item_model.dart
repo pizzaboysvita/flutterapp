@@ -20,6 +20,11 @@ class CartItem {
   String? dishName;
   String? dishImage;
 
+  // 🔹 New fields for OrderModel
+  String? base;
+  double? basePrice;
+  String? dishNote;
+
   CartItem({
     required this.cartId,
     required this.userId,
@@ -34,9 +39,16 @@ class CartItem {
     this.imageUrl = ImageUrls.cheeseLoverPizza, // default placeholder
     this.dishName,
     this.dishImage,
+    this.base,
+    this.basePrice,
+    this.dishNote,
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
+    final options = json['options_json'] != null
+        ? jsonDecode(json['options_json'])
+        : {};
+
     return CartItem(
       cartId: json['cart_id'] ?? 0,
       userId: json['user_id'] ?? 0,
@@ -51,16 +63,23 @@ class CartItem {
       updatedOn: json['updated_on'] != null
           ? DateTime.parse(json['updated_on'])
           : DateTime.now(),
-      options: json['options_json'] != null
-          ? jsonDecode(json['options_json'])
-          : {},
+      options: options,
 
       // 🔹 still keep default fallback
-      imageUrl: ImageUrls.cheeseLoverPizza, 
+      imageUrl: ImageUrls.cheeseLoverPizza,
 
       // 🔹 map dishName & dishImage if backend provides them
       dishName: json['dish_name'],
       dishImage: json['dish_image'],
+
+      // 🔹 map base & basePrice from options if exists
+      base: options['base'] as String?,
+      basePrice: options['basePrice'] != null
+          ? double.tryParse(options['basePrice'].toString())
+          : null,
+
+      // 🔹 optional dish note
+      dishNote: options['dishNote'] as String?,
     );
   }
 }

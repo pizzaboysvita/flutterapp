@@ -29,6 +29,7 @@ class DishModel {
     required this.choices,
   });
 
+  /// 🔹 Factory to parse regular dish JSON
   factory DishModel.fromJson(Map<String, dynamic> json) {
     List<Addon> _parseAddonList(dynamic value) {
       if (value == null) return [];
@@ -68,7 +69,31 @@ class DishModel {
     );
   }
 
-  /// ✅ Added toJson method
+  /// ✅ Named constructor to parse wishlist JSON
+  factory DishModel.fromWishlistJson(Map<String, dynamic> json) {
+    num? _parseNum(dynamic value) {
+      if (value == null) return null;
+      if (value is num) return value;
+      if (value is String) return num.tryParse(value);
+      return null;
+    }
+
+    return DishModel(
+      id: _parseNum(json['dish_id'])?.toInt() ?? 0,
+      name: "Dish ${json['dish_id']}", // Placeholder name
+      price: 0.0, // Default price as it's not provided
+      imageUrl: "", // Default empty image URL
+      rating: 0.0, // Default rating
+      dishCategoryId: -1, // Default or unknown
+      description: "", // Empty description
+      storeId: _parseNum(json['store_id'])?.toInt() ?? 0,
+      optionSets: [],
+      ingredients: [],
+      choices: [],
+    );
+  }
+
+  /// ✅ Converts DishModel back to JSON
   Map<String, dynamic> toJson() {
     return {
       'dish_id': id,

@@ -4,10 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
-import 'package:pizza_boys/core/helpers/device_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
-import 'package:pizza_boys/core/utils/app_utils.dart';
-import 'package:pizza_boys/core/validations/validation_rules.dart';
 import 'package:pizza_boys/data/repositories/auth/login_repo.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/login/login_bloc.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/login/login_event.dart';
@@ -15,13 +12,10 @@ import 'package:pizza_boys/features/auth/bloc/integration/login/login_state.dart
 import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_bloc.dart';
 import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_event.dart';
 import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_state.dart';
-import 'package:pizza_boys/features/widgets/controls/form_input.dart';
-import 'package:pizza_boys/features/widgets/controls/text_rich_button.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
-
   @override
   State<Login> createState() => _LoginState();
 }
@@ -31,12 +25,8 @@ class _LoginState extends State<Login> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  bool _submitted = false;
-
   @override
   Widget build(BuildContext context) {
-    final textTheme = DeviceHelper.textTheme(context);
-    final isPortrait = DeviceHelper.isPortraitOrientation(context);
     return BlocProvider(
       create: (_) => LoginBloc(LoginRepo()),
       child: Scaffold(
@@ -47,16 +37,14 @@ class _LoginState extends State<Login> {
         body: BlocConsumer<LoginBloc, LoginState>(
           listener: (context, state) {
             if (state is LoginSuccess) {
-              AppUtils.showSnackbar(
-                context,
-                state.data["message"] ?? "Login Successful",
-              );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.data["message"] ?? "Login Successful"),
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppColors.redPrimary,
                 ),
               );
+
+              // Navigate to checkout/home page with token
               Navigator.pushReplacementNamed(
                 context,
                 AppRoutes.chooseStoreLocation,
@@ -79,7 +67,7 @@ class _LoginState extends State<Login> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _headerSection(textTheme, isPortrait),
+                  _headerSection(),
                   Padding(
                     padding: EdgeInsets.all(24.w),
                     child: Form(
@@ -87,27 +75,26 @@ class _LoginState extends State<Login> {
                       child: Column(
                         children: [
                           SizedBox(height: 12.h),
-                          _formInputField(
-                            hint: "Email",
-                            controller: emailController,
-                            isEmail: true,
-                          ),
+                          _inputField("Email", emailController, isEmail: true),
                           SizedBox(height: 16.h),
                           _passwordField(),
                           SizedBox(height: 12.h),
+
                           Row(
                             children: [
                               Checkbox(
                                 value: true,
-                                fillColor: const WidgetStatePropertyAll(
+                                fillColor: WidgetStatePropertyAll(
                                   AppColors.blackColor,
                                 ),
                                 onChanged: (v) {},
                               ),
                               Text(
                                 "Remember me",
-                                style: textTheme.titleSmall!.copyWith(
-                                  color: Colors.black,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: "Poppins",
                                 ),
                               ),
                               const Spacer(),
@@ -115,22 +102,22 @@ class _LoginState extends State<Login> {
                                 onPressed: () {},
                                 child: Text(
                                   "Forgot Password?",
-                                  style: textTheme.titleSmall!.copyWith(
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 12.sp,
                                     color: AppColors.redPrimary,
                                   ),
                                 ),
                               ),
                             ],
                           ),
+
                           SizedBox(height: 12.h),
+
+                          // 🔹 Login Button
                           _mainButton(
-                            textTheme,
                             state is LoginLoading ? "Logging in..." : "Login",
                             () {
-                              setState(() {
-                                _submitted = true;
-                              });
-
                               if (_formKey.currentState!.validate()) {
                                 context.read<LoginBloc>().add(
                                   LoginButtonPressed(
@@ -142,33 +129,75 @@ class _LoginState extends State<Login> {
                             },
                             isLoading: state is LoginLoading,
                           ),
+
                           SizedBox(height: 14.h),
-                          SizedBox(
-                            width: double.maxFinite,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  AppRoutes.chooseStoreLocation,
-                                );
-                              },
-                              icon: Icon(
-                                FontAwesomeIcons.solidUser,
+
+                          // 🔹 Continue as Guest
+                          OutlinedButton(
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                AppRoutes.chooseStoreLocation,
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: Size(double.infinity, 45.h),
+                              side: BorderSide(
                                 color: AppColors.blackColor,
+                                width: 1.5,
                               ),
-                              label: Text(
-                                "Continue as Guest",
-                                style: textTheme.titleMedium,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28.r),
                               ),
                             ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  FontAwesomeIcons.solidUser,
+                                  color: AppColors.blackColor,
+                                ),
+                                SizedBox(width: 8.0.w),
+                                Text(
+                                  "Continue as Guest",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 14.sp,
+                                    color: AppColors.blackColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+
                           SizedBox(height: 12.h),
-                          TextRichButton(
-                            normalText: "Don't have an account? ",
-                            actionText: "Register",
-                            onActionTap: () {
+
+                          // 🔹 Register Button
+                          TextButton(
+                            onPressed: () {
                               Navigator.pushNamed(context, AppRoutes.register);
                             },
+                            child: Text.rich(
+                              TextSpan(
+                                text: "Don't have an account? ",
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: AppColors.blackColor,
+                                  fontFamily: 'Poppins',
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: " Register",
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      color: AppColors.redPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -183,7 +212,7 @@ class _LoginState extends State<Login> {
     );
   }
 
-  Widget _headerSection(TextTheme textTheme, bool isPortrait) {
+  Widget _headerSection() {
     return Stack(
       children: [
         ClipPath(
@@ -199,94 +228,143 @@ class _LoginState extends State<Login> {
                 SizedBox(height: 12.h),
                 Text(
                   "Login to Proceed!",
-                  style: textTheme.titleLarge!.copyWith(color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                    color: Colors.white,
+                  ),
                 ),
                 SizedBox(height: 4.h),
                 Text(
                   "Please login to place your\ndelicious order",
-                  style: textTheme.titleSmall!.copyWith(color: Colors.white),
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Colors.white70,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ],
             ),
           ),
         ),
         Positioned(
-          right: isPortrait ? -3 : -3,
-          bottom: isPortrait ? -5 : 8,
+          right: -32.w,
+          bottom: -20.h,
           child: Image.asset(
             ImageUrls.heroImage,
-            width: 160,
-            height: 160,
-            fit: BoxFit.contain,
+            width: 160.w,
+            height: 160.h,
+            fit: BoxFit.cover,
           ),
         ),
       ],
     );
   }
 
-  Widget _formInputField({
-    required String hint,
-    required TextEditingController controller,
+  // 🔹 Input Field with validation
+  Widget _inputField(
+    String hint,
+    TextEditingController controller, {
     bool isEmail = false,
   }) {
-    return FormInput(
-      placeHolderText: hint,
-      isRequired: true,
-      initialValue: controller.text,
-      validationRules: isEmail ? [ValidationRules.Email] : null,
-      onChanged: (value) => controller.text = value,
-      prefixIcon: Icon(Icons.email),
-      showPrefixIcon: true,
-      autoValidate: _submitted,
+    return TextFormField(
+      controller: controller,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return "$hint is required";
+        }
+        if (isEmail &&
+            !RegExp(
+              r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$",
+            ).hasMatch(value.trim())) {
+          return "Enter a valid email";
+        }
+        return null;
+      },
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide.none,
+        ),
+      ),
     );
   }
 
+  // 🔹 Password Field with validation
   Widget _passwordField() {
     return BlocBuilder<PsObscureBloc, PsObscureState>(
       builder: (context, state) {
         final isObscure = state is PsObscureValue ? state.obscure : true;
 
-        return FormInput(
-          showPrefixIcon: true,
-          prefixIcon: Icon(Icons.lock),
-          placeHolderText: "Password",
-          isRequired: true,
-          isVisible: isObscure,
-          validationRules: [ValidationRules.Password],
-          onChanged: (value) => passwordController.text = value,
-          suffixIcon: IconButton(
-            icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
-            onPressed: () {
-              context.read<PsObscureBloc>().add(ObscureText());
-            },
+        return TextFormField(
+          controller: passwordController,
+          obscureText: isObscure,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return "Password is required";
+            }
+            if (value.length < 6) {
+              return "Password must be at least 6 characters";
+            }
+            return null;
+          },
+          decoration: InputDecoration(
+            hintText: "Password",
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide.none,
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
+              onPressed: () {
+                context.read<PsObscureBloc>().add(ObscureText());
+              },
+            ),
           ),
-          autoValidate: _submitted,
         );
       },
     );
   }
 
+  // 🔹 Main Button with loader
   Widget _mainButton(
-    TextTheme textTheme,
     String text,
     VoidCallback onPressed, {
     bool isLoading = false,
   }) {
-    return SizedBox(
-      width: double.maxFinite,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        child: isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(text),
+    return ElevatedButton(
+      onPressed: isLoading ? null : onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.redPrimary,
+        minimumSize: Size(double.infinity, 50.h),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28.r),
+        ),
       ),
+      child: isLoading
+          ? SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : Text(
+              text,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14.sp,
+                color: Colors.white,
+              ),
+            ),
     );
   }
 }

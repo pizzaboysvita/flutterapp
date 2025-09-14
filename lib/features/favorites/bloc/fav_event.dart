@@ -13,3 +13,6 @@ class RemoveFromFavoriteEvent extends FavoriteEvent {
 }
 
 class LoadFavoritesEvent extends FavoriteEvent {}
+
+// Get Api Event
+class FetchWishlistEvent extends FavoriteEvent {}

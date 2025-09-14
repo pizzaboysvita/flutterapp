@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pizza_boys/data/models/order/order_post_model.dart';
 import 'package:pizza_boys/features/auth/pages/login.dart';
 import 'package:pizza_boys/features/auth/pages/register.dart';
 import 'package:pizza_boys/features/cart/pages/cart_ui_view.dart';
@@ -32,25 +33,30 @@ class AppPages {
     switch (setting.name) {
       case AppRoutes.pizzaDetails:
         final dishId = setting.arguments as int;
-        return MaterialPageRoute(builder: (context) => PizzaDetailsView(dishId: dishId,));
+        return MaterialPageRoute(
+          builder: (context) => PizzaDetailsView(dishId: dishId),
+        );
       case AppRoutes.home:
         return MaterialPageRoute(
           builder: (context) => Home(scrollController: ScrollController()),
         );
       case AppRoutes.cartView:
         return MaterialPageRoute(
-          builder: (context) => CartView(scrollController: ScrollController(), userId: 101,),
+          builder: (context) =>
+              CartView(scrollController: ScrollController(), userId: 101),
         );
-         case AppRoutes.cartUiView:
-        return MaterialPageRoute(
-          builder: (context) => CartUIView(),
-        );
+      case AppRoutes.cartUiView:
+        return MaterialPageRoute(builder: (context) => CartUIView());
       case AppRoutes.checkOut:
         return MaterialPageRoute(builder: (context) => Checkout());
       case AppRoutes.payments:
         return MaterialPageRoute(builder: (context) => PaymentPage());
       case AppRoutes.orderDetails:
-        return MaterialPageRoute(builder: (context) => OrderDetails());
+        final order = setting.arguments as OrderModel;
+        return MaterialPageRoute(
+          builder: (context) => OrderDetails(order: order),
+        );
+
       case AppRoutes.register:
         return MaterialPageRoute(builder: (context) => Register());
       case AppRoutes.login:
@@ -75,7 +81,7 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => SplashScreen());
       case AppRoutes.orderTracking:
         return MaterialPageRoute(builder: (context) => OrderTracking());
-        case AppRoutes.favorites:
+      case AppRoutes.favorites:
         return MaterialPageRoute(builder: (context) => FavoritesView());
       // Profile Sub Pages
       case AppRoutes.orderHistory:

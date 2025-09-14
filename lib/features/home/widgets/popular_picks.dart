@@ -68,18 +68,6 @@ class PopularPicks extends StatelessWidget {
                   fontFamily: 'Poppins',
                 ),
               ),
-              // GestureDetector(
-              //   onTap: () {},
-              //   child: Text(
-              //     'Show More',
-              //     style: TextStyle(
-              //       fontSize: 11.sp,
-              //       color: AppColors.redSecondary,
-              //       fontFamily: 'Poppins',
-              //       fontWeight: FontWeight.w700,
-              //     ),
-              //   ),
-              // ),
             ],
           ),
           SizedBox(height: 16.h),

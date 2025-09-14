@@ -7,6 +7,7 @@ class LoginRepo {
     try {
       final data = await _service.postLogin(email, password);
       print('Login Repo Data : $data');
+      print("LoginRepo: loginUser called with email: $email");
       return data;
     } catch (e) {
       throw Exception('Login Failed at repo : $e');

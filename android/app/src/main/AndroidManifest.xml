@@ -6,7 +6,8 @@
     <application
         android:label="pizza_boys"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">0
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
 
          <meta-data
             android:name="com.google.android.geo.API_KEY"

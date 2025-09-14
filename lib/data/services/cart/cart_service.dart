@@ -65,6 +65,7 @@ class CartService {
   Future<List<CartItem>> getCartItems() async {
     final userIdString = await TokenStorage.getUserId();
     if (userIdString == null)
+      // ignore: curly_braces_in_flow_control_structures
       throw Exception("❌ No user ID found. Please login again.");
     final userId = int.tryParse(userIdString) ?? 0;
 
