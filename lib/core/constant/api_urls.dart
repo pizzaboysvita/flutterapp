@@ -1,16 +1,11 @@
 class ApiUrls {
-  static const String getCategories =
-      'http://78.142.47.247:3003/api/category?store_id=-1&type=web';
-
-  static const String getDish =
-      "http://78.142.47.247:3003/api/dish?store_id=-1&type=web";
-
-  static const String loginPost = 'http://78.142.47.247:3003/api/loginUser';
-
-  static const String storesGet =
-      'http://78.142.47.247:3003/api/store?type=web';
-
-  static const String whishlist = "http://78.142.47.247:3003/api/wishlist";
-  static const String postOrders = "http://78.142.47.247:3003/api/order";
-
+  // Endpoints only, use with ApiClient.dio
+  static const String getCategories = "category?store_id=-1&type=web";
+  static const String getDish = "dish?store_id=-1&type=web";
+  static const String register = 'user?store_id=-1&type=web';
+  static const String loginPost = "loginUser";
+  static const String storesGet = "store?type=web";
+  static const String wishlist = "wishlist";
+  static const String postOrders = "order";
+  static const String refreshToken = "refreshToken";
 }

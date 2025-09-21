@@ -103,33 +103,33 @@ class _IconAccordionState extends State<IconAccordion> {
                   child: FaIcon(icon, size: 16.sp, color: Colors.white),
                 ),
               ),
-              if (badgeCount != null && badgeCount > 0)
-                Positioned(
-                  top: -3,
-                  right: -3,
-                  child: Container(
-                    padding: EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: AppColors.redAccent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 0.5),
-                    ),
-                    constraints: BoxConstraints(
-                      minWidth: 12.w,
-                      minHeight: 12.h,
-                    ),
-                    child: Center(
-                      child: Text(
-                        badgeCount > 9 ? '9+' : '$badgeCount',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              // if (badgeCount != null && badgeCount > 0)
+              //   Positioned(
+              //     top: -3,
+              //     right: -3,
+              //     child: Container(
+              //       padding: EdgeInsets.all(2),
+              //       decoration: BoxDecoration(
+              //         color: AppColors.redAccent,
+              //         shape: BoxShape.circle,
+              //         border: Border.all(color: Colors.white, width: 0.5),
+              //       ),
+              //       constraints: BoxConstraints(
+              //         minWidth: 12.w,
+              //         minHeight: 12.h,
+              //       ),
+              //       child: Center(
+              //         child: Text(
+              //           badgeCount > 9 ? '9+' : '$badgeCount',
+              //           style: TextStyle(
+              //             color: Colors.white,
+              //             fontSize: 8.sp,
+              //             fontWeight: FontWeight.bold,
+              //           ),
+              //         ),
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
         ),

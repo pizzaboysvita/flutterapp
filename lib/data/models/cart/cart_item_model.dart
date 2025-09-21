@@ -45,9 +45,19 @@ class CartItem {
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
-    final options = json['options_json'] != null
-        ? jsonDecode(json['options_json'])
-        : {};
+    // 🔹 Handle options_json safely (string OR map OR null)
+    Map<String, dynamic> options = {};
+    if (json['options_json'] != null) {
+      if (json['options_json'] is String) {
+        try {
+          options = jsonDecode(json['options_json']);
+        } catch (e) {
+          options = {};
+        }
+      } else if (json['options_json'] is Map<String, dynamic>) {
+        options = Map<String, dynamic>.from(json['options_json']);
+      }
+    }
 
     return CartItem(
       cartId: json['cart_id'] ?? 0,
@@ -65,20 +75,17 @@ class CartItem {
           : DateTime.now(),
       options: options,
 
-      // 🔹 still keep default fallback
+      //  fallback
       imageUrl: ImageUrls.cheeseLoverPizza,
 
-      // 🔹 map dishName & dishImage if backend provides them
       dishName: json['dish_name'],
       dishImage: json['dish_image'],
 
-      // 🔹 map base & basePrice from options if exists
       base: options['base'] as String?,
       basePrice: options['basePrice'] != null
           ? double.tryParse(options['basePrice'].toString())
           : null,
 
-      // 🔹 optional dish note
       dishNote: options['dishNote'] as String?,
     );
   }

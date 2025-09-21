@@ -17,6 +17,7 @@ class CartRepository {
   }) async {
     try {
       final response = await _cartService.addToCart(
+        type: "insert",
         userId: userId,
         dishId: dishId,
         storeId: storeId,
@@ -33,5 +34,21 @@ class CartRepository {
   // Cart Get Repo
   Future<List<CartItem>> fetchCart() async {
     return await _cartService.getCartItems();
+  }
+
+  // ✅ Cart Remove Repo
+  Future<Map<String, dynamic>> removeFromCart({
+    required int cartId,
+    required int userId,
+  }) async {
+    try {
+      final response = await _cartService.removeFromCart(
+        cartId: cartId,
+        userId: userId,
+      );
+      return response;
+    } catch (e) {
+      throw Exception("CartRepository Error: $e");
+    }
   }
 }

@@ -107,9 +107,16 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
           } else if (state is DishLoaded) {
             print("✅ Dishes loaded: ${state.dishes.length} items");
 
-            final filteredDishes = state.dishes
-                .where((dish) => dish.dishCategoryId == categoryId)
-                .toList();
+            final filteredDishes = state.dishes.where((dish) {
+              print(
+                "🔹 Dish: ${dish.name} | dishCategoryId: ${dish.dishCategoryId} | Filter categoryId: $categoryId",
+              );
+              return dish.dishCategoryId == categoryId;
+            }).toList();
+
+            print(
+              "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
+            );
 
             print(
               "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
@@ -121,7 +128,7 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
             }
 
             return ListView.separated(
-              padding: EdgeInsets.all(16.w),
+              padding: EdgeInsets.all(18.w),
               itemCount: filteredDishes.length,
               separatorBuilder: (_, __) => SizedBox(height: 12.h),
               itemBuilder: (context, index) {
@@ -148,7 +155,7 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
         : "https://wallpapers.com/images/hd/error-placeholder-image-2e1q6z01rfep95v0.jpg";
 
     return Container(
-      padding: EdgeInsets.all(8.w),
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.r),
         color: Colors.white,
@@ -159,7 +166,7 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
         children: [
           // ✅ Dish Image
           ClipRRect(
-            borderRadius: BorderRadius.circular(50.r),
+            borderRadius: BorderRadius.circular(10.r),
             child: CachedNetworkImage(
               height: 70.w,
               width: 70.w,
@@ -221,15 +228,31 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                           ),
                           onPressed: () {
                             if (isFavorite) {
-                              context.read<FavoriteBloc>().add(
-                                RemoveFromFavoriteEvent(dish.id),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("💔 Removed from Favorites"),
-                                ),
-                              );
+                              // ✅ Remove only if wishlistId exists
+                              if (dish.wishlistId != null) {
+                                context.read<FavoriteBloc>().add(
+                                  RemoveFromFavoriteEvent(
+                                    dishId: dish.id,
+                                    wishlistId: dish.wishlistId,
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Removed from Favorites"),
+                                  ),
+                                );
+                              } else {
+                                // ❌ Show error if wishlistId is null
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Cannot remove: wishlistId is missing!",
+                                    ),
+                                  ),
+                                );
+                              }
                             } else {
+                              // ✅ Add to favorites
                               context.read<FavoriteBloc>().add(
                                 AddToFavoriteEvent(dish),
                               );
@@ -319,7 +342,7 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                         );
                       },
                       child: Text(
-                        "Add to cart",
+                        "Order now",
                         style: TextStyle(
                           fontSize: 10.sp,
                           color: AppColors.whiteColor,

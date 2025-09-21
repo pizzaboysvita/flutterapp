@@ -1,15 +1,15 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/cart/cart_item_model.dart';
 import 'package:pizza_boys/data/services/dish/dish_service.dart';
 
 class CartService {
-  final String baseUrl = "http://78.142.47.247:3003/api";
+  final Dio _dio = ApiClient.dio; // use your singleton Dio client
 
-  // Cart Post
+  // 🛒 Add to Cart
   Future<Map<String, dynamic>> addToCart({
+    required String type,
     required int userId,
     required int dishId,
     required int storeId,
@@ -17,9 +17,8 @@ class CartService {
     required double price,
     required String optionsJson,
   }) async {
-    final url = Uri.parse("$baseUrl/cart");
-
     final body = {
+      "type": type,
       "user_id": userId,
       "dish_id": dishId,
       "store_id": storeId,
@@ -28,88 +27,94 @@ class CartService {
       "options_json": optionsJson,
     };
 
-    // 🔐 Read token dynamically
-    final token = await TokenStorage.getAccessToken();
+    try {
+      print("🛒 [CartService] POST /cart");
+      body.forEach((k, v) => print("   $k => (${v.runtimeType}) $v"));
 
-    if (token == null) {
-      throw Exception("❌ No token found in storage. Please login again.");
-    }
+      final response = await _dio.post("/cart", data: body);
 
-    // 🔎 Debug logs
-    print("🛒 [CartService] POST $url");
-    body.forEach((key, value) {
-      print("   $key => (${value.runtimeType}) $value");
-    });
-    print("🔑 Token: ${token.substring(0, 15)}...");
+      print("✅ Status Code: ${response.statusCode}");
+      print("📥 Response Data: ${response.data}");
 
-    final response = await http.post(
-      url,
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json", // ✅ sending JSON
-      },
-      body: jsonEncode(body), // ✅ JSON encoding
-    );
-
-    print("✅ Status Code: ${response.statusCode}");
-    print("📥 Response Body: ${response.body}");
-
-    if (response.statusCode == 200) {
-      return compute(_parseCartResponse, response.body);
-    } else {
-      throw Exception("Failed to add to cart: ${response.body}");
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      print("❌ DioError: ${e.response?.data ?? e.message}");
+      throw Exception("Failed to add to cart: ${e.response?.data ?? e.message}");
     }
   }
 
-  // Cart Get
+  // 🗑 Remove from Cart
+  Future<Map<String, dynamic>> removeFromCart({
+    required int cartId,
+    required int userId,
+  }) async {
+    final body = {
+      "type": "delete_item",
+      "cart_id": cartId,
+      "user_id": userId,
+    };
+
+    try {
+      print("🗑️ [CartService] DELETE /cart");
+      body.forEach((k, v) => print("   $k => (${v.runtimeType}) $v"));
+
+      final response = await _dio.post("/cart", data: body);
+
+      print("✅ Status Code: ${response.statusCode}");
+      print("📥 Response Data: ${response.data}");
+
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      print("❌ DioError: ${e.response?.data ?? e.message}");
+      throw Exception("Failed to remove item: ${e.response?.data ?? e.message}");
+    }
+  }
+
+  // 📦 Get Cart Items
   Future<List<CartItem>> getCartItems() async {
     final userIdString = await TokenStorage.getUserId();
-    if (userIdString == null)
-      // ignore: curly_braces_in_flow_control_structures
-      throw Exception("❌ No user ID found. Please login again.");
+    if (userIdString == null) throw Exception("❌ No user ID found.");
     final userId = int.tryParse(userIdString) ?? 0;
 
-    final url = Uri.parse("$baseUrl/cart?user_id=$userId");
-    final token = await TokenStorage.getAccessToken();
-    if (token == null) throw Exception("❌ No token found. Please login again.");
+    try {
+      final response = await _dio.get("/cart", queryParameters: {
+        "user_id": userId,
+      });
 
-    final response = await http.get(
-      url,
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      },
-    );
+      print("✅ Status Code: ${response.statusCode}");
+      print("📥 Response Data: ${response.data}");
 
-    if (response.statusCode != 200) {
-      throw Exception("Failed to load cart: ${response.body}");
-    }
+      final decoded = response.data;
 
-    final List<dynamic> data = jsonDecode(response.body);
-    final cartItems = data.map((e) => CartItem.fromJson(e)).toList();
-
-    // 🔹 Fetch dishes
-    final dishService = DishService();
-    final dishes = await dishService.fetchAllDishes();
-
-    // 🔹 Match dish_id with dish data
-    for (var item in cartItems) {
-      final match = dishes.firstWhere(
-        (d) => d["dish_id"] == item.dishId,
-        orElse: () => {},
-      );
-
-      if (match.isNotEmpty) {
-        item.dishName = match["dish_name"];
-        item.dishImage = match["dish_image"]; // assuming API returns "image"
+      // ✅ Handle both single object and list
+      List<CartItem> cartItems;
+      if (decoded is List) {
+        cartItems = decoded.map((e) => CartItem.fromJson(e)).toList();
+      } else if (decoded is Map<String, dynamic>) {
+        cartItems = [CartItem.fromJson(decoded)];
+      } else {
+        throw Exception("Unexpected cart response: $decoded");
       }
+
+      // 🔹 Enrich with dish info
+      final dishService = DishService();
+      final dishes = await dishService.fetchAllDishes();
+
+      for (var item in cartItems) {
+        final match = dishes.firstWhere(
+          (d) => d["dish_id"] == item.dishId,
+          orElse: () => {},
+        );
+        if (match.isNotEmpty) {
+          item.dishName = match["dish_name"];
+          item.dishImage = match["dish_image"];
+        }
+      }
+
+      return cartItems;
+    } on DioException catch (e) {
+      print("❌ DioError: ${e.response?.data ?? e.message}");
+      throw Exception("Failed to load cart: ${e.response?.data ?? e.message}");
     }
-
-    return cartItems;
   }
-}
-
-/// Runs in background isolate
-Map<String, dynamic> _parseCartResponse(String responseBody) {
-  return jsonDecode(responseBody) as Map<String, dynamic>;
 }

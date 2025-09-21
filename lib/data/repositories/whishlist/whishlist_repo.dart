@@ -12,14 +12,24 @@ class FavoriteRepository {
   }) async {
     return await service.toggleFavorite(
       dishId: dishId,
-      token: token,
     );
   }
 
-    // ✅ New method for fetching wishlist
-  Future<List<DishModel>> getWishlist({
-    required String token,
-  }) async {
-    return await service.getWishlist(token: token);
+  // ✅ New method for removeFavorite
+Future<bool> removeFavorite({
+  required int dishId,
+  int? wishlistId, // ✅ optional parameter
+  required String token,
+}) async {
+  return await service.removeFavorite(
+    dishId: dishId,
+    wishlistId: wishlistId,
+  );
+}
+
+
+  // ✅ Fetch wishlist
+  Future<List<DishModel>> getWishlist() async {
+    return await service.getWishlist();
   }
 }

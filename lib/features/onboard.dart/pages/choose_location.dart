@@ -4,17 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:lottie/lottie.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/map/address_to_latlang.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
+import 'package:pizza_boys/features/onboard.dart/model/store_selection_model.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class StoreSelectionPage extends StatefulWidget {
-  const StoreSelectionPage({super.key});
+  final ScrollController? scrollController;
+  const StoreSelectionPage({super.key, this.scrollController});
 
   @override
   State<StoreSelectionPage> createState() => _StoreSelectionPageState();
@@ -22,7 +24,7 @@ class StoreSelectionPage extends StatefulWidget {
 
 class _StoreSelectionPageState extends State<StoreSelectionPage> {
   GoogleMapController? _mapController;
-  // final Set<Marker> _markers = {};   //Google-Map
+  final Set<Marker> _markers = {}; //Google-Map
   BitmapDescriptor? normalIcon;
   BitmapDescriptor? highlightedIcon;
 
@@ -40,7 +42,38 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     );
 
     highlightedIcon = await _createBorderedMarker(ImageUrls.circleLogo);
+
+    if (!mounted) return; // <-- check if widget is still in tree
     setState(() {});
+  }
+
+  Future<void> _updateMarkers(List<Store> stores, String? selectedId) async {
+    _markers.clear();
+
+    for (var store in stores) {
+      final isSelected = store.id.toString() == selectedId;
+      final storeLocation = await getStoreLatLng(store);
+
+      _markers.add(
+        Marker(
+          markerId: MarkerId(store.id.toString()),
+          position: storeLocation,
+          icon: isSelected
+              ? highlightedIcon ?? BitmapDescriptor.defaultMarker
+              : normalIcon ?? BitmapDescriptor.defaultMarker,
+          onTap: () async {
+            context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
+
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLngZoom(storeLocation, 15),
+            );
+          },
+        ),
+      );
+    }
+
+    if (!mounted) return; // <-- check before updating state
+    setState(() {}); // refresh map
   }
 
   /// Draw logo with red border for selected marker
@@ -84,28 +117,33 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   }
 
   // .......... Google-Map ............
-  // void _updateMarkers(List stores, String? selectedId) {
-  //   _markers.clear();
-  //   for (var store in stores) {
-  //     final isSelected = store.id.toString() == selectedId;
-  //     final storeLocation = _getStoreLocation(store.id);
-  //     _markers.add(
-  //       Marker(
-  //         markerId: MarkerId(store.id.toString()),
-  //         position: storeLocation,
-  //         icon: isSelected
-  //             ? highlightedIcon ?? BitmapDescriptor.defaultMarker
-  //             : normalIcon ?? BitmapDescriptor.defaultMarker,
-  //         onTap: () {
-  //           context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
-  //           _mapController?.animateCamera(
-  //             CameraUpdate.newLatLngZoom(storeLocation, 15),
-  //           );
-  //         },
-  //       ),
-  //     );
-  //   }
-  // }
+  Future<void> updateMarkers(List<Store> stores, String? selectedId) async {
+    _markers.clear();
+
+    for (var store in stores) {
+      final isSelected = store.id.toString() == selectedId;
+      final storeLocation = await getStoreLatLng(store);
+
+      _markers.add(
+        Marker(
+          markerId: MarkerId(store.id.toString()),
+          position: storeLocation,
+          icon: isSelected
+              ? highlightedIcon ?? BitmapDescriptor.defaultMarker
+              : normalIcon ?? BitmapDescriptor.defaultMarker,
+          onTap: () async {
+            context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
+
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLngZoom(storeLocation, 15),
+            );
+          },
+        ),
+      );
+    }
+
+    setState(() {}); // refresh map
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,71 +156,80 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // .................. Google-MAP ..........
-              //              BlocListener<StoreSelectionBloc, StoreSelectionState>(
-              //   listener: (context, state) {
-              //     if (state is StoreSelectionLoaded) {
-              //       _updateMarkers(state.stores, state.selectedStoreId?.toString());
-              //       setState(() {}); // ✅ safe, because it's outside the build process
-              //     }
-              //   },
-              //   child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
-              //     builder: (context, state) {
-              //       if (state is StoreSelectionLoaded) {
-              //         return Column(
-              //           children: [
-              //             Container(
-              //               height: 200.h,
-              //               decoration: BoxDecoration(
-              //                 borderRadius: BorderRadius.circular(12.r),
-              //                 boxShadow: [
-              //                   BoxShadow(color: Colors.black26, blurRadius: 4),
-              //                 ],
-              //               ),
-              //               child: ClipRRect(
-              //                 borderRadius: BorderRadius.circular(12.r),
-              //                 child: GoogleMap(
-              //                   onMapCreated: (controller) {
-              //                     _mapController = controller;
-              //                   },
-              //                   initialCameraPosition: CameraPosition(
-              //                     target: _getStoreLocation(state.stores.first.id),
-              //                     zoom: 10.5,
-              //                   ),
-              //                   markers: _markers,
-              //                   myLocationEnabled: true,
-              //                   myLocationButtonEnabled: false,
-              //                   zoomControlsEnabled: false,
-              //                 ),
-              //               ),
-              //             ),
-              //             Align(
-              //               alignment: Alignment.centerRight,
-              //               child: TextButton.icon(
-              //                 onPressed: () {
-              //                   Navigator.pushNamed(context, AppRoutes.googleMaps);
-              //                 },
-              //                 icon: const Icon(Icons.fullscreen, color: Colors.red),
-              //                 label: const Text("View Full Map",
-              //                     style: TextStyle(color: Colors.red)),
-              //               ),
-              //             ),
-              //           ],
-              //         );
-              //       }
-              //       return Container(height: 200.h, color: Colors.grey.shade200);
-              //     },
-              //   ),
-              // ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Lottie.asset(
-                    'assets/lotties/Dlivery Map.json',
-                    height: 200.h,
-                    width: 200.w,
-                  ),
-                ],
+              BlocListener<StoreSelectionBloc, StoreSelectionState>(
+                listener: (context, state) {
+                  if (state is StoreSelectionLoaded) {
+                    _updateMarkers(
+                      state.stores,
+                      state.selectedStoreId?.toString(),
+                    );
+                    setState(
+                      () {},
+                    ); // ✅ safe, because it's outside the build process
+                  }
+                },
+                child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+                  builder: (context, state) {
+                    if (state is StoreSelectionLoaded) {
+                      return Column(
+                        children: [
+                          Container(
+                            height: 200.h,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12.r),
+                              boxShadow: [
+                                BoxShadow(color: Colors.black26, blurRadius: 4),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12.r),
+                              child: GoogleMap(
+                                onMapCreated: (controller) {
+                                  _mapController = controller;
+                                },
+                                initialCameraPosition: CameraPosition(
+                                  target: _getStoreLocation(
+                                    state.stores.first.id,
+                                  ),
+                                  zoom: 10.5,
+                                ),
+                                markers: _markers,
+                                myLocationEnabled: true,
+                                myLocationButtonEnabled: false,
+                                zoomControlsEnabled: false,
+                              ),
+                            ),
+                          ),
+                          // Align(
+                          //   alignment: Alignment.centerRight,
+                          //   child: TextButton.icon(
+                          //     onPressed: () {
+                          //       Navigator.pushNamed(
+                          //         context,
+                          //         AppRoutes.googleMaps,
+                          //       );
+                          //     },
+                          //     icon: const Icon(
+                          //       Icons.fullscreen,
+                          //       color: Colors.red,
+                          //     ),
+                          //     label: const Text(
+                          //       "View Full Map",
+                          //       style: TextStyle(color: Colors.red),
+                          //     ),
+                          //   ),
+                          // ),
+                        ],
+                      );
+                    }
+                    return Container(
+                      height: 200.h,
+                      color: Colors.grey.shade200,
+                    );
+                  },
+                ),
               ),
+
               SizedBox(height: 10.h),
               Text(
                 "Choose Your Nearby Store",
@@ -259,12 +306,19 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
         final store = state.stores[index];
         final isSelected = store.id == state.selectedStoreId;
         return InkWell(
-          onTap: () {
-            context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
+          onTap: () async {
+            // ✅ Use dot notation, not square brackets
+            context.read<StoreSelectionBloc>().add(
+              SelectStoreEvent(store.id), // store.id, not store['store_id']
+            );
+
+            // Get coordinates dynamically
+            final latLng = await getStoreLatLng(store);
             _mapController?.animateCamera(
-              CameraUpdate.newLatLngZoom(_getStoreLocation(store.id), 15),
+              CameraUpdate.newLatLngZoom(latLng, 15),
             );
           },
+
           child: Container(
             padding: EdgeInsets.all(14.w),
             decoration: BoxDecoration(
@@ -418,13 +472,13 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   LatLng _getStoreLocation(int storeId) {
     switch (storeId) {
       case 1:
-        return const LatLng(37.7749, -122.4194); // Example: San Francisco
+        return const LatLng(-36.8485, 174.7633); // Example: Auckland
       case 2:
-        return const LatLng(34.0522, -118.2437); // Example: Los Angeles
+        return const LatLng(-37.8136, 144.9631); // Example: Melbourne
       case 3:
-        return const LatLng(40.7128, -74.0060); // Example: New York
+        return const LatLng(-33.8688, 151.2093); // Example: Sydney
       default:
-        return const LatLng(37.7749, -122.4194); // fallback
+        return const LatLng(-36.8485, 174.7633); // fallback
     }
   }
 }

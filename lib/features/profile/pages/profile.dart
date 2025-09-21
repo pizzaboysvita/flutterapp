@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class Profile extends StatelessWidget {
@@ -35,11 +37,11 @@ class Profile extends StatelessWidget {
               color: AppColors.redPrimary,
               size: 18.sp,
             ),
-            onPressed: () async {
-              // 🔴 Clear session and move to Login page
-              await SessionManager.clearSession(context);
+            onPressed: () {
+              _showLogoutConfirmationDialog(context);
             },
           ),
+
           SizedBox(width: 16.w),
         ],
       ),
@@ -56,7 +58,103 @@ class Profile extends StatelessWidget {
     );
   }
 
+  void _showLogoutConfirmationDialog(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
+    final width = MediaQuery.of(context).size.width;
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: EdgeInsets.symmetric(
+            vertical: 16 * height / 800,
+            horizontal: 20 * width / 360,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(8 * width / 360),
+                decoration: BoxDecoration(
+                  color: AppColors.blackColor.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.power_settings_new,
+                  color: AppColors.blackColor,
+                  size: 24 * width / 360,
+                ),
+              ),
+              SizedBox(height: 12),
+              Text(
+                "Are you sure you want to logout?",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14 * width / 360,
+                  color: Colors.black87,
+                ),
+              ),
+              SizedBox(height: 16 * height / 800),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: AppColors.redPrimary.withOpacity(0.8),
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await SessionManager.clearSession(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.redPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(
+                        "Logout",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildUserCard(BuildContext context) {
+    Future<Map<String, String?>> _loadUserNameEmail() async {
+      final name = await TokenStorage.getName();
+      final email = await TokenStorage.getEmail();
+      return {'name': name, 'email': email};
+    }
+
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
@@ -65,35 +163,54 @@ class Profile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 25.r,
-            backgroundImage: NetworkImage("https://i.pravatar.cc/300"),
+          FutureBuilder<String?>(
+            future: TokenStorage.getProfile(),
+            builder: (context, snapshot) {
+              final profileUrl =
+                  snapshot.data ??
+                  "https://i.pravatar.cc/300"; // fallback image
+              return CircleAvatar(
+                radius: 25.r,
+                backgroundImage: NetworkImage(profileUrl),
+              );
+            },
           ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Tori Greeno",
-                  style: _textStyle(14.sp, FontWeight.w800, Colors.white),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  "torri_greeno@gmail.com",
-                  style: _textStyle(12.sp, FontWeight.normal, Colors.white60),
-                ),
-              ],
+            child: FutureBuilder<Map<String, String?>>(
+              future: _loadUserNameEmail(),
+              builder: (context, snapshot) {
+                final name = snapshot.data?['name'] ?? "User Name";
+                final email = snapshot.data?['email'] ?? "user@example.com";
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: _textStyle(14.sp, FontWeight.w800, Colors.white),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      email,
+                      style: _textStyle(
+                        12.sp,
+                        FontWeight.normal,
+                        Colors.white60,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
-          InkWell(
-            onTap: () => Navigator.pushNamed(context, AppRoutes.profileEdit),
-            child: Icon(
-              FontAwesomeIcons.edit,
-              color: Colors.white,
-              size: 16.sp,
-            ),
-          ),
+          // InkWell(
+          //   onTap: () => Navigator.pushNamed(context, AppRoutes.profileEdit),
+          //   child: Icon(
+          //     FontAwesomeIcons.edit,
+          //     color: Colors.white,
+          //     size: 16.sp,
+          //   ),
+          // ),
         ],
       ),
     );
@@ -106,7 +223,11 @@ class Profile extends StatelessWidget {
         "Order History",
         "View past orders and reorder quickly",
         ontap: () {
-          Navigator.pushNamed(context, AppRoutes.orderHistory,arguments: false,);
+          Navigator.pushNamed(
+            context,
+            AppRoutes.orderHistory,
+            arguments: false,
+          );
         },
       ),
       _ProfileOption(

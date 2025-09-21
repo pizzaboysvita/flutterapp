@@ -6,9 +6,12 @@ import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
+import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
+import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_state.dart';
+import 'package:pizza_boys/routes/app_routes.dart';
 import 'package:shimmer/shimmer.dart';
 
 class FavoritesView extends StatefulWidget {
@@ -86,71 +89,160 @@ class _FavoritesViewState extends State<FavoritesView> {
                   final dish = entry.value.first; // Take one as representative
                   // final quantity = entry.value.length;
 
-                  return Container(
-                    padding: EdgeInsets.all(12.w),
-                    margin: EdgeInsets.only(bottom: 12.h),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12.r),
-                      color: Colors.white,
-                    ),
-                    child: Row(
-                      children: [
-                        // Dish Image
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8.r),
-                          child: SizedBox(
-                            height: 50.h,
-                            width: 50.w,
-                            child: buildCartImage(dish.imageUrl),
+                  return Stack(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12.w),
+                        margin: EdgeInsets.only(bottom: 12.h),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12.r),
+                          color: Colors.white,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 🍕 Dish Image with rounded corners
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10.r),
+                              child: SizedBox(
+                                height: 70.h,
+                                width: 70.w,
+                                child: buildCartImage(dish.imageUrl),
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+
+                            // 📄 Dish Details
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Name
+                                  Text(
+                                    dish.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  // Store Name
+                                  Text(
+                                    'From ${dish.storeName}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10.sp,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w400,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 6.h),
+
+                                  // Price + Button Row
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Price
+                                      Text(
+                                        "\$${dish.price.toStringAsFixed(2)}",
+                                        style: TextStyle(
+                                          fontSize: 13.sp,
+                                          color: AppColors.greenColor,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'Poppins',
+                                        ),
+                                      ),
+
+                                      // 🛒 Add to Cart Button
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 10.w,
+                                        ), // small padding inside
+                                        height: 28.h, // smaller height
+                                        decoration: BoxDecoration(
+                                          gradient: AppColors.buttonGradient,
+                                          borderRadius: BorderRadius.circular(
+                                            8.r,
+                                          ),
+                                        ),
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            8.r,
+                                          ),
+                                          onTap: () {
+                                            // Navigate to the dish details page
+                                            context
+                                                .read<PizzaDetailsBloc>()
+                                                .add(ResetPizzaDetailsEvent());
+
+                                            // ✅ Then navigate to PizzaDetailsView with dishId
+                                            Navigator.pushNamed(
+                                              context,
+                                              AppRoutes.pizzaDetails,
+                                              arguments:
+                                                  dish.id, // pass correct id
+                                            );
+
+                                            print(
+                                              '👉 Passing Selected Dish ID: ${dish.id}',
+                                            );
+                                          },
+                                          child: Center(
+                                            child: Text(
+                                              'Order Now',
+                                              style: TextStyle(
+                                                fontSize: 10.sp, // smaller font
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Poppins',
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: 2.h,
+                        right: 8.w,
+                        child: GestureDetector(
+                          onTap: () {
+                            context.read<FavoriteBloc>().add(
+                              RemoveFromFavoriteEvent(
+                                dishId: dish.id, // keep dish id
+                                wishlistId:
+                                    dish.wishlistId, // pass the wishlist_id
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(4.w),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.cancel_rounded,
+                              color: Colors.grey,
+                              size: 20.sp,
+                            ),
                           ),
                         ),
-                        SizedBox(width: 12.w),
-
-                        // Dish Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                dish.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              Text(
-                                "\$${dish.price.toStringAsFixed(2)} ",
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: AppColors.greenColor,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // // Remove Button (optional, here it removes all of them or handle differently)
-                        // IconButton(
-                        //   icon: const Icon(Icons.delete, color: Colors.red),
-                        //   onPressed: () {
-                        //     context.read<FavoriteBloc>().add(
-                        //       RemoveFromFavoriteEvent(dish.id),
-                        //     );
-                        //     ScaffoldMessenger.of(context).showSnackBar(
-                        //       const SnackBar(
-                        //         content: Text("💔 Removed from Favorites"),
-                        //       ),
-                        //     );
-                        //   },
-                        // ),
-                      ],
-                    ),
+                      ),
+                    ],
                   );
                 },
               );

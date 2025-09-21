@@ -24,6 +24,7 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
           imageFile: event.imageFile,
         );
         emit(RegisterSuccess(result));
+        
       } catch (e) {
         emit(RegisterFailure(e.toString()));
       }

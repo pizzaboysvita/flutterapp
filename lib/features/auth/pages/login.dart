@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
+import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_bloc.dart';
+import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_event.dart';
+import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_state.dart';
+import 'package:pizza_boys/core/bloc/loading_button/loading_button_bloc.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
+import 'package:pizza_boys/core/helpers/buttons/outline_button.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
 import 'package:pizza_boys/data/repositories/auth/login_repo.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/login/login_bloc.dart';
@@ -21,192 +28,240 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  final _formKey = GlobalKey<FormState>();
+  final formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, String>?;
+
+    if (args != null) {
+      emailController.text = args['prefillEmail'] ?? '';
+      passwordController.text = args['prefillPassword'] ?? '';
+    }
     return BlocProvider(
       create: (_) => LoginBloc(LoginRepo()),
-      child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 0.0.h,
-          backgroundColor: AppColors.blackColor,
-        ),
-        body: BlocConsumer<LoginBloc, LoginState>(
-          listener: (context, state) {
-            if (state is LoginSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.data["message"] ?? "Login Successful"),
-                  backgroundColor: AppColors.redPrimary,
-                ),
-              );
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            toolbarHeight: 0.0.h,
+            backgroundColor: AppColors.blackColor,
+          ),
+          body: BlocConsumer<LoginBloc, LoginState>(
+            listener: (context, state) {
+              if (state is LoginSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.data["message"] ?? "Login Successful"),
+                    backgroundColor: AppColors.redPrimary,
+                  ),
+                );
 
-              // Navigate to checkout/home page with token
-              Navigator.pushReplacementNamed(
-                context,
-                AppRoutes.chooseStoreLocation,
-                arguments: {
-                  "token": state.data["access_token"],
-                  "user": state.data["user"],
-                },
-              );
-            } else if (state is LoginFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.error),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
-          builder: (context, state) {
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _headerSection(),
-                  Padding(
-                    padding: EdgeInsets.all(24.w),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          SizedBox(height: 12.h),
-                          _inputField("Email", emailController, isEmail: true),
-                          SizedBox(height: 16.h),
-                          _passwordField(),
-                          SizedBox(height: 12.h),
-
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: true,
-                                fillColor: WidgetStatePropertyAll(
-                                  AppColors.blackColor,
-                                ),
-                                onChanged: (v) {},
-                              ),
-                              Text(
-                                "Remember me",
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: "Poppins",
-                                ),
-                              ),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () {},
-                                child: Text(
-                                  "Forgot Password?",
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 12.sp,
-                                    color: AppColors.redPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 12.h),
-
-                          // 🔹 Login Button
-                          _mainButton(
-                            state is LoginLoading ? "Logging in..." : "Login",
-                            () {
-                              if (_formKey.currentState!.validate()) {
-                                context.read<LoginBloc>().add(
-                                  LoginButtonPressed(
-                                    emailController.text.trim(),
-                                    passwordController.text.trim(),
-                                  ),
-                                );
-                              }
-                            },
-                            isLoading: state is LoginLoading,
-                          ),
-
-                          SizedBox(height: 14.h),
-
-                          // 🔹 Continue as Guest
-                          OutlinedButton(
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                AppRoutes.chooseStoreLocation,
-                              );
-                            },
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: Size(double.infinity, 45.h),
-                              side: BorderSide(
-                                color: AppColors.blackColor,
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28.r),
-                              ),
+                // Delay navigation until after the current frame
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.pushReplacementNamed(
+                    context,
+                    AppRoutes.chooseStoreLocation,
+                    arguments: {
+                      "token": state.data["access_token"],
+                      "user": state.data["user"],
+                    },
+                  );
+                });
+              } else if (state is LoginFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.error),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            builder: (context, state) {
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _headerSection(),
+                    Padding(
+                      padding: EdgeInsets.all(24.w),
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          children: [
+                            SizedBox(height: 12.h),
+                            _inputField(
+                              "Email",
+                              emailController,
+                              isEmail: true,
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  FontAwesomeIcons.solidUser,
-                                  color: AppColors.blackColor,
-                                ),
-                                SizedBox(width: 8.0.w),
-                                Text(
-                                  "Continue as Guest",
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 14.sp,
-                                    color: AppColors.blackColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                            SizedBox(height: 16.h),
+                            _passwordField(),
+                            SizedBox(height: 6.h),
 
-                          SizedBox(height: 12.h),
-
-                          // 🔹 Register Button
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, AppRoutes.register);
-                            },
-                            child: Text.rich(
-                              TextSpan(
-                                text: "Don't have an account? ",
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: AppColors.blackColor,
-                                  fontFamily: 'Poppins',
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: " Register",
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      color: AppColors.redPrimary,
-                                      fontWeight: FontWeight.w600,
+                            // SizedBox(height: 12.h),
+                            BlocBuilder<LoginCheckboxBloc, LoginCheckboxState>(
+                              builder: (context, settingsState) {
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Checkbox(
+                                      value: settingsState.acceptTerms,
+                                      fillColor:
+                                          MaterialStateProperty.resolveWith<
+                                            Color
+                                          >((states) {
+                                            if (states.contains(
+                                              MaterialState.selected,
+                                            )) {
+                                              return AppColors
+                                                  .blackColor; // Fill color when checked
+                                            }
+                                            return Colors
+                                                .white; // Fill color when unchecked
+                                          }),
+                                      checkColor: AppColors
+                                          .whiteColor, // Color of the check mark
+                                      side: MaterialStateBorderSide.resolveWith((
+                                        states,
+                                      ) {
+                                        return BorderSide(
+                                          color: AppColors
+                                              .blackColor, // Border color always black
+                                          width: 1.5,
+                                        );
+                                      }),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          4.r,
+                                        ), // Rounded corners
+                                      ),
+                                      onChanged: (v) {
+                                        context.read<LoginCheckboxBloc>().add(
+                                          ToggleAcceptTerms(),
+                                        );
+                                      },
                                     ),
-                                  ),
-                                ],
+
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => context
+                                            .read<LoginCheckboxBloc>()
+                                            .add(ToggleAcceptTerms()),
+                                        child: Text.rich(
+                                          TextSpan(
+                                            text: "I agree to the ",
+                                            style: TextStyle(
+                                              fontSize: 12.sp,
+                                              color: AppColors.blackColor,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                            children: [
+                                              TextSpan(
+                                                text: "Terms & Conditions",
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.redAccent,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+
+                            SizedBox(height: 16.h),
+
+                            BlocProvider(
+                              create: (_) => LoadingButtonBloc(),
+                              child: LoadingFillButton(
+                                text: "Login",
+                                onPressedAsync: () async {
+                                  if (formKey.currentState!.validate()) {
+                                    context.read<LoginBloc>().add(
+                                      LoginButtonPressed(
+                                        emailController.text.trim(),
+                                        passwordController.text.trim(),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
                             ),
-                          ),
-                        ],
+
+                            SizedBox(height: 14.h),
+
+                            LoadingOutlineButton(
+                              text: "Continue as Guest",
+                              icon: FontAwesomeIcons.solidUser,
+                              onPressedAsync: () async {
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  AppRoutes.chooseStoreLocation,
+                                );
+                              },
+                            ),
+
+                            SizedBox(height: 12.h),
+
+                            InkWell(
+                              borderRadius: BorderRadius.circular(8.r),
+                              splashColor: AppColors.redAccent.withOpacity(
+                                0.3,
+                              ), // More visible splash
+                              highlightColor: AppColors.redAccent.withOpacity(
+                                0.1,
+                              ), // More visible highlight
+                              onTap: () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.register,
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: 8.h,
+                                  horizontal: 16.w,
+                                ),
+                                child: Text.rich(
+                                  TextSpan(
+                                    text: "Don't have an account? ",
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: AppColors.blackColor,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: " Register",
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          color: AppColors.redAccent,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -271,6 +326,8 @@ class _LoginState extends State<Login> {
   }) {
     return TextFormField(
       controller: controller,
+      keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
+      autofillHints: isEmail ? [AutofillHints.email] : null,
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return "$hint is required";
@@ -283,14 +340,32 @@ class _LoginState extends State<Login> {
         }
         return null;
       },
+      style: TextStyle(fontSize: 14.sp),
       decoration: InputDecoration(
-        hintText: hint,
+        labelText: hint,
+        labelStyle: TextStyle(fontSize: 14.sp, color: Colors.black),
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
         filled: true,
         fillColor: Colors.white,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.r),
           borderSide: BorderSide.none,
         ),
+
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: AppColors.redPrimary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: AppColors.redAccent, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: AppColors.redAccent, width: 1.5),
+        ),
+        errorStyle: TextStyle(fontSize: 12.sp, color: AppColors.redAccent),
       ),
     );
   }
@@ -299,72 +374,60 @@ class _LoginState extends State<Login> {
   Widget _passwordField() {
     return BlocBuilder<PsObscureBloc, PsObscureState>(
       builder: (context, state) {
-        final isObscure = state is PsObscureValue ? state.obscure : true;
+        final isObscure = state is PsObscureValue ? state.obscure : false;
 
         return TextFormField(
           controller: passwordController,
           obscureText: isObscure,
+          keyboardType: TextInputType.visiblePassword,
+          autofillHints: [AutofillHints.password],
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return "Password is required";
             }
-            if (value.length < 6) {
+            if (value.trim().length < 6) {
               return "Password must be at least 6 characters";
             }
             return null;
           },
+          style: TextStyle(fontSize: 14.sp),
           decoration: InputDecoration(
-            hintText: "Password",
+            labelText: "Password",
+            labelStyle: TextStyle(fontSize: 14.sp, color: Colors.black),
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
             filled: true,
             fillColor: Colors.white,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16.w,
+              vertical: 14.h,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
               borderSide: BorderSide.none,
             ),
+
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: AppColors.redAccent, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: AppColors.redAccent, width: 1.5),
+            ),
+            errorStyle: TextStyle(fontSize: 12.sp, color: AppColors.redAccent),
             suffixIcon: IconButton(
-              icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
+              icon: Icon(
+                isObscure ? Icons.visibility_off : Icons.visibility,
+                color: isObscure ? Colors.grey.shade600 : AppColors.redPrimary,
+              ),
               onPressed: () {
                 context.read<PsObscureBloc>().add(ObscureText());
               },
+              tooltip: isObscure ? 'Show password' : 'Hide password',
             ),
           ),
         );
       },
-    );
-  }
-
-  // 🔹 Main Button with loader
-  Widget _mainButton(
-    String text,
-    VoidCallback onPressed, {
-    bool isLoading = false,
-  }) {
-    return ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.redPrimary,
-        minimumSize: Size(double.infinity, 50.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28.r),
-        ),
-      ),
-      child: isLoading
-          ? SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : Text(
-              text,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14.sp,
-                color: Colors.white,
-              ),
-            ),
     );
   }
 }

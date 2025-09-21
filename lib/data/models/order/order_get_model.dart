@@ -3,7 +3,7 @@ import 'dart:convert';
 class OrderGetModel {
   final int orderMasterId;
   final int storeId;
-  final String totalPrice;
+  final double totalPrice;
   final String? gstPrice;                 // Nullable field
   final int totalQuantity;
   final int orderType;
@@ -28,6 +28,7 @@ class OrderGetModel {
   final String? name;
   final List<Map<String, dynamic>> orderIngredients;
   final List<Map<String, dynamic>> orderToppings;
+  final List<Map<String, dynamic>> orderItems; // add this to your class
 
   OrderGetModel({
     required this.orderMasterId,
@@ -57,39 +58,42 @@ class OrderGetModel {
     this.name,
     required this.orderIngredients,
     required this.orderToppings,
+    required this.orderItems
   });
 
-  factory OrderGetModel.fromJson(Map<String, dynamic> json) {
-    return OrderGetModel(
-      orderMasterId: json['order_master_id'] ?? 0,
-      storeId: json['store_id'] ?? 0,
-      totalPrice: parseNullableString(json['total_price']) ?? "0.00",
-      gstPrice: parseNullableString(json['gst_price']),
-      totalQuantity: json['total_quantity'] ?? 0,
-      orderType: json['order_type'] ?? 0,
-      pickupDatetime: parseNullableString(json['pickup_datetime']) ?? "",
-      isPosOrder: json['is_pos_order'] ?? 0,
-      deliveryAddress: parseNullableString(json['delivery_address']),
-      deliveryFees: parseNullableString(json['delivery_fees']) ?? "0.00",
-      deliveryDatetime: parseNullableString(json['delivery_datetime']),
-      unitNumber: parseNullableString(json['unitnumber']),
-      orderNotes: parseNullableString(json['order_notes']),
-      orderStatus: parseNullableString(json['order_status']) ?? "Unknown",
-      deliveryNotes: parseNullableString(json['delivery_notes']),
-      orderDue: parseNullableString(json['order_due']),
-      orderDueDatetime: parseNullableString(json['order_due_datetime']),
-      orderCreatedDatetime: parseNullableString(json['order_created_datetime']) ?? "",
-      orderCreatedBy: json['order_created_by'] ?? 0,
-      orderUpdatedOn: parseNullableString(json['order_updated_on']),
-      orderUpdatedBy: parseNullableString(json['order_updated_by']),
-      paymentMethod: parseNullableString(json['payment_method']) ?? "",
-      email: parseNullableString(json['email']),
-      phoneNumber: parseNullableString(json['phone_number']),
-      name: parseNullableString(json['name']),
-      orderIngredients: parseJsonList(json['order_ingredients']),
-      orderToppings: parseJsonList(json['order_toppings']),
-    );
-  }
+
+factory OrderGetModel.fromJson(Map<String, dynamic> json) {
+  return OrderGetModel(
+    orderMasterId: json['order_master_id'] ?? 0,
+    storeId: json['store_id'] ?? 0,
+     totalPrice: double.tryParse(parseNullableString(json['total_price']) ?? "0.0") ?? 0.0,
+    gstPrice: parseNullableString(json['gst_price']),
+    totalQuantity: json['total_quantity'] ?? 0,
+    orderType: json['order_type'] ?? 0,
+    pickupDatetime: parseNullableString(json['pickup_datetime']) ?? "",
+    isPosOrder: json['is_pos_order'] ?? 0,
+    deliveryAddress: parseNullableString(json['delivery_address']),
+    deliveryFees: parseNullableString(json['delivery_fees']) ?? "0.00",
+    deliveryDatetime: parseNullableString(json['delivery_datetime']),
+    unitNumber: json['unitnumber'] ?? 'POS-001',
+    orderNotes: parseNullableString(json['order_notes']),
+    orderStatus: parseNullableString(json['order_status']) ?? "Unknown",
+    deliveryNotes: parseNullableString(json['delivery_notes']),
+    orderDue: parseNullableString(json['order_due']),
+    orderDueDatetime: parseNullableString(json['order_due_datetime']),
+    orderCreatedDatetime: parseNullableString(json['order_created_datetime']) ?? "",
+    orderCreatedBy: json['order_created_by'] ?? 0,
+    orderUpdatedOn: parseNullableString(json['order_updated_on']),
+    orderUpdatedBy: parseNullableString(json['order_updated_by']),
+    paymentMethod: parseNullableString(json['payment_method']) ?? "",
+    email: parseNullableString(json['email']),
+    phoneNumber: parseNullableString(json['phone_number']),
+    name: parseNullableString(json['name']),
+    orderIngredients: parseJsonList(json['order_ingredients']),
+    orderToppings: parseJsonList(json['order_toppings']),
+    orderItems: parseJsonList(json['order_items']), // ✅ add this line
+  );
+}
 
   static List<Map<String, dynamic>> parseJsonList(dynamic jsonValue) {
     if (jsonValue == null) return [];

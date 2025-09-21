@@ -25,8 +25,8 @@ class _RegisterState extends State<Register> {
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
+  final emailCtrl = TextEditingController();
+  final passwordCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   final _countryCtrl = TextEditingController();
   final _stateCtrl = TextEditingController();
@@ -60,7 +60,7 @@ class _RegisterState extends State<Register> {
         } else if (state is RegisterFailure) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text("❌ Error: ${state.error}")));
+          ).showSnackBar(SnackBar(content: Text("Error: ${state.error}")));
         }
       },
       builder: (context, state) {
@@ -74,117 +74,238 @@ class _RegisterState extends State<Register> {
               children: [
                 _headerSection(),
                 Padding(
-                  padding: EdgeInsets.all(24.w),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 24.w,
+                    vertical: 16.h,
+                  ),
                   child: Form(
                     key: _formKey,
-                    child: Column(
-                      children: [
-                        // 🔹 Profile Image Picker
-                        GestureDetector(
-                          onTap: _pickImage,
-                          child: CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Colors.grey.shade200,
-                            backgroundImage: _image != null
-                                ? FileImage(_image!)
-                                : null,
-                            child: _image == null
-                                ? const Icon(
-                                    Icons.camera_alt,
-                                    size: 32,
-                                    color: Colors.grey,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        SizedBox(height: 16.h),
-
-                        _field("First Name", _firstNameCtrl),
-                        _field("Last Name", _lastNameCtrl),
-                        _field(
-                          "Phone Number",
-                          _phoneCtrl,
-                          keyboard: TextInputType.phone,
-                        ),
-                        _field("Email", _emailCtrl, isEmail: true),
-                        _field(
-                          "Password",
-                          _passwordCtrl,
-                          obscure: true,
-                          isPassword: true,
-                        ),
-                        _field("Address", _addressCtrl),
-                        _field("Country", _countryCtrl),
-                        _field("State", _stateCtrl),
-                        _field("City", _cityCtrl),
-                        _field(
-                          "Pin Code",
-                          _pinCtrl,
-                          keyboard: TextInputType.number,
-                        ),
-
-                        SizedBox(height: 16.h),
-
-                        // 🔹 Register Button
-                        _mainButton(
-                          state is RegisterLoading
-                              ? "Registering..."
-                              : "Register",
-                          () {
-                            if (_formKey.currentState!.validate()) {
-                              context.read<RegisterBloc>().add(
-                                SubmitRegister(
-                                  firstName: _firstNameCtrl.text.trim(),
-                                  lastName: _lastNameCtrl.text.trim(),
-                                  phone: _phoneCtrl.text.trim(),
-                                  email: _emailCtrl.text.trim(),
-                                  password: _passwordCtrl.text.trim(),
-                                  address: _addressCtrl.text.trim(),
-                                  country: _countryCtrl.text.trim(),
-                                  state: _stateCtrl.text.trim(),
-                                  city: _cityCtrl.text.trim(),
-                                  pinCode:
-                                      int.tryParse(_pinCtrl.text.trim()) ?? 0,
-                                  imageFile: _image,
-                                ),
-                              );
-                            }
-                          },
-                          isLoading: state is RegisterLoading,
-                        ),
-
-                        SizedBox(height: 12.h),
-
-                        // 🔹 Already have account? Login
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushReplacementNamed(
-                              context,
-                              AppRoutes.login,
-                            );
-                          },
-                          child: Text.rich(
-                            TextSpan(
-                              text: "Already have an account? ",
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: AppColors.blackColor,
-                                fontFamily: 'Poppins',
-                              ),
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // 🔹 Profile Image Picker with guidance
+                          GestureDetector(
+                            onTap: _pickImage,
+                            child: Stack(
                               children: [
-                                TextSpan(
-                                  text: " Login",
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    color: AppColors.redPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                CircleAvatar(
+                                  radius: 45.r,
+                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundImage: _image != null
+                                      ? FileImage(_image!)
+                                      : null,
+                                  child: _image == null
+                                      ? Icon(
+                                          Icons.camera_alt,
+                                          size: 32.r,
+                                          color: Colors.grey.shade500,
+                                        )
+                                      : null,
                                 ),
+                                if (_image == null)
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: CircleAvatar(
+                                      radius: 12.r,
+                                      backgroundColor: AppColors.redAccent,
+                                      child: Icon(
+                                        Icons.add,
+                                        size: 16.r,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
+                          SizedBox(height: 16.h),
+                          Text(
+                            "Upload your profile photo",
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          SizedBox(height: 24.h),
+
+                          // 🔹 Name Fields in one row for better UX
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _field("First Name", _firstNameCtrl),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: _field("Last Name", _lastNameCtrl),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 10.h),
+
+                          _field(
+                            "Phone Number",
+                            _phoneCtrl,
+                            keyboard: TextInputType.phone,
+                          ),
+                          SizedBox(height: 10.h),
+
+                          _field("Email", emailCtrl, isEmail: true),
+                          SizedBox(height: 10.h),
+
+                          _field(
+                            "Password",
+                            passwordCtrl,
+                            obscure: true,
+                            isPassword: true,
+                          ),
+                          SizedBox(height: 10.h),
+
+                          // 🔹 Address block
+                          _field("Address", _addressCtrl),
+                          SizedBox(height: 10.h),
+                          _field("Country", _countryCtrl),
+                          SizedBox(height: 10.h),
+                          Row(
+                            children: [
+                              Expanded(child: _field("State", _stateCtrl)),
+                              SizedBox(width: 10.w),
+                              Expanded(child: _field("City", _cityCtrl)),
+                            ],
+                          ),
+                          SizedBox(height: 10.h),
+                          _field(
+                            "Pin Code",
+                            _pinCtrl,
+                            keyboard: TextInputType.number,
+                          ),
+                          SizedBox(height: 24.h),
+
+                          // 🔹 Register Button with loading
+                          BlocBuilder<RegisterBloc, RegisterState>(
+                            builder: (context, state) {
+                              final isLoading = state is RegisterLoading;
+
+                              return SizedBox(
+                                width: double.infinity,
+                                child: Material(
+                                  color: AppColors.redPrimary,
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  child: InkWell(
+                                    onTap: isLoading
+                                        ? null
+                                        : () {
+                                            if (_formKey.currentState!
+                                                .validate()) {
+                                              context.read<RegisterBloc>().add(
+                                                SubmitRegister(
+                                                  firstName: _firstNameCtrl.text
+                                                      .trim(),
+                                                  lastName: _lastNameCtrl.text
+                                                      .trim(),
+                                                  phone: _phoneCtrl.text.trim(),
+                                                  email: emailCtrl.text.trim(),
+                                                  password: passwordCtrl.text
+                                                      .trim(),
+                                                  address: _addressCtrl.text
+                                                      .trim(),
+                                                  country: _countryCtrl.text
+                                                      .trim(),
+                                                  state: _stateCtrl.text.trim(),
+                                                  city: _cityCtrl.text.trim(),
+                                                  pinCode:
+                                                      int.tryParse(
+                                                        _pinCtrl.text.trim(),
+                                                      ) ??
+                                                      0,
+                                                  imageFile: _image,
+                                                ),
+                                              );
+                                            }
+                                          },
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    splashColor: Colors.white.withOpacity(0.3),
+                                    highlightColor: Colors.white.withOpacity(
+                                      0.1,
+                                    ),
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 14.h,
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: isLoading
+                                          ? SizedBox(
+                                              width: 24.w,
+                                              height: 24.w,
+                                              child:
+                                                  const CircularProgressIndicator(
+                                                    color: Colors.white,
+                                                    strokeWidth: 2,
+                                                  ),
+                                            )
+                                          : Text(
+                                              "Register",
+                                              style: TextStyle(
+                                                color: Colors.grey.shade200,
+                                                fontSize: 14.sp,
+                                                fontWeight: FontWeight.w600,
+                                                shadows: const [
+                                                  Shadow(
+                                                    blurRadius: 20,
+                                                    offset: Offset(0, 3),
+                                                    color: Colors.black45,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: 12.h),
+
+                          // 🔹 Already have an account? Login
+                          InkWell(
+                            onTap: () {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                AppRoutes.login,
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8.r),
+                            splashColor: AppColors.redAccent.withOpacity(0.2),
+                            highlightColor: AppColors.redAccent.withOpacity(
+                              0.1,
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.h),
+                              child: Text.rich(
+                                TextSpan(
+                                  text: "Already have an account? ",
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: Colors.black87,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: " Login",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.redAccent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 24.h),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -256,13 +377,16 @@ class _RegisterState extends State<Register> {
     bool isEmail = false,
     bool isPassword = false,
     TextInputType keyboard = TextInputType.text,
+    int? maxLength,
   }) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.only(bottom: 6.h),
       child: TextFormField(
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboard,
+        maxLength: maxLength,
+        autofillHints: isEmail ? [AutofillHints.email] : null,
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
             return "$hint is required";
@@ -278,51 +402,36 @@ class _RegisterState extends State<Register> {
           }
           return null;
         },
+        style: TextStyle(fontSize: 14.sp),
         decoration: InputDecoration(
-          hintText: hint,
+          labelText: hint,
+          labelStyle: TextStyle(fontSize: 14.sp, color: Colors.black87),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
           filled: true,
           fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 16.w,
+            vertical: 14.h,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.r),
             borderSide: BorderSide.none,
           ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            borderSide: BorderSide(color: AppColors.redPrimary, width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            borderSide: BorderSide(color: AppColors.redAccent, width: 1.5),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            borderSide: BorderSide(color: AppColors.redAccent, width: 1.5),
+          ),
+          errorStyle: TextStyle(fontSize: 12.sp, color: AppColors.redAccent),
         ),
       ),
-    );
-  }
-
-  // 🔹 Main Button (same as login)
-  Widget _mainButton(
-    String text,
-    VoidCallback onPressed, {
-    bool isLoading = false,
-  }) {
-    return ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.redPrimary,
-        minimumSize: Size(double.infinity, 50.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28.r),
-        ),
-      ),
-      child: isLoading
-          ? SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : Text(
-              text,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14.sp,
-                color: Colors.white,
-              ),
-            ),
     );
   }
 }

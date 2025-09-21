@@ -20,7 +20,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         final data = await repository.loginUser(event.email, event.password);
         print("Login response data: $data"); // Debug log
 
-        if (data["code"] == "1") {
+        if (data["code"] == 1) {
           print("Login success, saving session...");
           await TokenStorage.saveSession(data);
           emit(LoginSuccess(data));

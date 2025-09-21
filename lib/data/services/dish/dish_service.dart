@@ -1,21 +1,20 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:pizza_boys/core/constant/api_urls.dart';
+import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 
 class DishService {
   Future<List<dynamic>> fetchAllDishes() async {
-    final response = await http.get(Uri.parse(ApiUrls.getDish));
+    try {
+      final response = await ApiClient.dio.get(ApiUrls.getDish);
 
-    if (response.statusCode == 200) {
-      return compute(_parseDishes, response.body);
-    } else {
-      throw Exception("Failed to load dishes");
+      if (response.statusCode == 200) {
+        final data = response.data;
+        return data['data'] ?? [];
+      } else {
+        throw Exception("Failed to load dishes: ${response.statusCode}");
+      }
+    } on DioException catch (e) {
+      throw Exception("DishService Error: ${e.message}");
     }
   }
-}
-
-List<dynamic> _parseDishes(String responseBody) {
-  final parsed = jsonDecode(responseBody);
-  return parsed['data'];
 }

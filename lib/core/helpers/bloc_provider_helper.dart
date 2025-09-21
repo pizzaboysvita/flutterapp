@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_bloc.dart';
+import 'package:pizza_boys/core/bloc/loading_button/loading_button_bloc.dart';
 import 'package:pizza_boys/data/repositories/auth/register_repo.dart';
 import 'package:pizza_boys/data/repositories/cart/cart_repo.dart';
 import 'package:pizza_boys/data/repositories/order/order_repo.dart';
@@ -38,6 +40,8 @@ class BlocProviderHelper {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => CartUIBloc()),
+        BlocProvider(create: (_) => LoadingButtonBloc()),
+        BlocProvider(create: (_) => LoginCheckboxBloc()),
         BlocProvider(create: (_) => RegisterBloc(AuthRepository())),
         BlocProvider(create: (_) => BikeAnimationBloc()),
         BlocProvider(create: (_) => BannerCarouselBloc()),

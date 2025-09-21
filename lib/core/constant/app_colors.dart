@@ -12,7 +12,7 @@ class AppColors {
   static const Color redSecondary = Color(
     0xFFD32F2F,
   ); // Gradient Secondary Color
-  static const Color redAccent = Colors.red;
+  static const Color redAccent = Color(0Xffe71512);
 
   static const Color greenColor = Colors.green;
 
