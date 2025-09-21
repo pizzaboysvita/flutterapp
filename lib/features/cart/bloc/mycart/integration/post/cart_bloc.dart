@@ -8,9 +8,13 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
   CartBloc({required this.cartRepository}) : super(CartInitial()) {
     on<AddToCartEvent>(_onAddToCart);
+    on<RemoveFromCartEvent>(_onRemoveFromCart); // ✅ Register event handler
   }
 
-  Future<void> _onAddToCart(AddToCartEvent event, Emitter<CartState> emit) async {
+  Future<void> _onAddToCart(
+    AddToCartEvent event,
+    Emitter<CartState> emit,
+  ) async {
     emit(CartLoading());
     try {
       final response = await cartRepository.addDishToCart(
@@ -26,4 +30,20 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       emit(CartFailure(e.toString()));
     }
   }
+
+Future<void> _onRemoveFromCart(
+  RemoveFromCartEvent event,
+  Emitter<CartState> emit,
+) async {
+  try {
+    final response = await cartRepository.removeFromCart(
+      cartId: event.cartId,
+      userId: event.userId,
+    );
+    emit(CartSuccess(response)); // Only emit success/failure
+  } catch (e) {
+    emit(CartFailure(e.toString()));
+  }
+}
+
 }

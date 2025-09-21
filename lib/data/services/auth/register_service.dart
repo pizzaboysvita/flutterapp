@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
-// ignore: depend_on_referenced_packages
+import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:pizza_boys/core/constant/api_urls.dart';
+import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 
 class AuthService {
-  static const String baseUrl =
-      "http://78.142.47.247:3003/api/user?store_id=-1&type=web";
 
   Future<Map<String, dynamic>> registerUser({
     required String firstName,
@@ -24,11 +23,7 @@ class AuthService {
     try {
       print("📌 Starting registerUser()...");
 
-      var uri = Uri.parse(baseUrl);
-      var request = http.MultipartRequest("POST", uri);
-      print("✅ Created MultipartRequest with URL: $baseUrl");
-
-      // ✅ JSON body (like Postman)
+      // Construct body JSON
       final Map<String, dynamic> body = {
         "type": "insert",
         "role_id": 1,
@@ -68,57 +63,59 @@ class AuthService {
         },
       };
 
-      // 🔑 send JSON inside "body" field (not individual request.fields)
-      request.fields["body"] = jsonEncode(body);
-
-      // ✅ Image upload with correct MIME type
-      if (imageFile != null) {
-        final ext = imageFile.path.split('.').last.toLowerCase();
-        MediaType contentType;
-        if (ext == "jpg" || ext == "jpeg") {
-          contentType = MediaType("image", "jpeg");
-        } else if (ext == "png") {
-          contentType = MediaType("image", "png");
-        } else if (ext == "svg") {
-          contentType = MediaType("image", "svg+xml");
-        } else {
-          throw Exception("❌ Unsupported file type: $ext");
-        }
-
-        print(
-          "🖼️ Adding image file: ${imageFile.path} with contentType: $contentType",
-        );
-
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            "image", // 👈 backend expects this field name
+      // Multipart form data
+      FormData formData = FormData.fromMap({
+        "body": jsonEncode(body),
+        if (imageFile != null)
+          "image": await MultipartFile.fromFile(
             imageFile.path,
-            contentType: contentType,
+            filename: imageFile.path.split('/').last,
+            contentType: _getMediaType(imageFile),
           ),
-        );
-      } else {
-        print("⚠️ No image file provided");
-      }
+      });
 
-      print("📝 Request fields: ${request.fields}");
+      print("📝 FormData prepared: $formData");
 
-      // Send request
-      print("📤 Sending request...");
-      final response = await request.send();
-      final resBody = await response.stream.bytesToString();
+      // Send request via Dio
+      final response = await ApiClient.dio.post(
+        ApiUrls.register,
+        data: formData,
+        options: Options(
+          headers: {"Content-Type": "multipart/form-data"},
+        ),
+      );
 
-      print("📥 Response received with status: ${response.statusCode}");
-      print("🔍 Response body: $resBody");
+      print("📥 Response status: ${response.statusCode}");
+      print("🔍 Response body: ${response.data}");
 
       if (response.statusCode == 200) {
         print("✅ Registration successful!");
-        return jsonDecode(resBody);
+        return response.data;
       } else {
-        throw Exception("❌ Failed: $resBody");
+        throw Exception("❌ Failed: ${response.data}");
       }
+    } on DioException catch (e) {
+      print("⚠️ DioException: ${e.message}");
+      throw Exception("⚠️ Register Error: ${e.message}");
     } catch (e) {
-      print("⚠️ Exception occurred: $e");
+      print("⚠️ Unknown Exception: $e");
       throw Exception("⚠️ Register Error: $e");
+    }
+  }
+
+  // Helper to get correct MediaType for image
+  MediaType _getMediaType(File file) {
+    final ext = file.path.split('.').last.toLowerCase();
+    switch (ext) {
+      case "jpg":
+      case "jpeg":
+        return MediaType("image", "jpeg");
+      case "png":
+        return MediaType("image", "png");
+      case "svg":
+        return MediaType("image", "svg+xml");
+      default:
+        throw Exception("Unsupported file type: $ext");
     }
   }
 }

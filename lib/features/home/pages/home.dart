@@ -13,6 +13,7 @@ import 'package:pizza_boys/features/home/widgets/promotional_banner.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
 import 'package:pizza_boys/features/onboard.dart/model/store_selection_model.dart';
+import 'package:pizza_boys/features/onboard.dart/pages/choose_location.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class Home extends StatefulWidget {
@@ -85,8 +86,9 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
 
             BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
               builder: (context, state) {
+                String selectedStore = "Select Store";
                 if (state is StoreSelectionLoaded) {
-                  final selectedStore = state.stores
+                  selectedStore = state.stores
                       .firstWhere(
                         (store) => store.id == state.selectedStoreId,
                         orElse: () => Store(
@@ -98,15 +100,23 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                         ),
                       )
                       .name;
+                }
 
-                  return Row(
+                return InkWell(
+                  onTap: () async {
+                    await Navigator.pushNamed(
+                      context,
+                      AppRoutes.chooseStoreLocation,
+                    );
+                  },
+                  child: Row(
                     children: [
                       Icon(
                         Icons.location_on,
                         color: AppColors.whiteColor,
                         size: 14.w,
                       ),
-                      SizedBox(width: 2.0.w),
+                      SizedBox(width: 2.w),
                       Text(
                         selectedStore,
                         style: TextStyle(
@@ -117,15 +127,6 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                         ),
                       ),
                     ],
-                  );
-                }
-                return Text(
-                  "Select Store",
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: Colors.white70,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w500,
                   ),
                 );
               },
@@ -199,6 +200,34 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _showStoreSelectionBottomSheet(BuildContext context) async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent, // optional for rounded corners
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8, // 70% of screen height
+          minChildSize: 0.6,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+              ),
+              child: StoreSelectionPage(
+                scrollController:
+                    scrollController, // pass it to your ListView inside page
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

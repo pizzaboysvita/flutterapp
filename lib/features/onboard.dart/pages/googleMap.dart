@@ -71,7 +71,7 @@ class _GooglemapState extends State<Googlemap> {
     ),
   ];
 
-  LatLng _initialLocation = const LatLng(-36.8485, 174.7633); // Auckland
+  final LatLng _initialLocation = const LatLng(-36.8485, 174.7633); // Auckland
 
   @override
   void initState() {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 abstract class RegisterEvent {}
 
@@ -14,6 +15,7 @@ class SubmitRegister extends RegisterEvent {
   final String city;
   final int pinCode;
   final File? imageFile;
+  final VoidCallback? onSuccess;
 
   SubmitRegister({
     required this.firstName,
@@ -27,5 +29,7 @@ class SubmitRegister extends RegisterEvent {
     required this.city,
     required this.pinCode,
     this.imageFile,
+    this.onSuccess,
+
   });
 }

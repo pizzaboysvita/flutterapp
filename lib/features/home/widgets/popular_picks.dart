@@ -415,18 +415,33 @@ class PopularPicks extends StatelessWidget {
                                   ),
                                   onPressed: () {
                                     if (isFavorite) {
-                                      context.read<FavoriteBloc>().add(
-                                        RemoveFromFavoriteEvent(dish.id),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "💔 Removed from Favorites",
+                                      if (dish.wishlistId != null) {
+                                        context.read<FavoriteBloc>().add(
+                                          RemoveFromFavoriteEvent(
+                                            dishId: dish.id,
+                                            wishlistId: dish.wishlistId,
                                           ),
-                                        ),
-                                      );
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Removed from Favorites!",
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Cannot remove: wishlistId is missing!",
+                                            ),
+                                          ),
+                                        );
+                                      }
                                     } else {
                                       context.read<FavoriteBloc>().add(
                                         AddToFavoriteEvent(dish),

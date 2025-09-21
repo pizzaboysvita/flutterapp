@@ -10,6 +10,8 @@ class DishModel {
   final int dishCategoryId;
   final String description;
   final int storeId;
+  final String? storeName;
+  final int? wishlistId; // ✅ new field
 
   final List<Addon> optionSets;
   final List<Addon> ingredients;
@@ -24,79 +26,51 @@ class DishModel {
     required this.dishCategoryId,
     required this.description,
     required this.storeId,
+    this.storeName,
+    this.wishlistId, // optional
     required this.optionSets,
     required this.ingredients,
     required this.choices,
   });
 
-  /// 🔹 Factory to parse regular dish JSON
-  factory DishModel.fromJson(Map<String, dynamic> json) {
-    List<Addon> _parseAddonList(dynamic value) {
-      if (value == null) return [];
-      if (value is List) {
-        return value.map((e) => Addon.fromJson(e)).toList();
-      }
-      if (value is String) {
-        try {
-          final decoded = jsonDecode(value);
-          if (decoded is List) {
-            return decoded.map((e) => Addon.fromJson(e)).toList();
-          }
-        } catch (_) {}
-      }
-      return [];
-    }
-
-    num? _parseNum(dynamic value) {
-      if (value == null) return null;
-      if (value is num) return value;
-      if (value is String) return num.tryParse(value);
-      return null;
-    }
-
-    return DishModel(
-      id: _parseNum(json['dish_id'])?.toInt() ?? 0,
-      name: json['dish_name']?.toString() ?? '',
-      price: _parseNum(json['dish_price'])?.toDouble() ?? 0.0,
-      imageUrl: json['dish_image']?.toString() ?? '',
-      rating: _parseNum(json['rating'])?.toDouble() ?? 0.0,
-      dishCategoryId: _parseNum(json['dish_category_id'])?.toInt() ?? -1,
-      description: json['description']?.toString() ?? '',
-      storeId: _parseNum(json['store_id'])?.toInt() ?? 0,
-      optionSets: _parseAddonList(json['dish_option_set_json']),
-      ingredients: _parseAddonList(json['dish_ingredients_json']),
-      choices: _parseAddonList(json['dish_choices_json']),
-    );
+  /// 🔹 Named constructor to parse wishlist JSON
+factory DishModel.fromJson(Map<String, dynamic> json) {
+  double parsePrice(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 
-  /// ✅ Named constructor to parse wishlist JSON
-  factory DishModel.fromWishlistJson(Map<String, dynamic> json) {
-    num? _parseNum(dynamic value) {
-      if (value == null) return null;
-      if (value is num) return value;
-      if (value is String) return num.tryParse(value);
-      return null;
-    }
-
-    return DishModel(
-      id: _parseNum(json['dish_id'])?.toInt() ?? 0,
-      name: "Dish ${json['dish_id']}", // Placeholder name
-      price: 0.0, // Default price as it's not provided
-      imageUrl: "", // Default empty image URL
-      rating: 0.0, // Default rating
-      dishCategoryId: -1, // Default or unknown
-      description: "", // Empty description
-      storeId: _parseNum(json['store_id'])?.toInt() ?? 0,
-      optionSets: [],
-      ingredients: [],
-      choices: [],
-    );
+  num? _parseNum(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value;
+    if (value is String) return num.tryParse(value);
+    return null;
   }
 
-  /// ✅ Converts DishModel back to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'dish_id': id,
+  return DishModel(
+    id: _parseNum(json['dish_id'])?.toInt() ?? 0,
+    name: "${json['dish_name']}",
+    price: parsePrice(json['dish_price']),
+    imageUrl: json['dish_image']?.toString() ?? "",
+    rating: 0.0,
+    dishCategoryId: _parseNum(json['dish_category_id'])?.toInt() ?? -1, // ✅ fix here
+    description: json['description']?.toString() ?? "",
+    storeId: _parseNum(json['store_id'])?.toInt() ?? 0,
+    storeName: json['store_name']?.toString(),
+    wishlistId: _parseNum(json['wishlist_id'])?.toInt(),
+    optionSets: [], 
+    ingredients: [], 
+    choices: [],
+  );
+}
+
+/// ✅ Converts DishModel back to JSON
+Map<String, dynamic> toJson() {
+  return {
+    'dish_id': id,
       'dish_name': name,
       'dish_price': price,
       'dish_image': imageUrl,
@@ -104,6 +78,7 @@ class DishModel {
       'dish_category_id': dishCategoryId,
       'description': description,
       'store_id': storeId,
+      'store_name': storeName, // optional
       'dish_option_set_json': optionSets.map((e) => e.toJson()).toList(),
       'dish_ingredients_json': ingredients.map((e) => e.toJson()).toList(),
       'dish_choices_json': choices.map((e) => e.toJson()).toList(),

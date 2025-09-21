@@ -9,8 +9,15 @@ class AddToFavoriteEvent extends FavoriteEvent {
 
 class RemoveFromFavoriteEvent extends FavoriteEvent {
   final int dishId;
-  RemoveFromFavoriteEvent(this.dishId);
+  final int? wishlistId; // ✅ now optional
+
+  RemoveFromFavoriteEvent({
+    required this.dishId,
+    this.wishlistId,
+  });
 }
+
+
 
 class LoadFavoritesEvent extends FavoriteEvent {}
 

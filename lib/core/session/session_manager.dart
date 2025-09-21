@@ -3,8 +3,9 @@ import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class SessionManager {
+  /// Check session on splash / app start
   static Future<void> checkSession(BuildContext context) async {
-    await Future.delayed(const Duration(seconds: 2)); // splash delay
+    await Future.delayed(const Duration(seconds: 2));
 
     final token = await TokenStorage.getAccessToken();
     if (token == null || token.isEmpty) {
@@ -23,6 +24,7 @@ class SessionManager {
     }
   }
 
+  /// Clear session & navigate to login
   static Future<void> clearSession(BuildContext context) async {
     await TokenStorage.clearSession();
     debugPrint("🚪 Session cleared. Redirecting to Login.");

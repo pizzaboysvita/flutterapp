@@ -151,8 +151,8 @@ class _OrderDetailsState extends State<OrderDetails> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _infoTile("Name", order.orderType ?? "-"),
-                    _infoTile("Phone", order.orderType ?? "-"),
+                    _infoTile("Name", order.orderType),
+                    _infoTile("Phone", order.orderType),
                     _infoTile("Address", order.deliveryAddress ?? "-"),
                   ],
                 ),
@@ -214,7 +214,7 @@ class _OrderDetailsState extends State<OrderDetails> {
                     Divider(color: Colors.grey[300]),
 
                     // ➤ Item rows
-                    ...order.orderDetails.map((item) {
+                    ...order.orderDetails!.map((item) {
                       return Padding(
                         padding: EdgeInsets.symmetric(vertical: 6.h),
                         child: Row(
@@ -232,7 +232,7 @@ class _OrderDetailsState extends State<OrderDetails> {
                             ),
                             Expanded(
                               child: Text(
-                                "Dish ${item.dishId}", // Replace with actual dish name if available
+                                "${item.dishName}", // Replace with actual dish name if available
                                 style: TextStyle(
                                   fontSize: 13.sp,
                                   fontFamily: 'Poppins',
@@ -255,7 +255,7 @@ class _OrderDetailsState extends State<OrderDetails> {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
 
                     Divider(color: Colors.grey[300]),
 
@@ -385,7 +385,11 @@ class _OrderDetailsState extends State<OrderDetails> {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
-            Navigator.pushNamed(context, AppRoutes.orderHistory,arguments: true);
+            Navigator.pushNamed(
+              context,
+              AppRoutes.orderHistory,
+              arguments: true,
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.redPrimary,

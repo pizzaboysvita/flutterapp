@@ -1,29 +1,43 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:pizza_boys/core/constant/api_urls.dart';
+import 'package:pizza_boys/core/helpers/api_client_helper.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 
 class LoginService {
   Future<Map<String, dynamic>> postLogin(String email, String password) async {
-    print("Attempting login for email: $email"); // Debug log
-    final response = await http.post(
-      Uri.parse(ApiUrls.loginPost),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": email,
-        "password_hash": password,
-      }),
-    );
+    print("🔐 Attempting login for email: $email");
 
-    print('User Login Details : $email , $password');
-    print('Login API Response Code: ${response.statusCode}');
-    print('Login API Response Body: ${response.body}');
+    try {
+      final response = await ApiClient.dio.post(
+        ApiUrls.loginPost,
+        data: {
+          "email": email,
+          "password_hash": password,
+        },
+        options: Options(
+          headers: {"Content-Type": "application/json"},
+        ),
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return json.decode(response.body);
-    } else {
-      print("Login failed with status code: ${response.statusCode}");
-      throw Exception('Failed to Login User');
+      print('✅ Login API Response Code: ${response.statusCode}');
+      print('📥 Login API Response Body: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> data = response.data;
+
+        // ✅ Save user session (tokens, user info)
+        await TokenStorage.saveSession(data);
+
+        print('🎉 Login data saved to storage');
+
+        return data;
+      } else {
+        print("⚠️ Login failed with status code: ${response.statusCode}");
+        throw Exception('Failed to login user');
+      }
+    } on DioException catch (e) {
+      print("❌ DioException during login: ${e.message}");
+      throw Exception('Login request failed: ${e.message}');
     }
   }
 }
-

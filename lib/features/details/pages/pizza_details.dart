@@ -30,8 +30,8 @@ class PizzaDetailsView extends StatefulWidget {
 
 class _PizzaDetailsViewState extends State<PizzaDetailsView> {
   final Map<String, double> addonPrices = const {
-    'Extra Cheese': 1.00,
-    'Olives Topping': 0.80,
+    'Extra Cheese': 0.00,
+    'Olives Topping': 0.00,
     'Coke (500ml)': 1.50,
     'Garlic Bread': 2.00,
     'French Fries': 2.50,
@@ -556,78 +556,90 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                         ],
                       ),
                       child: SizedBox(
-  width: double.infinity, // ensure it takes available width
-  child: ElevatedButton(
-    onPressed: state is CartLoading
-        ? null
-        : () async {
-            print("🛒 [UI] AddToCart tapped");
+                        width:
+                            double.infinity, // ensure it takes available width
+                        child: ElevatedButton(
+                          onPressed: state is CartLoading
+                              ? null
+                              : () async {
+                                  print("🛒 [UI] AddToCart tapped");
 
-            final userId = await TokenStorage.getUserId();
-            final storeId = await TokenStorage.getChosenStoreId();
+                                  final userId = await TokenStorage.getUserId();
+                                  final storeId =
+                                      await TokenStorage.getChosenStoreId();
 
-            if (userId == null || storeId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("⚠️ User or Store not found in session"),
-                ),
-              );
-              return;
-            }
+                                  if (userId == null || storeId == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "⚠️ User or Store not found in session",
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  print("👤 userId: $userId");
+                                  print("🍕 dishId: ${dish.id}");
+                                  print("🏬 storeId: $storeId");
+                                  print(
+                                    "🔢 quantity: ${detailsState.quantity}",
+                                  );
+                                  print("💲 price: $total");
 
-            print("👤 userId: $userId");
-            print("🍕 dishId: ${dish.id}");
-            print("🏬 storeId: $storeId");
-            print("🔢 quantity: ${detailsState.quantity}");
-            print("💲 price: $total");
+                                  final optionsJson = {
+                                    "size": detailsState.selectedSize,
+                                    "largeOption":
+                                        detailsState.selectedLargeOption,
+                                    "addons": detailsState.selectedAddons,
+                                    "choices": detailsState.selectedChoices,
+                                  };
 
-            final optionsJson = {
-              "size": detailsState.selectedSize,
-              "largeOption": detailsState.selectedLargeOption,
-              "addons": detailsState.selectedAddons,
-              "choices": detailsState.selectedChoices,
-            };
+                                  print(
+                                    "⚙️ optionsJson: ${jsonEncode(optionsJson)}",
+                                  );
 
-            print("⚙️ optionsJson: ${jsonEncode(optionsJson)}");
-
-            context.read<CartBloc>().add(
-              AddToCartEvent(
-                userId: int.parse(userId),
-                dishId: dish.id,
-                storeId: int.parse(storeId),
-                quantity: detailsState.quantity,
-                price: total,
-                optionsJson: jsonEncode(optionsJson),
-              ),
-            );
-          },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.redPrimary,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 16.w), // dynamic padding
-    ),
-    child: state is CartLoading
-        ? const SizedBox(
-            height: 20,
-            width: 20,
-            child: CircularProgressIndicator(
-              color: Colors.white,
-              strokeWidth: 2.0,
-            ),
-          )
-        : Text(
-            'Total \$${total.toStringAsFixed(2)} - Order Now!',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontFamily: 'Poppins',
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-  ),
-),
+                                  context.read<CartBloc>().add(
+                                    AddToCartEvent(
+                                      type: "insert",
+                                      userId: int.parse(userId),
+                                      dishId: dish.id,
+                                      storeId: int.parse(storeId),
+                                      quantity: detailsState.quantity,
+                                      price: total,
+                                      optionsJson: jsonEncode(optionsJson),
+                                    ),
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.redPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              vertical: 14.h,
+                              horizontal: 16.w,
+                            ), // dynamic padding
+                          ),
+                          child: state is CartLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.0,
+                                  ),
+                                )
+                              : Text(
+                                  'Total \$${total.toStringAsFixed(2)} - Order Now!',
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontFamily: 'Poppins',
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                        ),
+                      ),
                     );
                   },
                 );

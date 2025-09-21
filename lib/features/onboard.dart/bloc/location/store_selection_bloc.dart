@@ -1,16 +1,15 @@
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'package:pizza_boys/core/constant/api_urls.dart';
-import 'package:pizza_boys/core/storage/api_res_storage.dart'; // 👈 import TokenStorage
+import 'package:dio/dio.dart';
+import 'package:pizza_boys/core/helpers/api_client_helper.dart'; // 👈 Dio helper
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
 import 'package:pizza_boys/features/onboard.dart/model/store_selection_model.dart';
+import 'package:pizza_boys/core/constant/api_urls.dart';
 
 class StoreSelectionBloc
     extends Bloc<StoreSelectionEvent, StoreSelectionState> {
-  final String _apiUrl = ApiUrls.storesGet;
-
   int? selectedStoreId;
 
   StoreSelectionBloc() : super(StoreSelectionInitial()) {
@@ -18,6 +17,7 @@ class StoreSelectionBloc
     on<SelectStoreEvent>(_onSelectStore);
   }
 
+  // ✅ Load stores using Dio
   Future<void> _onLoadStores(
     LoadStoresEvent event,
     Emitter<StoreSelectionState> emit,
@@ -25,10 +25,12 @@ class StoreSelectionBloc
     emit(StoreSelectionLoading());
 
     try {
-      final response = await http.get(Uri.parse(_apiUrl));
+      final response = await ApiClient.dio.get(ApiUrls.storesGet);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as List;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Depending on API, your data might be nested in 'data' key
+        final List<dynamic> data =
+            response.data is List ? response.data : response.data['data'];
         final stores = data.map((e) => Store.fromJson(e)).toList();
 
         // 👇 Load saved store from storage
@@ -48,18 +50,20 @@ class StoreSelectionBloc
           ),
         );
       }
+    } on DioException catch (e) {
+      emit(StoreSelectionError("Error loading stores: ${e.message}"));
     } catch (e) {
-      emit(StoreSelectionError("Error loading stores: $e"));
+      emit(StoreSelectionError("Unexpected error loading stores: $e"));
     }
   }
 
+  // ✅ Select store and persist
   Future<void> _onSelectStore(
     SelectStoreEvent event,
     Emitter<StoreSelectionState> emit,
   ) async {
     selectedStoreId = event.storeId;
 
-    // ✅ Persist store selection
     final selectedStore = (state is StoreSelectionLoaded)
         ? (state as StoreSelectionLoaded).stores.firstWhere(
             (s) => s.id == event.storeId,

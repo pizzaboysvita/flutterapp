@@ -1,3 +1,4 @@
+import 'package:pizza_boys/data/models/order/order_get_model.dart';
 import 'package:pizza_boys/data/models/order/order_post_model.dart';
 import 'package:pizza_boys/data/services/order/order_service.dart';
 
@@ -9,7 +10,7 @@ class OrderRepository {
     return await service.placeOrder(order);
   }
 
-  Future<List<OrderModel>> fetchOrders() async {
+  Future<List<OrderGetModel>> fetchOrders() async {
     return await service.fetchOrders();
   }
 }
