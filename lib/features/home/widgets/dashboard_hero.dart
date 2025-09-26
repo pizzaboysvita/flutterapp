@@ -216,6 +216,7 @@ class PizzaCategoriesRow extends StatelessWidget {
                   },
                   child: Column(
                     children: [
+                      
                       Container(
                         width: 65.w,
                         height: 65.w,

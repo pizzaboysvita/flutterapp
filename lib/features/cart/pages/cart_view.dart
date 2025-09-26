@@ -88,7 +88,7 @@ class _CartViewState extends State<CartView> {
           // Navigate to order details
           Navigator.pushNamed(
             context,
-            AppRoutes.orderDetails,
+            AppRoutes.payments,
             arguments: state.order,
           );
           // Optional: Clear cart or navigate
@@ -421,6 +421,7 @@ class _CartViewState extends State<CartView> {
                             storeId: int.parse(storeId!),
                             orderType: "test",
                             pickupDatetime: formattedDate,
+                            deliveryDatetime: formattedDate,
                             orderNotes: deliveryNote.isNotEmpty
                                 ? deliveryNote
                                 : "Customer will pick up",

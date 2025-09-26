@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -47,20 +48,118 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     setState(() {});
   }
 
+Future<BitmapDescriptor> _createLogoPinMarker(ui.Image logoImage) async {
+  final pictureRecorder = ui.PictureRecorder();
+  final canvas = Canvas(pictureRecorder);
+  final paint = Paint()..isAntiAlias = true;
+
+  const double circleRadius = 50; // radius of circle/logo
+  const double stickHeight = 60;  // length of stick
+  const double stickWidth = 12;   // width of stick
+
+  final double totalHeight = circleRadius * 2 + stickHeight + 20;
+
+  final double centerX = circleRadius;
+  final double shadowCenterY = totalHeight - 10; // shadow near bottom
+
+  // === Shadow at Bottom ===
+  paint.color = Colors.black.withOpacity(0.3);
+  canvas.drawOval(
+    Rect.fromCenter(
+      center: Offset(centerX, shadowCenterY),
+      width: circleRadius * 1.4,
+      height: 14,
+    ),
+    paint,
+  );
+
+  // === Stick ===
+  paint.color = Colors.black;
+  final stickTopY = shadowCenterY - stickHeight; // stick ends at bottom of circle
+  final stickRect = Rect.fromLTWH(
+    centerX - stickWidth / 2,
+    stickTopY,
+    stickWidth,
+    stickHeight,
+  );
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(stickRect, const Radius.circular(3)),
+    paint,
+  );
+
+  // === Circle Head (outer ring) ===
+  paint.color = Colors.white;
+  final circleCenterY = stickTopY; // circle sits on top of stick
+  canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius, paint);
+
+  // === Inner Circle (theme color) ===
+  paint.color = Colors.red;
+  canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius - 6, paint);
+
+  // === Inner border ===
+  paint
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 4
+    ..color = Colors.black;
+  canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius - 6, paint);
+
+  // === Draw Logo in Center ===
+  final logoSize = 55.0;
+  final src = Rect.fromLTWH(
+    0,
+    0,
+    logoImage.width.toDouble(),
+    logoImage.height.toDouble(),
+  );
+  final dst = Rect.fromCenter(
+    center: Offset(centerX, circleCenterY),
+    width: logoSize,
+    height: logoSize,
+  );
+  paint.style = PaintingStyle.fill;
+  canvas.drawImageRect(logoImage, src, dst, paint);
+
+  // === Export ===
+  final img = await pictureRecorder.endRecording().toImage(
+    (circleRadius * 2).toInt(),
+    totalHeight.toInt(),
+  );
+
+  final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+  return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+}
+
+Future<ui.Image> _loadLogo(String assetPath) async {
+  final data = await rootBundle.load(assetPath);
+  final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final frame = await codec.getNextFrame();
+  return frame.image;
+}
+
+
   Future<void> _updateMarkers(List<Store> stores, String? selectedId) async {
+    final logo = await _loadLogo(ImageUrls.circleLogo);
+final customPin = await _createLogoPinMarker(logo);
+
+
     _markers.clear();
 
     for (var store in stores) {
-      final isSelected = store.id.toString() == selectedId;
       final storeLocation = await getStoreLatLng(store);
 
       _markers.add(
         Marker(
           markerId: MarkerId(store.id.toString()),
           position: storeLocation,
-          icon: isSelected
-              ? highlightedIcon ?? BitmapDescriptor.defaultMarker
-              : normalIcon ?? BitmapDescriptor.defaultMarker,
+          // Custom Logo Marker with red border if selected
+          // icon: isSelected
+          //     ? highlightedIcon ?? BitmapDescriptor.defaultMarker
+          //     : normalIcon ?? BitmapDescriptor.defaultMarker,
+
+          // GMap default red pin, highlighted if selected
+          icon: customPin,
+          anchor: const Offset(0.5, 1.0), 
+
           onTap: () async {
             context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
 
@@ -72,8 +171,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
       );
     }
 
-    if (!mounted) return; // <-- check before updating state
-    setState(() {}); // refresh map
+    if (!mounted) return;
+    setState(() {});
   }
 
   /// Draw logo with red border for selected marker
@@ -157,12 +256,16 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             children: [
               // .................. Google-MAP ..........
               BlocListener<StoreSelectionBloc, StoreSelectionState>(
-                listener: (context, state) {
+                listener: (context, state) async {
                   if (state is StoreSelectionLoaded) {
-                    _updateMarkers(
+                    await _updateMarkers(
                       state.stores,
                       state.selectedStoreId?.toString(),
                     );
+                    // 🔥 Fit all markers initially if no store selected
+                    if (state.selectedStoreId == null) {
+                      _fitMarkersToBounds(state.stores);
+                    }
                     setState(
                       () {},
                     ); // ✅ safe, because it's outside the build process
@@ -188,10 +291,11 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                                   _mapController = controller;
                                 },
                                 initialCameraPosition: CameraPosition(
-                                  target: _getStoreLocation(
-                                    state.stores.first.id,
-                                  ),
-                                  zoom: 10.5,
+                                  target: LatLng(
+                                    -36.8485,
+                                    174.7633,
+                                  ), // Dummy, will be overridden by fit
+                                  zoom: 2,
                                 ),
                                 markers: _markers,
                                 myLocationEnabled: true,
@@ -200,25 +304,6 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                               ),
                             ),
                           ),
-                          // Align(
-                          //   alignment: Alignment.centerRight,
-                          //   child: TextButton.icon(
-                          //     onPressed: () {
-                          //       Navigator.pushNamed(
-                          //         context,
-                          //         AppRoutes.googleMaps,
-                          //       );
-                          //     },
-                          //     icon: const Icon(
-                          //       Icons.fullscreen,
-                          //       color: Colors.red,
-                          //     ),
-                          //     label: const Text(
-                          //       "View Full Map",
-                          //       style: TextStyle(color: Colors.red),
-                          //     ),
-                          //   ),
-                          // ),
                         ],
                       );
                     }
@@ -480,5 +565,40 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
       default:
         return const LatLng(-36.8485, 174.7633); // fallback
     }
+  }
+
+  Future<void> _fitMarkersToBounds(List<Store> stores) async {
+    if (_mapController == null || stores.isEmpty) return;
+
+    final List<LatLng> positions = [];
+    for (var store in stores) {
+      final loc = await getStoreLatLng(store);
+      positions.add(loc);
+    }
+
+    if (positions.isEmpty) return;
+
+    final bounds = _createLatLngBounds(positions);
+    _mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 60));
+  }
+
+  LatLngBounds _createLatLngBounds(List<LatLng> positions) {
+    // Assume at least one position exists (safe since we check before calling)
+    double minLat = positions.first.latitude;
+    double maxLat = positions.first.latitude;
+    double minLng = positions.first.longitude;
+    double maxLng = positions.first.longitude;
+
+    for (var latLng in positions) {
+      if (latLng.latitude < minLat) minLat = latLng.latitude;
+      if (latLng.latitude > maxLat) maxLat = latLng.latitude;
+      if (latLng.longitude < minLng) minLng = latLng.longitude;
+      if (latLng.longitude > maxLng) maxLng = latLng.longitude;
+    }
+
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
   }
 }

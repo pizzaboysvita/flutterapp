@@ -5,18 +5,18 @@ import 'package:pizza_boys/core/constant/app_colors.dart';
 class PriceSummaryWidget extends StatelessWidget {
   final String itemName;
   // final String base;
-  final String size;
+  final String ? size;
   final double price;
-  final double gst; // GST amount
+  final double  ? gst; // GST amount
   final int quantity;
 
   const PriceSummaryWidget({
     super.key,
     required this.itemName,
     // required this.base,
-    required this.size,
+     this.size,
     required this.price,
-    required this.gst,
+     this.gst,
     this.quantity = 1,
   });
 
@@ -97,7 +97,7 @@ class PriceSummaryWidget extends StatelessWidget {
                       //   ),
                       // ),
                       Text(
-                        size,
+                        size.toString(),
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 12.sp,

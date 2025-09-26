@@ -29,13 +29,13 @@ class PizzaDetailsView extends StatefulWidget {
 }
 
 class _PizzaDetailsViewState extends State<PizzaDetailsView> {
-  final Map<String, double> addonPrices = const {
-    'Extra Cheese': 0.00,
-    'Olives Topping': 0.00,
-    'Coke (500ml)': 1.50,
-    'Garlic Bread': 2.00,
-    'French Fries': 2.50,
-  };
+  // final Map<String, double> addonPrices = const {
+  //   'Extra Cheese': 0.00,
+  //   'Olives Topping': 0.00,
+  //   'Coke (500ml)': 1.50,
+  //   'Garlic Bread': 2.00,
+  //   'French Fries': 2.50,
+  // };
 
   @override
   Widget build(BuildContext context) {
@@ -49,24 +49,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
           scrolledUnderElevation: 0,
           backgroundColor: AppColors.scaffoldColor,
           elevation: 0,
-          // actions: [
-          //   Padding(
-          //     padding: EdgeInsets.all(8.0),
-          //     child: Container(
-          //       decoration: BoxDecoration(
-          //         color: Colors.grey.shade200,
-          //         shape: BoxShape.circle,
-          //       ),
-          //       child: IconButton(
-          //         icon: Icon(
-          //           Icons.favorite_border,
-          //           color: AppColors.redPrimary,
-          //         ),
-          //         onPressed: () {},
-          //       ),
-          //     ),
-          //   ),
-          // ],
         ),
         body: BlocBuilder<DishBloc, DishState>(
           builder: (context, state) {
@@ -144,24 +126,14 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                               height: 260.h, // 👈 Adjusted height for balance
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(15.r),
-                                // boxShadow: [
-                                //   BoxShadow(
-                                //     color: Colors.black12,
-                                //     blurRadius: 20,
-                                //     offset: Offset(0, 10),
-                                //   ),
-                                // ],
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(15.r),
                                 child: CachedNetworkImage(
                                   imageUrl: imageUrl,
-                                  fit: BoxFit
-                                      .cover, // 👈 Fills container properly
-                                  memCacheHeight:
-                                      700, // 👈 Higher cache size (better quality)
-                                  memCacheWidth:
-                                      1200, // 👈 Still optimized (not full 20MB)
+                                  fit: BoxFit.cover,
+                                  memCacheHeight: 700,
+                                  memCacheWidth: 1200,
                                   placeholder: (context, url) =>
                                       const Center(child: LottieLoader()),
                                   errorWidget: (context, url, error) =>
@@ -288,7 +260,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
                         /// ✅ Quantity Selector
 
-                        /// ✅ Sizes (always fallback to hardcore Small/Large)
+                        /// ✅ Sizes (Dynamic)
                         Text(
                           'Pick your size!',
                           style: TextStyle(
@@ -298,35 +270,41 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                           ),
                         ),
                         SizedBox(height: 12.h),
+
                         Row(
-                          children: ['Small', 'Large'].map((size) {
-                            final isSelected =
-                                detailsState.selectedSize == size;
-                            return Expanded(
+                          children: [
+                            // Small chip (always active initially)
+                            Expanded(
                               child: Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 8.w),
                                 child: GestureDetector(
                                   onTap: () {
-                                    print("👉 Size tapped: $size");
-                                    bloc.add(SelectSizeEvent(size));
+                                    print("👉 Size tapped: Small");
+                                    bloc.add(SelectSizeEvent('Small'));
                                   },
                                   child: AnimatedContainer(
                                     duration: Duration(milliseconds: 300),
                                     height: 35.h,
                                     decoration: BoxDecoration(
-                                      color: isSelected
+                                      color:
+                                          (detailsState.selectedSize ??
+                                                  'Small') ==
+                                              'Small'
                                           ? AppColors.blackColor
                                           : Colors.grey.shade100,
                                       borderRadius: BorderRadius.circular(8.r),
                                     ),
                                     alignment: Alignment.center,
                                     child: Text(
-                                      size,
+                                      'Small',
                                       style: TextStyle(
                                         fontSize: 12.sp,
                                         fontWeight: FontWeight.w500,
                                         fontFamily: 'Poppins',
-                                        color: isSelected
+                                        color:
+                                            (detailsState.selectedSize ??
+                                                    'Small') ==
+                                                'Small'
                                             ? AppColors.whiteColor
                                             : Colors.black87,
                                       ),
@@ -334,11 +312,56 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                   ),
                                 ),
                               ),
-                            );
-                          }).toList(),
+                            ),
+
+                            // Large chip (tappable only if backend has large options)
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                                child: GestureDetector(
+                                  onTap: dish.largeOptions.isEmpty
+                                      ? null
+                                      : () {
+                                          print("👉 Size tapped: Large");
+                                          bloc.add(SelectSizeEvent('Large'));
+                                        },
+                                  child: AnimatedContainer(
+                                    duration: Duration(milliseconds: 300),
+                                    height: 35.h,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          detailsState.selectedSize == 'Large'
+                                          ? AppColors.blackColor
+                                          : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'Large',
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Poppins',
+                                        color: dish.largeOptions.isEmpty
+                                            ? Colors.grey
+                                            : (detailsState.selectedSize ==
+                                                      'Large'
+                                                  ? AppColors.whiteColor
+                                                  : Colors.black87),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
 
-                        if (detailsState.selectedSize == 'Large') ...[
+                        /// ✅ Large size options (Dynamic)
+                        if (detailsState.selectedSize == 'Large' &&
+                            dish.largeOptions
+                                .where((o) => o.name.toLowerCase() != 'large')
+                                .isNotEmpty) ...[
                           SizedBox(height: 12.h),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +389,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                   ],
                                 ),
                               ),
-
                               Container(
                                 width: double.infinity,
                                 padding: EdgeInsets.all(12.w),
@@ -375,47 +397,38 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                   borderRadius: BorderRadius.circular(10.r),
                                 ),
                                 child: Wrap(
-                                  alignment:
-                                      WrapAlignment.center, // ✅ centers chips
-                                  spacing: 15.w,
-                                  children: [
-                                    _buildChipOption(
-                                      title: 'Thin Base',
-                                      price: 1,
-                                      isSelected:
-                                          detailsState.selectedLargeOption ==
-                                          'Thin Base',
-                                      onTap: () {
-                                        print(
-                                          "👉 Large option tapped: Thin Base | +1",
+                                  alignment: WrapAlignment.center,
+                                  spacing: 15.w, // horizontal spacing
+                                  runSpacing:
+                                      6.h, // vertical spacing between rows
+                                  children: dish.largeOptions
+                                      .where(
+                                        (opt) =>
+                                            opt.name.toLowerCase() != 'large',
+                                      ) // filter
+                                      .map((opt) {
+                                        // Check if this chip is selected
+                                        final isSelected =
+                                            detailsState.selectedLargeOption ==
+                                            opt.name;
+
+                                        return _buildChipOption(
+                                          title: opt.name,
+                                          price: opt.price,
+                                          isSelected:
+                                              isSelected, // only selected chip is red
+                                          onTap: () {
+                                            // Update selected option in Bloc/State
+                                            bloc.add(
+                                              SelectLargeOptionEvent(
+                                                opt.name,
+                                                opt.price,
+                                              ),
+                                            );
+                                          },
                                         );
-                                        bloc.add(
-                                          SelectLargeOptionEvent(
-                                            'Thin Base',
-                                            1,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    _buildChipOption(
-                                      title: 'Gluten Free Base',
-                                      price: 3,
-                                      isSelected:
-                                          detailsState.selectedLargeOption ==
-                                          'Gluten Free Base',
-                                      onTap: () {
-                                        print(
-                                          "👉 Large option tapped: Gluten Free Base | +3",
-                                        );
-                                        bloc.add(
-                                          SelectLargeOptionEvent(
-                                            'Gluten Free Base',
-                                            3,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
+                                      })
+                                      .toList(),
                                 ),
                               ),
                             ],
@@ -424,70 +437,53 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
                         SizedBox(height: 18.h),
 
-                        /// ✅ Ingredients (fallback if empty)
-                        Text(
-                          'Add Extra Ingredients',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        if (ingredients.isNotEmpty)
-                          ...ingredients.map((ing) {
-                            return _buildAddonTile(
-                              context,
-                              ing.name ??
-                                  "Extra Cheese", // use property, not map
-                              detailsState,
-                              bloc,
-                            );
-                          })
-                        else
-                          ...['Extra Cheese', 'Olives Topping'].map(
-                            (addon) => _buildAddonTile(
-                              context,
-                              addon,
-                              detailsState,
-                              bloc,
+                        /// ✅ Ingredients (Extra Toppings)
+                        if (dish.ingredients.isNotEmpty) ...[
+                          Text(
+                            'Add Extra Ingredients',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Poppins',
                             ),
                           ),
+                          SizedBox(height: 10.h),
+                          ...dish.ingredients.map((ing) {
+                            return _buildAddonTile(
+                              context,
+                              ing.name ?? "",
+                              detailsState,
+                              bloc,
+                              price: ing.price ?? 0,
+                            );
+                          }),
+                        ],
 
                         SizedBox(height: 18.h),
 
                         /// ✅ Choices (fallback if empty)
-                        Text(
-                          'Add Side Items',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        if (choices.isNotEmpty)
-                          ...choices.map((choice) {
-                            return _buildAddonTile(
-                              context,
-                              choice.name ?? "Coke (500ml)",
-                              detailsState,
-                              bloc,
-                            );
-                          })
-                        else
-                          ...[
-                            'Coke (500ml)',
-                            'Garlic Bread',
-                            'French Fries',
-                          ].map(
-                            (addon) => _buildAddonTile(
-                              context,
-                              addon,
-                              detailsState,
-                              bloc,
+
+                        /// ✅ Choices (Side Items)
+                        if (dish.choices.isNotEmpty) ...[
+                          Text(
+                            'Add Side Items',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Poppins',
                             ),
                           ),
+                          SizedBox(height: 10.h),
+                          ...dish.choices.map((choice) {
+                            return _buildAddonTile(
+                              context,
+                              choice.name ?? "",
+                              detailsState,
+                              bloc,
+                              price: choice.price ?? 0,
+                            );
+                          }),
+                        ],
 
                         SizedBox(height: 80.h),
                       ],
@@ -656,12 +652,12 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
     print("💲 base price: ${dish.price}");
 
-    // 👇 Size adjustment
-    if (state.selectedSize == "Medium") {
-      total += 2.0;
-    } else if (state.selectedSize == "Large") {
-      total += 4.0;
-    }
+    // // 👇 Size adjustment
+    // if (state.selectedSize == "Medium") {
+    //   total += 2.0;
+    // } else if (state.selectedSize == "Large") {
+    //   total += 4.0;
+    // }
 
     // 👇 Large option (Thin / Gluten Free)
     total += state.largeOptionExtraPrice;
@@ -700,7 +696,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
           '$title (+\$$price)',
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 10.5.sp,
+            fontSize: 9.0.sp,
             fontWeight: FontWeight.w500,
             color: isSelected ? AppColors.whiteColor : Colors.black87,
           ),
@@ -732,12 +728,13 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
     PizzaDetailsState state,
     PizzaDetailsBloc bloc, {
     bool isChoice = false, // set true for side items
+    double price = 0, // ✅ Add price here
   }) {
     final isSelected = isChoice
         ? state.selectedChoices.contains(title)
         : state.selectedAddons[title] ?? false;
 
-    final price = addonPrices[title]?.toStringAsFixed(2) ?? '0.00';
+    final priceText = price.toStringAsFixed(2); // use the passed price
     final iconData = getAddonIcon(title);
 
     return InkWell(
@@ -760,7 +757,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              // 👈 This fixes the overflow
               child: Row(
                 children: [
                   if (iconData != null) ...[
@@ -768,7 +764,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                     SizedBox(width: 8.w),
                   ],
                   Expanded(
-                    // 👈 Constrain text inside row
                     child: Text(
                       title,
                       maxLines: 1,
@@ -780,11 +775,10 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               ),
             ),
             Row(
-              mainAxisSize:
-                  MainAxisSize.min, // 👈 Prevent unnecessary expansion
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '\$$price',
+                  '\$$priceText',
                   style: TextStyle(fontSize: 12.sp, fontFamily: 'Poppins'),
                 ),
                 SizedBox(width: 8.w),

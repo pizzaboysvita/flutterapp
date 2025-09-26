@@ -13,7 +13,6 @@ import 'package:pizza_boys/features/home/widgets/promotional_banner.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
 import 'package:pizza_boys/features/onboard.dart/model/store_selection_model.dart';
-import 'package:pizza_boys/features/onboard.dart/pages/choose_location.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class Home extends StatefulWidget {
@@ -117,13 +116,19 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                         size: 14.w,
                       ),
                       SizedBox(width: 2.w),
-                      Text(
-                        selectedStore,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.white70,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
+
+                      // ✅ Make text flexible + ellipsis
+                      Flexible(
+                        child: Text(
+                          selectedStore,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -147,10 +152,28 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                 Column(
                   children: [
                     const DashboardHeroSection(),
-                    SizedBox(height: 20.h),
-                    const PizzaCategoriesRow(),
+
                     SizedBox(height: 20.h),
                     const PromotionalBanner(),
+                    SizedBox(height: 16.h),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0.w),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Pizza Categories',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                    const PizzaCategoriesRow(),
                     SizedBox(height: 20.h),
                     const PopularPicks(),
                     SizedBox(height: 20.h),
@@ -203,31 +226,31 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
     );
   }
 
-  Future<void> _showStoreSelectionBottomSheet(BuildContext context) async {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent, // optional for rounded corners
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.8, // 70% of screen height
-          minChildSize: 0.6,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-              ),
-              child: StoreSelectionPage(
-                scrollController:
-                    scrollController, // pass it to your ListView inside page
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  // Future<void> _showStoreSelectionBottomSheet(BuildContext context) async {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     backgroundColor: Colors.transparent, // optional for rounded corners
+  //     builder: (ctx) {
+  //       return DraggableScrollableSheet(
+  //         initialChildSize: 0.8, // 70% of screen height
+  //         minChildSize: 0.6,
+  //         maxChildSize: 0.95,
+  //         expand: false,
+  //         builder: (context, scrollController) {
+  //           return Container(
+  //             decoration: BoxDecoration(
+  //               color: Colors.white,
+  //               borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+  //             ),
+  //             child: StoreSelectionPage(
+  //               scrollController:
+  //                   scrollController, // pass it to your ListView inside page
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 }
