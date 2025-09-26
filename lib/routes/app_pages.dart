@@ -50,7 +50,11 @@ class AppPages {
       case AppRoutes.checkOut:
         return MaterialPageRoute(builder: (context) => Checkout());
       case AppRoutes.payments:
-        return MaterialPageRoute(builder: (context) => PaymentPage());
+        final order = setting.arguments as OrderModel;
+        return MaterialPageRoute(
+          builder: (context) => PaymentPage(order: order),
+        );
+
       case AppRoutes.orderDetails:
         final order = setting.arguments as OrderModel;
         return MaterialPageRoute(

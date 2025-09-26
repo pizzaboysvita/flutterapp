@@ -31,7 +31,7 @@ class CartService {
       print("🛒 [CartService] POST /cart");
       body.forEach((k, v) => print("   $k => (${v.runtimeType}) $v"));
 
-      final response = await _dio.post("/cart", data: body);
+      final response = await ApiClient.dio.post("cart", data: body);
 
       print("✅ Status Code: ${response.statusCode}");
       print("📥 Response Data: ${response.data}");
@@ -39,7 +39,9 @@ class CartService {
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       print("❌ DioError: ${e.response?.data ?? e.message}");
-      throw Exception("Failed to add to cart: ${e.response?.data ?? e.message}");
+      throw Exception(
+        "Failed to add to cart: ${e.response?.data ?? e.message}",
+      );
     }
   }
 
@@ -48,17 +50,13 @@ class CartService {
     required int cartId,
     required int userId,
   }) async {
-    final body = {
-      "type": "delete_item",
-      "cart_id": cartId,
-      "user_id": userId,
-    };
+    final body = {"type": "delete_item", "cart_id": cartId, "user_id": userId};
 
     try {
       print("🗑️ [CartService] DELETE /cart");
       body.forEach((k, v) => print("   $k => (${v.runtimeType}) $v"));
 
-      final response = await _dio.post("/cart", data: body);
+      final response = await ApiClient.dio.post("cart", data: body);
 
       print("✅ Status Code: ${response.statusCode}");
       print("📥 Response Data: ${response.data}");
@@ -66,7 +64,9 @@ class CartService {
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       print("❌ DioError: ${e.response?.data ?? e.message}");
-      throw Exception("Failed to remove item: ${e.response?.data ?? e.message}");
+      throw Exception(
+        "Failed to remove item: ${e.response?.data ?? e.message}",
+      );
     }
   }
 
@@ -77,9 +77,10 @@ class CartService {
     final userId = int.tryParse(userIdString) ?? 0;
 
     try {
-      final response = await _dio.get("/cart", queryParameters: {
-        "user_id": userId,
-      });
+      final response = await ApiClient.dio.get(
+        "cart",
+        queryParameters: {"user_id": userId},
+      );
 
       print("✅ Status Code: ${response.statusCode}");
       print("📥 Response Data: ${response.data}");

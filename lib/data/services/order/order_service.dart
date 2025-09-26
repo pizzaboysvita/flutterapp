@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:pizza_boys/core/constant/api_urls.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
@@ -8,25 +10,46 @@ import 'package:pizza_boys/data/models/order/order_post_model.dart';
 class OrderService {
   // Post API: Place Order
   Future<bool> placeOrder(OrderModel order) async {
+    print('hiited order post api');
     try {
-      print("📤 Sending order JSON: ${order.toJson()}");
+      final orderJson = order.toJson();
+      print("📤 Sending order JSON: $orderJson");
+      print("📤 Sending order JSON keys: ${orderJson.keys}");
+      print("📤 Sending order JSON: ${jsonEncode(orderJson)}");
 
       final response = await ApiClient.dio.post(
         ApiUrls.postOrders,
-        data: order.toJson(),
+        data: orderJson,
         options: Options(headers: {"Content-Type": "application/json"}),
       );
 
       print("📥 Response: ${response.statusCode} ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return response.data["code"] == "1";
+        return response.data["code"].toString() == "1";
       } else {
+        // Log backend error
+        print("❌ Backend returned error: ${response.data}");
         throw Exception("Failed to place order: ${response.data}");
       }
     } on DioException catch (e) {
-      print("❌ Error placing order: ${e.message}");
-      throw Exception("Failed to place order: ${e.message}");
+      // Print Dio exception type and message
+      print("⚠️ DioException: ${e.type} → ${e.message}");
+
+      // If backend responded with 4xx/5xx, print the response
+      if (e.response != null) {
+        print(
+          "❌ Backend response: ${e.response?.statusCode} ${e.response?.data}",
+        );
+      }
+
+      // Rethrow to propagate the error
+      throw Exception(
+        "Failed to place order: ${e.message} | Backend: ${e.response?.data}",
+      );
+    } catch (e) {
+      print("❌ Unknown error: $e");
+      throw Exception("Failed to place order: $e");
     }
   }
 
