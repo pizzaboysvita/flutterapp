@@ -36,7 +36,7 @@ class _OrderDetailsState extends State<OrderDetails> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: AppColors.scaffoldColor,
+        backgroundColor: AppColors.scaffoldColor(context),
         appBar: _buildAppBar(),
         body: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -469,7 +469,7 @@ class _OrderDetailsState extends State<OrderDetails> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.scaffoldColor,
+      backgroundColor: AppColors.scaffoldColor(context),
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,

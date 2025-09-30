@@ -19,7 +19,7 @@ class _CheckoutState extends State<Checkout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffoldColor,
+      backgroundColor: AppColors.scaffoldColor(context),
       appBar: _buildAppBar(),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
@@ -68,7 +68,7 @@ class _CheckoutState extends State<Checkout> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.scaffoldColor,
+      backgroundColor: AppColors.scaffoldColor(context),
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,

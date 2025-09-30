@@ -31,9 +31,9 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffoldColor,
+      backgroundColor: AppColors.scaffoldColor(context),
       appBar: AppBar(
-        backgroundColor: AppColors.scaffoldColor,
+        backgroundColor: AppColors.scaffoldColor(context),
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
@@ -289,7 +289,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.scaffoldColor,
+      backgroundColor: AppColors.scaffoldColor(context),
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,
@@ -446,7 +446,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
   PreferredSizeWidget _buildAppBarName(BuildContext context) {
     return AppBar(
-      backgroundColor: AppColors.scaffoldColor,
+      backgroundColor: AppColors.scaffoldColor(context),
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,

@@ -12,8 +12,8 @@ class NetworkIssueScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: Colors.white,
-      appBar: AppBar(),
+      appBar: AppBar(backgroundColor: AppColors.scaffoldColorLight),
+
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

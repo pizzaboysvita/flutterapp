@@ -1,38 +1,52 @@
 abstract class PizzaDetailsEvent {}
 
+/// ♻️ Reset everything
 class ResetPizzaDetailsEvent extends PizzaDetailsEvent {}
 
-// Fetch dish details by id
+/// 🔄 Load dish details by dishId
 class LoadPizzaDetailsEvent extends PizzaDetailsEvent {
   final int dishId;
   LoadPizzaDetailsEvent(this.dishId);
 }
 
-// Select size
-class SelectSizeEvent extends PizzaDetailsEvent {
-  final String size;
-  SelectSizeEvent(this.size);
+class ToggleBaseExpandEvent extends PizzaDetailsEvent {}
+
+/// 🍕 Select a Base (radio option)
+class SelectBaseEvent extends PizzaDetailsEvent {
+  final String baseName;
+  final double extraPrice;
+  SelectBaseEvent(this.baseName, this.extraPrice);
 }
 
-// Toggle addon
-class ToggleAddonEvent extends PizzaDetailsEvent {  
-  final String addonName;
-  ToggleAddonEvent(this.addonName);
+/// 🧀 Toggle Topping (checkbox)
+class ToggleToppingEvent extends PizzaDetailsEvent {
+  final String toppingName;
+  final Map<String, double> availableToppings; // name → price
+  ToggleToppingEvent(this.toppingName, this.availableToppings);
 }
 
+/// 🥫 Update Sauce (stepper with quantity)
+class UpdateSauceQuantityEvent extends PizzaDetailsEvent {
+  final String sauceName;
+  final int quantity;
+  final Map<String, double> availableSauces; // name → price
+  UpdateSauceQuantityEvent(this.sauceName, this.quantity, this.availableSauces);
+}
+
+/// 🥦 Toggle Ingredient (checkbox, optional)
+class ToggleIngredientEvent extends PizzaDetailsEvent {
+  final String ingredientName;
+  ToggleIngredientEvent(this.ingredientName);
+}
+
+/// 🍟 Toggle Choice (checkbox, optional side item)
 class ToggleChoiceEvent extends PizzaDetailsEvent {
   final String choiceName;
-  ToggleChoiceEvent(this.choiceName);
+  final Map<String, double> availableChoices; // name → price
+  ToggleChoiceEvent(this.choiceName, this.availableChoices);
 }
 
-// Select large option
-class SelectLargeOptionEvent extends PizzaDetailsEvent {
-  final String optionName;
-  final double extraPrice;
-  SelectLargeOptionEvent(this.optionName, this.extraPrice);
-}
-
-
+/// 🔢 Update quantity of pizzas
 class UpdateQuantityEvent extends PizzaDetailsEvent {
   final int quantity;
   UpdateQuantityEvent(this.quantity);

@@ -34,7 +34,7 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   void initState() {
     super.initState();
 
-    // Show popups only once after the widget is built
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasShownPopup) {
         _hasShownPopup = true;
@@ -64,6 +64,8 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
 
   @override
   Widget build(BuildContext context) {
+    
+ 
     super.build(context);
     return Scaffold(
       appBar: AppBar(
@@ -174,7 +176,7 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                     ),
                     SizedBox(height: 16.h),
                     const PizzaCategoriesRow(),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 8.h),
                     const PopularPicks(),
                     SizedBox(height: 20.h),
                   ],

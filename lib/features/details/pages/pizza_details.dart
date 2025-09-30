@@ -9,6 +9,7 @@ import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/data/models/dish/addon_model.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_event.dart';
@@ -17,11 +18,13 @@ import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_state.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
+import 'package:pizza_boys/features/home/bloc/integration/dish/dish_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class PizzaDetailsView extends StatefulWidget {
   final int dishId;
+
   const PizzaDetailsView({super.key, required this.dishId});
 
   @override
@@ -29,6 +32,11 @@ class PizzaDetailsView extends StatefulWidget {
 }
 
 class _PizzaDetailsViewState extends State<PizzaDetailsView> {
+  // Selected options
+  String? selectedBase;
+  List<String> selectedToppings = [];
+  Map<String, int> sauceQuantity = {};
+  List<String> selectedIngredients = [];
   // final Map<String, double> addonPrices = const {
   //   'Extra Cheese': 0.00,
   //   'Olives Topping': 0.00,
@@ -47,7 +55,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
       child: Scaffold(
         appBar: AppBar(
           scrolledUnderElevation: 0,
-          backgroundColor: AppColors.scaffoldColor,
+          backgroundColor: AppColors.scaffoldColor(context),
           elevation: 0,
         ),
         body: BlocBuilder<DishBloc, DishState>(
@@ -97,20 +105,15 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                   ? dish.description
                   : "Delicious handmade pizza with classic toppings & fresh ingredients.";
               final price = dish.price != null ? dish.price!.toDouble() : 12.99;
-              final rating = dish.rating != null
-                  ? "${dish.rating}/5"
-                  : "4.5/5  2,646 Reviews";
-
-              final ingredients = dish.ingredients?.isNotEmpty == true
-                  ? dish.ingredients
-                  : [];
-              final choices = dish.choices?.isNotEmpty == true
-                  ? dish.choices
-                  : [];
+              // final rating = dish.rating != null
+              //     ? "${dish.rating}/5"
+              //     : "4.5/5  2,646 Reviews";
 
               return BlocBuilder<PizzaDetailsBloc, PizzaDetailsState>(
                 builder: (context, detailsState) {
                   final bloc = context.read<PizzaDetailsBloc>();
+                  // ❗ This is the missing variable
+                  final dishSelection = detailsState;
 
                   return SingleChildScrollView(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -172,78 +175,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                           ],
                         ),
 
-                        SizedBox(height: 6.h),
-
-                        /// ✅ Rating
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  color: AppColors.ratingYellow,
-                                  size: 16.sp,
-                                ),
-                                SizedBox(width: 4.w),
-                                Text(
-                                  rating,
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    color: Colors.black54,
-                                    fontFamily: 'Poppins',
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    if (detailsState.quantity > 1) {
-                                      bloc.add(
-                                        UpdateQuantityEvent(
-                                          detailsState.quantity - 1,
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  icon: Icon(
-                                    Icons.remove_circle,
-                                    color: AppColors.redPrimary,
-                                    size: 18.w,
-                                  ),
-                                ),
-                                Text(
-                                  detailsState.quantity.toString(),
-                                  style: TextStyle(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Poppins',
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    bloc.add(
-                                      UpdateQuantityEvent(
-                                        detailsState.quantity + 1,
-                                      ),
-                                    );
-                                  },
-                                  icon: Icon(
-                                    Icons.add_circle,
-                                    color: AppColors.blackColor,
-                                    size: 18.w,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-
                         SizedBox(height: 12.h),
 
                         /// ✅ Description
@@ -258,232 +189,45 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
                         SizedBox(height: 18.h),
 
-                        /// ✅ Quantity Selector
+                        // Loop through dynamic option sets
+                        ...dish.optionSets.map((optionSet) {
+                          final name = optionSet.name.toLowerCase();
 
-                        /// ✅ Sizes (Dynamic)
-                        Text(
-                          'Pick your size!',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                        SizedBox(height: 12.h),
-
-                        Row(
-                          children: [
-                            // Small chip (always active initially)
-                            Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    print("👉 Size tapped: Small");
-                                    bloc.add(SelectSizeEvent('Small'));
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: Duration(milliseconds: 300),
-                                    height: 35.h,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          (detailsState.selectedSize ??
-                                                  'Small') ==
-                                              'Small'
-                                          ? AppColors.blackColor
-                                          : Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(8.r),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      'Small',
-                                      style: TextStyle(
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Poppins',
-                                        color:
-                                            (detailsState.selectedSize ??
-                                                    'Small') ==
-                                                'Small'
-                                            ? AppColors.whiteColor
-                                            : Colors.black87,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Large chip (tappable only if backend has large options)
-                            Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w),
-                                child: GestureDetector(
-                                  onTap: dish.largeOptions.isEmpty
-                                      ? null
-                                      : () {
-                                          print("👉 Size tapped: Large");
-                                          bloc.add(SelectSizeEvent('Large'));
-                                        },
-                                  child: AnimatedContainer(
-                                    duration: Duration(milliseconds: 300),
-                                    height: 35.h,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          detailsState.selectedSize == 'Large'
-                                          ? AppColors.blackColor
-                                          : Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(8.r),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      'Large',
-                                      style: TextStyle(
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Poppins',
-                                        color: dish.largeOptions.isEmpty
-                                            ? Colors.grey
-                                            : (detailsState.selectedSize ==
-                                                      'Large'
-                                                  ? AppColors.whiteColor
-                                                  : Colors.black87),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        /// ✅ Large size options (Dynamic)
-                        if (detailsState.selectedSize == 'Large' &&
-                            dish.largeOptions
-                                .where((o) => o.name.toLowerCase() != 'large')
-                                .isNotEmpty) ...[
-                          SizedBox(height: 12.h),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(bottom: 8.h),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      "Select your pizza base",
-                                      style: TextStyle(
-                                        fontSize: 10.sp,
-                                        fontFamily: 'Poppins',
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                    SizedBox(width: 6.w),
-                                    Icon(
-                                      FontAwesomeIcons.pizzaSlice,
-                                      size: 16.sp,
-                                      color: Colors.orange.shade400,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.all(12.w),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(10.r),
-                                ),
-                                child: Wrap(
-                                  alignment: WrapAlignment.center,
-                                  spacing: 15.w, // horizontal spacing
-                                  runSpacing:
-                                      6.h, // vertical spacing between rows
-                                  children: dish.largeOptions
-                                      .where(
-                                        (opt) =>
-                                            opt.name.toLowerCase() != 'large',
-                                      ) // filter
-                                      .map((opt) {
-                                        // Check if this chip is selected
-                                        final isSelected =
-                                            detailsState.selectedLargeOption ==
-                                            opt.name;
-
-                                        return _buildChipOption(
-                                          title: opt.name,
-                                          price: opt.price,
-                                          isSelected:
-                                              isSelected, // only selected chip is red
-                                          onTap: () {
-                                            // Update selected option in Bloc/State
-                                            bloc.add(
-                                              SelectLargeOptionEvent(
-                                                opt.name,
-                                                opt.price,
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      })
-                                      .toList(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-
-                        SizedBox(height: 18.h),
-
-                        /// ✅ Ingredients (Extra Toppings)
-                        if (dish.ingredients.isNotEmpty) ...[
-                          Text(
-                            'Add Extra Ingredients',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                          SizedBox(height: 10.h),
-                          ...dish.ingredients.map((ing) {
-                            return _buildAddonTile(
-                              context,
-                              ing.name ?? "",
-                              detailsState,
+                          if (name.contains("base")) {
+                            return _buildBaseOptionSet(
+                              optionSet,
+                              dishSelection,
                               bloc,
-                              price: ing.price ?? 0,
                             );
-                          }),
-                        ],
-
-                        SizedBox(height: 18.h),
-
-                        /// ✅ Choices (fallback if empty)
-
-                        /// ✅ Choices (Side Items)
-                        if (dish.choices.isNotEmpty) ...[
-                          Text(
-                            'Add Side Items',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                          SizedBox(height: 10.h),
-                          ...dish.choices.map((choice) {
-                            return _buildAddonTile(
-                              context,
-                              choice.name ?? "",
-                              detailsState,
+                          } else if (name.contains("toppings")) {
+                            return _buildToppingsOptionSet(
+                              optionSet,
+                              dishSelection,
                               bloc,
-                              price: choice.price ?? 0,
                             );
-                          }),
-                        ],
+                          } else if (name.contains("sauce")) {
+                            return _buildSaucesOptionSet(
+                              optionSet,
+                              dishSelection,
+                              bloc,
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        }).toList(),
+
+                        if (dish.ingredients.isNotEmpty)
+                          _buildIngredientsSection(
+                            dish.ingredients,
+                            dishSelection,
+                            bloc,
+                          ),
+
+                        if (dish.choices.isNotEmpty)
+                          _buildChoicesSection(
+                            dish.choices,
+                            dishSelection,
+                            bloc,
+                          ),
 
                         SizedBox(height: 80.h),
                       ],
@@ -500,7 +244,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
         bottomNavigationBar: BlocBuilder<DishBloc, DishState>(
           builder: (context, dishState) {
             if (dishState is! DishLoaded || dishState.dishes.isEmpty) {
-              return const SizedBox.shrink(); // 🔹 nothing until loaded
+              return const SizedBox.shrink(); // nothing until loaded
             }
 
             final dish = dishState.dishes.firstWhere(
@@ -515,10 +259,13 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                 return BlocConsumer<CartBloc, CartState>(
                   listener: (context, state) {
                     if (state is CartSuccess) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("✅ Added to cart successfully!"),
-                        ),
+                      // ScaffoldMessenger.of(context).showSnackBar(
+                      //   const SnackBar(
+                      //     content: Text("✅ Added to cart successfully!"),
+                      //   ),
+                      // );
+                      print(  
+                        "✅ CartBloc → Added to cart: dishId=${dish.id}, quantity=${detailsState.quantity}, total=\$$total",
                       );
                       Navigator.pushNamed(
                         context,
@@ -547,94 +294,146 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                           BoxShadow(
                             color: Colors.black12,
                             blurRadius: 8,
-                            offset: Offset(0, -2),
+                            offset: const Offset(0, -2),
                           ),
                         ],
                       ),
-                      child: SizedBox(
-                        width:
-                            double.infinity, // ensure it takes available width
-                        child: ElevatedButton(
-                          onPressed: state is CartLoading
-                              ? null
-                              : () async {
-                                  print("🛒 [UI] AddToCart tapped");
-
-                                  final userId = await TokenStorage.getUserId();
-                                  final storeId =
-                                      await TokenStorage.getChosenStoreId();
-
-                                  if (userId == null || storeId == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          "⚠️ User or Store not found in session",
+                      child: Row(
+                        children: [
+                          // 📦 Quantity Counter
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                              vertical: 4.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    if (detailsState.quantity > 1) {
+                                      context.read<PizzaDetailsBloc>().add(
+                                        UpdateQuantityEvent(
+                                          detailsState.quantity - 1,
                                         ),
+                                      );
+                                    }
+                                  },
+                                  icon: Icon(
+                                    Icons.remove_circle,
+                                    color: AppColors.redPrimary,
+                                    size: 20.w,
+                                  ),
+                                ),
+                                Text(
+                                  detailsState.quantity.toString(),
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    context.read<PizzaDetailsBloc>().add(
+                                      UpdateQuantityEvent(
+                                        detailsState.quantity + 1,
                                       ),
                                     );
-                                    return;
-                                  }
-                                  print("👤 userId: $userId");
-                                  print("🍕 dishId: ${dish.id}");
-                                  print("🏬 storeId: $storeId");
-                                  print(
-                                    "🔢 quantity: ${detailsState.quantity}",
-                                  );
-                                  print("💲 price: $total");
-
-                                  final optionsJson = {
-                                    "size": detailsState.selectedSize,
-                                    "largeOption":
-                                        detailsState.selectedLargeOption,
-                                    "addons": detailsState.selectedAddons,
-                                    "choices": detailsState.selectedChoices,
-                                  };
-
-                                  print(
-                                    "⚙️ optionsJson: ${jsonEncode(optionsJson)}",
-                                  );
-
-                                  context.read<CartBloc>().add(
-                                    AddToCartEvent(
-                                      type: "insert",
-                                      userId: int.parse(userId),
-                                      dishId: dish.id,
-                                      storeId: int.parse(storeId),
-                                      quantity: detailsState.quantity,
-                                      price: total,
-                                      optionsJson: jsonEncode(optionsJson),
-                                    ),
-                                  );
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.redPrimary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.r),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              vertical: 14.h,
-                              horizontal: 16.w,
-                            ), // dynamic padding
-                          ),
-                          child: state is CartLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.0,
+                                  },
+                                  icon: Icon(
+                                    Icons.add_circle,
+                                    color: AppColors.blackColor,
+                                    size: 20.w,
                                   ),
-                                )
-                              : Text(
-                                  'Total \$${total.toStringAsFixed(2)} - Order Now!',
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontFamily: 'Poppins',
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
                                 ),
-                        ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(width: 16.w),
+
+                          // 🛒 Order Button with Total
+                          Expanded(
+                            child: SizedBox(
+                              // height: 50.h,
+                              child: ElevatedButton(
+                                onPressed: state is CartLoading
+                                    ? null
+                                    : () async {
+                                        final userId =
+                                            await TokenStorage.getUserId();
+                                        final storeId =
+                                            await TokenStorage.getChosenStoreId();
+
+                                        if (userId == null || storeId == null) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                "⚠️ User or Store not found in session",
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        final optionsJson = {
+                                          "size": detailsState.selectedSize,
+                                          "largeOption":
+                                              detailsState.selectedLargeOption,
+                                          "addons": detailsState.selectedAddons,
+                                          "choices":
+                                              detailsState.selectedChoices,
+                                        };
+
+                                        context.read<CartBloc>().add(
+                                          AddToCartEvent(
+                                            type: "insert",
+                                            userId: int.parse(userId),
+                                            dishId: dish.id,
+                                            storeId: int.parse(storeId),
+                                            quantity: detailsState.quantity,
+                                            price: total,
+                                            optionsJson: jsonEncode(
+                                              optionsJson,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.redPrimary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10.r),
+                                  ),
+                                ),
+                                child: state is CartLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.0,
+                                        ),
+                                      )
+                                    : Text(
+                                        'Total \$${total.toStringAsFixed(2)} (NZD)',
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -647,29 +446,700 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
     );
   }
 
+  Widget _buildBaseOptionSet(
+    OptionSet optionSet,
+    PizzaDetailsState state,
+    PizzaDetailsBloc bloc,
+  ) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8.h),
+      decoration: BoxDecoration(
+        color: AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🔽 Header Row with toggle (no splash)
+          GestureDetector(
+            onTap: () => bloc.add(ToggleBaseExpandEvent()),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+              child: Row(
+                children: [
+                  Text(
+                    optionSet.name,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const Spacer(),
+                  AnimatedRotation(
+                    turns: state.isBaseExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 250),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 22.sp,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 🔽 Expandable content with animation
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: state.isBaseExpanded
+                ? optionSet.options.length * 56.h
+                : 0, // collapses to 0
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: ListView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: optionSet.options.length,
+              itemBuilder: (context, index) {
+                final opt = optionSet.options[index];
+                final isSelected = state.selectedBase == opt.name;
+
+                return GestureDetector(
+                  onTap: () => bloc.add(SelectBaseEvent(opt.name, opt.price)),
+                  behavior: HitTestBehavior.translucent,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    child: Row(
+                      children: [
+                        Icon(
+                          FontAwesomeIcons.pizzaSlice,
+                          size: 16.sp,
+                          color: Colors.black87,
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Text(
+                            opt.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontFamily: 'Poppins',
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          '\$${opt.price.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+
+                        SizedBox(width: 12.w),
+                        _buildCustomRadio(isSelected),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomRadio(bool isSelected) {
+    return Container(
+      width: 20.w,
+      height: 20.h,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isSelected ? Colors.red : Colors.grey,
+          width: 2.w,
+        ),
+      ),
+      child: isSelected
+          ? Center(
+              child: Container(
+                width: 10.w,
+                height: 10.h,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red,
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildToppingsOptionSet(
+    OptionSet optionSet,
+    PizzaDetailsState state,
+    PizzaDetailsBloc bloc,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(12.r),
+
+      decoration: BoxDecoration(
+        color: AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Title
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.h),
+            child: Text(
+              optionSet.name,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w600, // Semi-bold for section titles
+                color: Colors.black87,
+              ),
+            ),
+          ),
+
+          ...optionSet.options.asMap().entries.map((entry) {
+            final index = entry.key;
+            final opt = entry.value;
+            final isSelected = state.selectedToppings[opt.name] ?? false;
+            final isMostOrdered = index == 0;
+
+            return Container(
+              margin: EdgeInsets.symmetric(vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12.r),
+                onTap: () => bloc.add(
+                  ToggleToppingEvent(opt.name, {
+                    for (var o in optionSet.options) o.name: o.price,
+                  }),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 12.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // "Most Ordered" badge
+                      if (isMostOrdered)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 0.h,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFFF5E5E), Color(0xFFFF4D4D)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(6.r),
+                          ),
+                          child: Text(
+                            'Most Ordered',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              color: Colors.white,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+
+                      if (isMostOrdered) SizedBox(height: 8.h),
+
+                      // Main Row: Icon, name, price, checkbox
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Green circular icon
+                          // Container(
+                          //   width: 16.w,
+                          //   height: 16.h,
+                          //   child: Icon(
+                          //     FontAwesomeIcons.pizzaSlice,
+                          //     size: 18.sp,
+                          //     color: Colors.black,
+                          //   ),
+                          // ),
+                          // SizedBox(width: 10.w),
+
+                          // Topping name
+                          Expanded(
+                            child: Text(
+                              opt.name,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w400, // Regular
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+
+                          // Price with decimals
+                          Text(
+                            '\$${opt.price.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 14.sp,
+                              fontWeight:
+                                  FontWeight.w600, // Semi-bold for price
+                              color: Colors.black87,
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+
+                          // Custom checkbox
+                          Container(
+                            width: 22.w,
+                            height: 22.h,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.black
+                                  : Colors.transparent,
+                              border: Border.all(
+                                color: Colors.black45,
+                                width: 1.2.w,
+                              ),
+                              borderRadius: BorderRadius.circular(6.r),
+                            ),
+                            child: isSelected
+                                ? Icon(
+                                    Icons.check,
+                                    size: 16.sp,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSaucesOptionSet(
+    OptionSet optionSet,
+    PizzaDetailsState state,
+    PizzaDetailsBloc bloc,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(12.r),
+      margin: EdgeInsets.symmetric(vertical: 6.h),
+      decoration: BoxDecoration(
+        color: AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Title
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.h),
+            child: Text(
+              optionSet.name,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+
+          ...optionSet.options.map((opt) {
+            final qty = state.sauceQuantities[opt.name] ?? 0;
+
+            return Container(
+              margin: EdgeInsets.symmetric(vertical: 6.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Sauce Name
+                  Expanded(
+                    child: Text(
+                      opt.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+
+                  // Price (always with 2 decimals)
+                  Text(
+                    "\$${opt.price.toStringAsFixed(2)}",
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+
+                  // Counter UI
+                  qty == 0
+                      ? GestureDetector(
+                          onTap: () {
+                            bloc.add(
+                              UpdateSauceQuantityEvent(opt.name, 1, {
+                                for (var o in optionSet.options)
+                                  o.name: o.price,
+                              }),
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 4.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.blackColor,
+                              borderRadius: BorderRadius.circular(14.r),
+                            ),
+                            child: Text(
+                              "+ Add",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                          child: Row(
+                            children: [
+                              // - button
+                              GestureDetector(
+                                onTap: () {
+                                  if (qty > 0) {
+                                    bloc.add(
+                                      UpdateSauceQuantityEvent(
+                                        opt.name,
+                                        qty - 1,
+                                        {
+                                          for (var o in optionSet.options)
+                                            o.name: o.price,
+                                        },
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(4.w),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent,
+                                    borderRadius: BorderRadius.circular(14.r),
+                                  ),
+                                  child: Icon(
+                                    Icons.remove,
+                                    size: 14.sp,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+
+                              // qty text
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                                child: Text(
+                                  qty.toString(),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+
+                              // + button
+                              GestureDetector(
+                                onTap: () {
+                                  bloc.add(
+                                    UpdateSauceQuantityEvent(
+                                      opt.name,
+                                      qty + 1,
+                                      {
+                                        for (var o in optionSet.options)
+                                          o.name: o.price,
+                                      },
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(4.w),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.blackColor,
+                                    borderRadius: BorderRadius.circular(14.r),
+                                  ),
+                                  child: Icon(
+                                    Icons.add,
+                                    size: 14.sp,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIngredientsSection(
+    List<Addon> ingredients,
+    PizzaDetailsState state,
+    PizzaDetailsBloc bloc,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(12.r),
+      margin: EdgeInsets.symmetric(vertical: 6.h),
+      decoration: BoxDecoration(
+        color: AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Title
+          // Padding(
+          //   padding: EdgeInsets.symmetric(vertical: 8.h),
+          //   child: Text(
+          //     "Ingredients",
+          //     style: TextStyle(
+          //       fontFamily: 'Poppins',
+          //       fontSize: 15.sp,
+          //       fontWeight: FontWeight.w600,
+          //       color: Colors.black87,
+          //     ),
+          //   ),
+          // ),
+          ...ingredients.map((ing) {
+            final isSelected = state.selectedIngredients[ing.name] ?? false;
+
+            return Container(
+              margin: EdgeInsets.symmetric(vertical: 6.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: InkWell(
+                onTap: () => bloc.add(ToggleIngredientEvent(ing.name)),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Green circular icon
+                    // Container(
+                    //   width: 16.w,
+                    //   height: 16.h,
+                    //   child: Icon(
+                    //     FontAwesomeIcons.leaf,
+                    //     size: 18.sp,
+                    //     color: Colors.black,
+                    //   ),
+                    // ),
+                    // SizedBox(width: 10.w),
+
+                    // Topping name
+                    Expanded(
+                      child: Text(
+                        ing.name,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w400, // Regular
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+
+                    // Price with decimals
+                    Text(
+                      '\$${ing.price.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600, // Semi-bold for price
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+
+                    // Custom checkbox
+                    Container(
+                      width: 22.w,
+                      height: 22.h,
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.black : Colors.transparent,
+                        border: Border.all(color: Colors.black45, width: 1.2.w),
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                      child: isSelected
+                          ? Icon(Icons.check, size: 16.sp, color: Colors.white)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChoicesSection(
+    List<Addon> choices,
+    PizzaDetailsState state,
+    PizzaDetailsBloc bloc,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Text(
+        //   "Choices",
+        //   style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+        // ),
+        ...choices.map((choice) {
+          final isSelected = state.selectedChoices[choice.name] ?? false;
+          return InkWell(
+            onTap: () => bloc.add(
+              ToggleChoiceEvent(choice.name, {
+                for (var c in choices) c.name: c.price,
+              }),
+            ),
+            child: Container(
+              margin: EdgeInsets.only(bottom: 8.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      "${choice.name} (+\$${choice.price.toStringAsFixed(2)})",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 14.sp),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Container(
+                    width: 22.w,
+                    height: 22.h,
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.black : Colors.transparent,
+                      border: Border.all(color: Colors.black45, width: 1.2.w),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: isSelected
+                        ? Icon(Icons.check, size: 16.sp, color: Colors.white)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
   double _getTotal(PizzaDetailsState state, DishModel dish) {
     double total = dish.price ?? 0;
 
-    print("💲 base price: ${dish.price}");
+    print("💲 Base price: ${dish.price}");
 
-    // // 👇 Size adjustment
-    // if (state.selectedSize == "Medium") {
-    //   total += 2.0;
-    // } else if (state.selectedSize == "Large") {
-    //   total += 4.0;
-    // }
+    // 👇 Base extra price
+    total += state.baseExtraPrice;
 
-    // 👇 Large option (Thin / Gluten Free)
-    total += state.largeOptionExtraPrice;
+    // 👇 Toppings total
+    total += state.toppingsExtraPrice;
 
-    // 👇 Use bloc-calculated addon & choice totals
-    total += state.addonExtraPrice;
-    total += state.choiceExtraPrice ?? 0; // if you added this in state
+    // 👇 Sauces total
+    total += state.saucesExtraPrice;
+
+    // 👇 Choices total
+    total += state.choicesExtraPrice;
 
     // 👇 Multiply by quantity
     double finalTotal = total * state.quantity;
 
-    print("🔢 final total (x${state.quantity}): $finalTotal");
+    print("🔢 Final total (x${state.quantity}): $finalTotal");
 
     return finalTotal;
   }
@@ -722,85 +1192,85 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
     }
   }
 
-  Widget _buildAddonTile(
-    BuildContext context,
-    String title,
-    PizzaDetailsState state,
-    PizzaDetailsBloc bloc, {
-    bool isChoice = false, // set true for side items
-    double price = 0, // ✅ Add price here
-  }) {
-    final isSelected = isChoice
-        ? state.selectedChoices.contains(title)
-        : state.selectedAddons[title] ?? false;
+  // Widget _buildAddonTile(
+  //   BuildContext context,
+  //   String title,
+  //   PizzaDetailsState state,
+  //   PizzaDetailsBloc bloc, {
+  //   bool isChoice = false, // set true for side items
+  //   double price = 0, // ✅ Add price here
+  // }) {
+  //   final isSelected = isChoice
+  //       ? state.selectedChoices.contains(title)
+  //       : state.selectedAddons[title] ?? false;
 
-    final priceText = price.toStringAsFixed(2); // use the passed price
-    final iconData = getAddonIcon(title);
+  //   final priceText = price.toStringAsFixed(2); // use the passed price
+  //   final iconData = getAddonIcon(title);
 
-    return InkWell(
-      splashColor: Colors.transparent,
-      onTap: () {
-        if (isChoice) {
-          bloc.add(ToggleChoiceEvent(title));
-        } else {
-          bloc.add(ToggleAddonEvent(title));
-        }
-      },
-      child: Container(
-        margin: EdgeInsets.only(bottom: 8.h),
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  if (iconData != null) ...[
-                    Icon(iconData, size: 18.sp, color: Colors.black),
-                    SizedBox(width: 8.w),
-                  ],
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12.sp, fontFamily: 'Poppins'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '\$$priceText',
-                  style: TextStyle(fontSize: 12.sp, fontFamily: 'Poppins'),
-                ),
-                SizedBox(width: 8.w),
-                Container(
-                  width: 22.w,
-                  height: 22.h,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.blackColor
-                        : Colors.transparent,
-                    border: Border.all(color: Colors.black45, width: 1.2.w),
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: isSelected
-                      ? Icon(Icons.check, size: 16.sp, color: Colors.white)
-                      : null,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  //   return InkWell(
+  //     splashColor: Colors.transparent,
+  //     onTap: () {
+  //       if (isChoice) {
+  //         bloc.add(ToggleChoiceEvent(title));
+  //       } else {
+  //         bloc.add(ToggleAddonEvent(title));
+  //       }
+  //     },
+  //     child: Container(
+  //       margin: EdgeInsets.only(bottom: 8.h),
+  //       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+  //       decoration: BoxDecoration(
+  //         color: Colors.grey.shade100,
+  //         borderRadius: BorderRadius.circular(12.r),
+  //       ),
+  //       child: Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //         children: [
+  //           Expanded(
+  //             child: Row(
+  //               children: [
+  //                 if (iconData != null) ...[
+  //                   Icon(iconData, size: 18.sp, color: Colors.black),
+  //                   SizedBox(width: 8.w),
+  //                 ],
+  //                 Expanded(
+  //                   child: Text(
+  //                     title,
+  //                     maxLines: 1,
+  //                     overflow: TextOverflow.ellipsis,
+  //                     style: TextStyle(fontSize: 12.sp, fontFamily: 'Poppins'),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           Row(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Text(
+  //                 '\$$priceText',
+  //                 style: TextStyle(fontSize: 12.sp, fontFamily: 'Poppins'),
+  //               ),
+  //               SizedBox(width: 8.w),
+  //               Container(
+  //                 width: 22.w,
+  //                 height: 22.h,
+  //                 decoration: BoxDecoration(
+  //                   color: isSelected
+  //                       ? AppColors.blackColor
+  //                       : Colors.transparent,
+  //                   border: Border.all(color: Colors.black45, width: 1.2.w),
+  //                   borderRadius: BorderRadius.circular(6.r),
+  //                 ),
+  //                 child: isSelected
+  //                     ? Icon(Icons.check, size: 16.sp, color: Colors.white)
+  //                     : null,
+  //               ),
+  //             ],
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }
