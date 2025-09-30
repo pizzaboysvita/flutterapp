@@ -201,16 +201,24 @@ class _LoginState extends State<Login> {
 
                             SizedBox(height: 14.h),
 
-                            LoadingOutlineButton(
-                              text: "Continue as Guest",
-                              icon: FontAwesomeIcons.solidUser,
-                              onPressedAsync: () async {
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  AppRoutes.chooseStoreLocation,
-                                );
-                              },
-                            ),
+                           LoadingOutlineButton(
+  text: "Continue as Guest",
+  icon: FontAwesomeIcons.solidUser,
+  onPressedAsync: () async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text("Functionality under processing..."),
+        backgroundColor: AppColors.redPrimary,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating, // nicer UI
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  },
+),
+
 
                             SizedBox(height: 12.h),
 

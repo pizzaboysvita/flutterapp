@@ -61,7 +61,7 @@ class OrderService {
       final storeId = await TokenStorage.getChosenStoreId();
 
       final getOrders =
-          'order?user_id=${userId ?? 1}&store_id=${storeId ?? 48}&type=web';
+          'order?user_id=$userId&store_id=$storeId&type=web';
 
       print("Fetching orders from: $getOrders");
 

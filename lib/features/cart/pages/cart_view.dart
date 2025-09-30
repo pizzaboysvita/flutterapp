@@ -76,14 +76,14 @@ class _CartViewState extends State<CartView> {
       listener: (context, state) async {
         if (state is OrderLoading) {
           print("Order is loading...");
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text("Placing order...")));
+          // ScaffoldMessenger.of(
+          //   context,
+          // ).showSnackBar(const SnackBar(content: Text("Placing order...")));
         } else if (state is OrderSuccess) {
           print("Order success: ${state.message}");
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          // ScaffoldMessenger.of(
+          //   context,
+          // ).showSnackBar(SnackBar(content: Text(state.message)));
 
           // Navigate to order details
           Navigator.pushNamed(

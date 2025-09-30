@@ -2,96 +2,93 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'pizza_details_event.dart';
 import 'pizza_details_state.dart';
 
-// ✅ Define addon & choice prices
-final Map<String, double> addonPrices = {
-  'Coke (500ml)': 1.5,   // fixed
-  'Garlic Bread': 2.0,   // fixed
-  'French Fries': 2.5,   // fixed
-  'Extra Cheese': 2.0,
-  'Olives': 1.5,
-  // keep other items correct
-};
-
-
-final Map<String, double> choicePrices = {
-  'Thin Crust': 0.0,
-  'Cheese Burst': 2.5,
-  'Stuffed Crust': 3.5,
-};
-
 class PizzaDetailsBloc extends Bloc<PizzaDetailsEvent, PizzaDetailsState> {
   PizzaDetailsBloc() : super(PizzaDetailsState.initial()) {
     
-// 🔄 Reset handler
+    // 🔄 Reset handler
     on<ResetPizzaDetailsEvent>((event, emit) {
       emit(PizzaDetailsState.initial());
-      print("♻️ PizzaDetailsBloc reset to initial state");
+      print("♻️ Reset to initial state");
     });
 
-    // 👉 Handle size selection
-    on<SelectSizeEvent>((event, emit) {
+on<ToggleBaseExpandEvent>((event, emit) {
+  emit(state.copyWith(isBaseExpanded: !state.isBaseExpanded));
+});
+
+
+    // 👉 Handle base selection (radio)
+    on<SelectBaseEvent>((event, emit) {
       emit(state.copyWith(
-        selectedSize: event.size,
-        selectedLargeOption: null,
-        largeOptionExtraPrice: 0,
+        selectedBase: event.baseName,
+        baseExtraPrice: event.extraPrice,
       ));
+      print("🍕 Base selected: ${event.baseName} | +${event.extraPrice}");
     });
 
-    // 👉 Handle addon toggle with price calculation
-    on<ToggleAddonEvent>((event, emit) {
-      final updatedAddons = Map<String, bool>.from(state.selectedAddons);
-      updatedAddons[event.addonName] = !(updatedAddons[event.addonName] ?? false);
+    // 👉 Handle topping toggle (checkbox)
+    on<ToggleToppingEvent>((event, emit) {
+      final updated = Map<String, bool>.from(state.selectedToppings);
+      updated[event.toppingName] = !(updated[event.toppingName] ?? false);
 
-      // ✅ Calculate new addon total
-      double newAddonPrice = 0;
-      updatedAddons.forEach((name, selected) {
+      // ✅ calculate total topping price
+      double newPrice = 0;
+      updated.forEach((name, selected) {
         if (selected) {
-          newAddonPrice += addonPrices[name] ?? 0;
+          newPrice += event.availableToppings[name] ?? 0;
         }
       });
 
       emit(state.copyWith(
-        selectedAddons: updatedAddons,
-        addonExtraPrice: newAddonPrice,
+        selectedToppings: updated,
+        toppingsExtraPrice: newPrice,
       ));
-
-      print("➕ addons total: $newAddonPrice | selected: $updatedAddons");
+      print("➕ Toppings total: $newPrice | selected: $updated");
     });
 
-    // 👉 Handle multiple choices (with price)
+    // 👉 Handle sauces (increment/decrement with quantity)
+    on<UpdateSauceQuantityEvent>((event, emit) {
+      final updated = Map<String, int>.from(state.sauceQuantities);
+      updated[event.sauceName] = event.quantity;
+
+      double newPrice = 0;
+      updated.forEach((name, qty) {
+        newPrice += (event.availableSauces[name] ?? 0) * qty;
+      });
+
+      emit(state.copyWith(
+        sauceQuantities: updated,
+        saucesExtraPrice: newPrice,
+      ));
+      print("🥫 Sauces updated: $updated | total $newPrice");
+    });
+
+    // 👉 Handle ingredients (checkbox)
+    on<ToggleIngredientEvent>((event, emit) {
+      final updated = Map<String, bool>.from(state.selectedIngredients);
+      updated[event.ingredientName] = !(updated[event.ingredientName] ?? false);
+
+      emit(state.copyWith(selectedIngredients: updated));
+      print("🥦 Ingredients: $updated");
+    });
+
+    // 👉 Handle choices (checkbox)
     on<ToggleChoiceEvent>((event, emit) {
-      final updatedChoices = List<String>.from(state.selectedChoices);
+      final updated = Map<String, bool>.from(state.selectedChoices);
+      updated[event.choiceName] = !(updated[event.choiceName] ?? false);
 
-      if (updatedChoices.contains(event.choiceName)) {
-        updatedChoices.remove(event.choiceName);
-      } else {
-        updatedChoices.add(event.choiceName);
-      }
-
-      // ✅ Calculate choice price
-      double newChoicePrice = 0;
-      for (var choice in updatedChoices) {
-        newChoicePrice += choicePrices[choice] ?? 0;
-      }
+      double newPrice = 0;
+      updated.forEach((name, selected) {
+        if (selected) newPrice += event.availableChoices[name] ?? 0;
+      });
 
       emit(state.copyWith(
-        selectedChoices: updatedChoices,
-        choiceExtraPrice: newChoicePrice,
+        selectedChoices: updated,
+        choicesExtraPrice: newPrice,
       ));
-
-      print("➕ choices total: $newChoicePrice | selected: $updatedChoices");
+      print("🍟 Choices total: $newPrice | $updated");
     });
 
-    // 👉 Handle large option selection
-    on<SelectLargeOptionEvent>((event, emit) {
-      emit(state.copyWith(
-        selectedLargeOption: event.optionName,
-        largeOptionExtraPrice: event.extraPrice,
-      ));
-      print("➕ large option: ${event.optionName} | +${event.extraPrice}");
-    });
-
-    // 👉 Handle quantity update
+    // 👉 Handle quantity of pizza
     on<UpdateQuantityEvent>((event, emit) {
       emit(state.copyWith(quantity: event.quantity));
     });

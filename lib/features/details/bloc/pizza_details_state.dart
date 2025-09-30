@@ -2,81 +2,109 @@ import 'package:pizza_boys/data/models/dish/dish_model.dart';
 
 class PizzaDetailsState {
   final bool isLoading;
+  final bool isBaseExpanded;
   final DishModel? dish;
-  final String selectedSize;
-  final Map<String, bool> selectedAddons;
 
+  /// 🍕 Size
+  final String selectedSize;
+
+  /// 🍕 Large Option
   final String? selectedLargeOption;
   final double largeOptionExtraPrice;
 
-  /// 👇 Multiple selected choices
-  final List<String> selectedChoices;
-
-  /// 👇 Added quantity
-  final int quantity;
-
-  /// 👇 New field for addons total price
+  /// 🧀 Addons
+  final Map<String, bool> selectedAddons;
   final double addonExtraPrice;
 
-  /// 👇 New field for choices total price
-  final double choiceExtraPrice;
+  /// 🍕 Base (radio)
+  final String? selectedBase;
+  final double baseExtraPrice;
 
+  /// 🧀 Toppings
+  final Map<String, bool> selectedToppings;
+  final double toppingsExtraPrice;
+
+  /// 🥫 Sauces
+  final Map<String, int> sauceQuantities;
+  final double saucesExtraPrice;
+
+  /// 🥦 Ingredients
+  final Map<String, bool> selectedIngredients;
+
+  /// 🍟 Choices
+  final Map<String, bool> selectedChoices;
+  final double choicesExtraPrice;
+
+  /// 🔢 Quantity
+  final int quantity;
+
+  /// ⚠ Error
   final String? error;
 
   PizzaDetailsState({
     required this.isLoading,
+    required this.isBaseExpanded,
     this.dish,
-    required this.selectedSize,
-    required this.selectedAddons,
+    this.selectedSize = "Small",
     this.selectedLargeOption,
     this.largeOptionExtraPrice = 0,
-    this.selectedChoices = const [],
-    this.quantity = 1, // 👈 default 1
-    this.addonExtraPrice = 0, // 👈 default 0
-    this.choiceExtraPrice = 0, // 👈 default 0
+    this.selectedAddons = const {},
+    this.addonExtraPrice = 0,
+    this.selectedBase,
+    this.baseExtraPrice = 0,
+    this.selectedToppings = const {},
+    this.toppingsExtraPrice = 0,
+    this.sauceQuantities = const {},
+    this.saucesExtraPrice = 0,
+    this.selectedIngredients = const {},
+    this.selectedChoices = const {},
+    this.choicesExtraPrice = 0,
+    this.quantity = 1,
     this.error,
   });
 
-  factory PizzaDetailsState.initial() {
-    return PizzaDetailsState(
-      isLoading: false,
-      dish: null,
-      selectedSize: 'Small',
-      selectedAddons: {},
-      selectedLargeOption: null,
-      largeOptionExtraPrice: 0,
-      selectedChoices: [],
-      quantity: 1,
-      addonExtraPrice: 0, // 👈 initial value
-      choiceExtraPrice: 0, // 👈 initial value
-      error: null,
-    );
-  }
+  factory PizzaDetailsState.initial() => PizzaDetailsState(isLoading: false,  isBaseExpanded: false,);
 
   PizzaDetailsState copyWith({
     bool? isLoading,
+    bool? isBaseExpanded,
     DishModel? dish,
     String? selectedSize,
-    Map<String, bool>? selectedAddons,
     String? selectedLargeOption,
     double? largeOptionExtraPrice,
-    List<String>? selectedChoices,
-    int? quantity,
+    Map<String, bool>? selectedAddons,
     double? addonExtraPrice,
-    double? choiceExtraPrice, // 👈 added here
-    String? error,
+    String? selectedBase,
+    double? baseExtraPrice,
+    Map<String, bool>? selectedToppings,
+    double? toppingsExtraPrice,
+    Map<String, int>? sauceQuantities,
+    double? saucesExtraPrice,
+    Map<String, bool>? selectedIngredients,
+    Map<String, bool>? selectedChoices,
+    double? choicesExtraPrice,
+    int? quantity,
+    String? error, 
   }) {
     return PizzaDetailsState(
       isLoading: isLoading ?? this.isLoading,
+       isBaseExpanded: isBaseExpanded ?? this.isBaseExpanded,
       dish: dish ?? this.dish,
       selectedSize: selectedSize ?? this.selectedSize,
-      selectedAddons: selectedAddons ?? this.selectedAddons,
       selectedLargeOption: selectedLargeOption ?? this.selectedLargeOption,
       largeOptionExtraPrice: largeOptionExtraPrice ?? this.largeOptionExtraPrice,
-      selectedChoices: selectedChoices ?? this.selectedChoices,
-      quantity: quantity ?? this.quantity,
+      selectedAddons: selectedAddons ?? this.selectedAddons,
       addonExtraPrice: addonExtraPrice ?? this.addonExtraPrice,
-      choiceExtraPrice: choiceExtraPrice ?? this.choiceExtraPrice, // 👈 added here
+      selectedBase: selectedBase ?? this.selectedBase,
+      baseExtraPrice: baseExtraPrice ?? this.baseExtraPrice,
+      selectedToppings: selectedToppings ?? this.selectedToppings,
+      toppingsExtraPrice: toppingsExtraPrice ?? this.toppingsExtraPrice,
+      sauceQuantities: sauceQuantities ?? this.sauceQuantities,
+      saucesExtraPrice: saucesExtraPrice ?? this.saucesExtraPrice,
+      selectedIngredients: selectedIngredients ?? this.selectedIngredients,
+      selectedChoices: selectedChoices ?? this.selectedChoices,
+      choicesExtraPrice: choicesExtraPrice ?? this.choicesExtraPrice,
+      quantity: quantity ?? this.quantity,
       error: error ?? this.error,
     );
   }

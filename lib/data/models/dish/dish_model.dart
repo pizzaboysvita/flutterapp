@@ -10,8 +10,13 @@ class OptionSet {
 
   factory OptionSet.fromJson(dynamic json) {
     Map<String, dynamic> map;
+
     if (json is String) {
-      map = jsonDecode(json);
+      try {
+        map = jsonDecode(json);
+      } catch (_) {
+        map = {};
+      }
     } else if (json is Map<String, dynamic>) {
       map = json;
     } else {
@@ -21,7 +26,11 @@ class OptionSet {
     final comboJson = map['option_set_combo_json'] ?? '[]';
     List<dynamic> combos = [];
     if (comboJson is String) {
-      combos = jsonDecode(comboJson);
+      try {
+        combos = jsonDecode(comboJson);
+      } catch (_) {
+        combos = [];
+      }
     } else if (comboJson is List) {
       combos = comboJson;
     }
@@ -32,13 +41,16 @@ class OptionSet {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'dispaly_name': name,
-    'option_set_combo_json': jsonEncode(
-      options.map((e) => e.toJson()).toList(),
-    ),
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'dispaly_name': name,
+      'option_set_combo_json': jsonEncode(
+        options.map((e) => e.toJson()).toList(),
+      ),
+    };
+  }
 }
+
 
 /// 🔹 Represents a dish/item in the menu
 class DishModel {

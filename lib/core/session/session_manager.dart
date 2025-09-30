@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
+import 'package:pizza_boys/core/helpers/internet_helper/error_screen_tracker.dart';
 
 class SessionManager {
   static Future<void> checkSession(BuildContext context) async {
     await Future.delayed(const Duration(seconds: 2));
 
-    if (!context.mounted) return; // ✅ Prevents null context crash
+    if (!context.mounted) return;
+
+    if (ErrorScreenTracker.isShowing) {
+      debugPrint("⚠️ Error screen is showing. Skipping session navigation.");
+      return; // Prevent overlapping navigation
+    }
 
     final token = await TokenStorage.getAccessToken();
+    debugPrint("🔍 Token: $token");
+
     if (token == null || token.isEmpty) {
-      debugPrint("🆕 User is fresh (no token). Navigating to landing.");
+      debugPrint("🆕 No token found. Navigating to landing.");
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.landing);
       }
@@ -18,20 +26,22 @@ class SessionManager {
     }
 
     final chosenLocation = await TokenStorage.getChosenLocation();
+    debugPrint("🔍 Chosen Location: $chosenLocation");
+
     if (chosenLocation == null || chosenLocation.isEmpty) {
-      debugPrint("✅ User logged in but has NOT chosen a location. Going to ChooseStoreLocation.");
+      debugPrint("✅ Location not chosen. Navigating to ChooseStoreLocation.");
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.chooseStoreLocation);
       }
     } else {
-      debugPrint("🎉 User logged in and location chosen. Going to Home.");
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
-      }
+      debugPrint("🎉 Session OK. Navigating to Home.");
+   if (!ErrorScreenTracker.isShowing) {
+  Navigator.pushReplacementNamed(context, AppRoutes.home);
+}
+
     }
   }
 
-  /// Clear session & navigate to login
   static Future<void> clearSession(BuildContext context) async {
     await TokenStorage.clearSession();
     debugPrint("🚪 Session cleared. Redirecting to Login.");

@@ -4,5 +4,9 @@ class LottieUrls {
       'assets/lotties/Payment Successful.json';
   static const String pizzaLoading = 'assets/lotties/Pizza loading.json';
   static const String networkIssue = 'assets/lotties/network_issue.json';
+  static const String serverError = 'assets/lotties/serverError.json';
+  static const String maintenance = 'assets/lotties/maintenance.json';
+
+
 
 }

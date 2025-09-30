@@ -165,7 +165,14 @@ final List<Color> categoryColors = [
 ];
 
 class PizzaCategoriesRow extends StatelessWidget {
-  const PizzaCategoriesRow({super.key});
+  final int? selectedCategoryId;
+  final ValueChanged<int>? onCategorySelected;
+
+  const PizzaCategoriesRow({
+    super.key,
+    this.selectedCategoryId,
+    this.onCategorySelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +193,7 @@ class PizzaCategoriesRow extends StatelessWidget {
                   width: 65.w,
                   height: 65.w,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    // color: AppColors.whiteColor,
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
@@ -196,95 +203,89 @@ class PizzaCategoriesRow extends StatelessWidget {
         } else if (state is CategoryLoaded) {
           return SizedBox(
             height: 100.h,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              itemCount: state.categories.length,
-              separatorBuilder: (_, __) => SizedBox(width: 12.w),
-              itemBuilder: (context, index) {
-                final item = state.categories[index];
-                final bgColor = categoryColors[index % categoryColors.length];
+            child: Builder(
+              builder: (context) {
+                // copy categories list
+                final categories = List.of(state.categories);
 
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.categoryPizzaDetails,
-                      arguments: {'categoryId': item.id},
-                    );
-                    print(item.id);
-                  },
-                  child: Column(
-                    children: [
-                      
-                      Container(
-                        width: 65.w,
-                        height: 65.w,
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        padding: EdgeInsets.all(8.w),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.r),
-                          child: CachedNetworkImage(
-                            imageUrl: item.categoryImage.isNotEmpty
-                                ? item.categoryImage
-                                : "https://via.placeholder.com/150", // ✅ fallback URL
+                // find the special category
+                final specialIndex = categories.indexWhere(
+                  (c) => c.id == 108 || c.name.toLowerCase() == "specials",
+                );
 
-                            fit: BoxFit.cover,
+                // if found, move it to the front
+                if (specialIndex != -1) {
+                  final special = categories.removeAt(specialIndex);
+                  categories.insert(0, special);
+                }
 
-                            // ✅ Optimize memory usage
-                            memCacheHeight: (65.w * 2).toInt(),
-                            memCacheWidth: (65.w * 2).toInt(),
+                return ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  itemCount: categories.length,
+                  separatorBuilder: (_, __) => SizedBox(width: 12.w),
+                  itemBuilder: (context, index) {
+                    final item = categories[index];
+                    // final bgColor = categoryColors[index % categoryColors.length];
 
-                            // ✅ Optional disk cache optimization
-                            maxHeightDiskCache: (65.w * 2).toInt(),
-                            maxWidthDiskCache: (65.w * 2).toInt(),
+                    final isActive = item.id == selectedCategoryId;
 
-                            placeholder: (context, url) => Shimmer.fromColors(
-                              baseColor: Colors.grey[300]!,
-                              highlightColor: Colors.grey[100]!,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8.r),
-                                child: Container(
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  color: Colors.white,
-                                ),
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.categoryPizzaDetails,
+                          arguments: {'categoryId': item.id},
+                        );
+                        print(item.id);
+                      },
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: 50.w,
+                            height: 50.w,
+                            // decoration: BoxDecoration(
+                            //   color: isActive ? Colors.orangeAccent : bgColor,
+                            //   borderRadius: BorderRadius.circular(12.r),
+                            //   border: isActive
+                            //       ? Border.all(color: Colors.deepOrange, width: 2)
+                            //       : null,
+                            // ),
+                            // padding: EdgeInsets.all(8.w),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(25.r),
+                              child: CachedNetworkImage(
+                                imageUrl: item.categoryImage.isNotEmpty
+                                    ? item.categoryImage
+                                    : "https://via.placeholder.com/150",
+                                fit: BoxFit.cover,
                               ),
                             ),
-
-                            errorWidget: (context, url, error) =>
-                                CachedNetworkImage(
-                                  imageUrl:
-                                      "https://via.placeholder.com/150", // ✅ fallback on error
-                                  fit: BoxFit.cover,
-                                  memCacheHeight: (65.w * 2).toInt(),
-                                  memCacheWidth: (65.w * 2).toInt(),
-                                ),
                           ),
-                        ),
-                      ),
-
-                      SizedBox(height: 8.h),
-                      SizedBox(
-                        width: 80.w,
-                        child: Text(
-                          item.name,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Poppins',
-                            color: Colors.black87,
+                          SizedBox(height: 4.h),
+                          SizedBox(
+                            width: 80.w,
+                            child: Text(
+                              item.name,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 10.sp,
+                                fontWeight: isActive
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: isActive
+                                    ? Colors.deepOrange
+                                    : Colors.black87,
+                              ),
+                              // maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),

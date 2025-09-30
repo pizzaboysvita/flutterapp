@@ -48,99 +48,98 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     setState(() {});
   }
 
-Future<BitmapDescriptor> _createLogoPinMarker(ui.Image logoImage) async {
-  final pictureRecorder = ui.PictureRecorder();
-  final canvas = Canvas(pictureRecorder);
-  final paint = Paint()..isAntiAlias = true;
+  Future<BitmapDescriptor> _createLogoPinMarker(ui.Image logoImage) async {
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    final paint = Paint()..isAntiAlias = true;
 
-  const double circleRadius = 50; // radius of circle/logo
-  const double stickHeight = 60;  // length of stick
-  const double stickWidth = 12;   // width of stick
+    const double circleRadius = 50; // radius of circle/logo
+    const double stickHeight = 60; // length of stick
+    const double stickWidth = 12; // width of stick
 
-  final double totalHeight = circleRadius * 2 + stickHeight + 20;
+    final double totalHeight = circleRadius * 2 + stickHeight + 20;
 
-  final double centerX = circleRadius;
-  final double shadowCenterY = totalHeight - 10; // shadow near bottom
+    final double centerX = circleRadius;
+    final double shadowCenterY = totalHeight - 10; // shadow near bottom
 
-  // === Shadow at Bottom ===
-  paint.color = Colors.black.withOpacity(0.3);
-  canvas.drawOval(
-    Rect.fromCenter(
-      center: Offset(centerX, shadowCenterY),
-      width: circleRadius * 1.4,
-      height: 14,
-    ),
-    paint,
-  );
+    // === Shadow at Bottom ===
+    paint.color = Colors.black.withOpacity(0.3);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(centerX, shadowCenterY),
+        width: circleRadius * 1.4,
+        height: 14,
+      ),
+      paint,
+    );
 
-  // === Stick ===
-  paint.color = Colors.black;
-  final stickTopY = shadowCenterY - stickHeight; // stick ends at bottom of circle
-  final stickRect = Rect.fromLTWH(
-    centerX - stickWidth / 2,
-    stickTopY,
-    stickWidth,
-    stickHeight,
-  );
-  canvas.drawRRect(
-    RRect.fromRectAndRadius(stickRect, const Radius.circular(3)),
-    paint,
-  );
+    // === Stick ===
+    paint.color = Colors.black;
+    final stickTopY =
+        shadowCenterY - stickHeight; // stick ends at bottom of circle
+    final stickRect = Rect.fromLTWH(
+      centerX - stickWidth / 2,
+      stickTopY,
+      stickWidth,
+      stickHeight,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(stickRect, const Radius.circular(3)),
+      paint,
+    );
 
-  // === Circle Head (outer ring) ===
-  paint.color = Colors.white;
-  final circleCenterY = stickTopY; // circle sits on top of stick
-  canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius, paint);
+    // === Circle Head (outer ring) ===
+    paint.color = Colors.white;
+    final circleCenterY = stickTopY; // circle sits on top of stick
+    canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius, paint);
 
-  // === Inner Circle (theme color) ===
-  paint.color = Colors.red;
-  canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius - 6, paint);
+    // === Inner Circle (theme color) ===
+    paint.color = Colors.red;
+    canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius - 6, paint);
 
-  // === Inner border ===
-  paint
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 4
-    ..color = Colors.black;
-  canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius - 6, paint);
+    // === Inner border ===
+    paint
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..color = Colors.black;
+    canvas.drawCircle(Offset(centerX, circleCenterY), circleRadius - 6, paint);
 
-  // === Draw Logo in Center ===
-  final logoSize = 55.0;
-  final src = Rect.fromLTWH(
-    0,
-    0,
-    logoImage.width.toDouble(),
-    logoImage.height.toDouble(),
-  );
-  final dst = Rect.fromCenter(
-    center: Offset(centerX, circleCenterY),
-    width: logoSize,
-    height: logoSize,
-  );
-  paint.style = PaintingStyle.fill;
-  canvas.drawImageRect(logoImage, src, dst, paint);
+    // === Draw Logo in Center ===
+    final logoSize = 55.0;
+    final src = Rect.fromLTWH(
+      0,
+      0,
+      logoImage.width.toDouble(),
+      logoImage.height.toDouble(),
+    );
+    final dst = Rect.fromCenter(
+      center: Offset(centerX, circleCenterY),
+      width: logoSize,
+      height: logoSize,
+    );
+    paint.style = PaintingStyle.fill;
+    canvas.drawImageRect(logoImage, src, dst, paint);
 
-  // === Export ===
-  final img = await pictureRecorder.endRecording().toImage(
-    (circleRadius * 2).toInt(),
-    totalHeight.toInt(),
-  );
+    // === Export ===
+    final img = await pictureRecorder.endRecording().toImage(
+      (circleRadius * 2).toInt(),
+      totalHeight.toInt(),
+    );
 
-  final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-  return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
-}
+    final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+  }
 
-Future<ui.Image> _loadLogo(String assetPath) async {
-  final data = await rootBundle.load(assetPath);
-  final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-  final frame = await codec.getNextFrame();
-  return frame.image;
-}
-
+  Future<ui.Image> _loadLogo(String assetPath) async {
+    final data = await rootBundle.load(assetPath);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  }
 
   Future<void> _updateMarkers(List<Store> stores, String? selectedId) async {
     final logo = await _loadLogo(ImageUrls.circleLogo);
-final customPin = await _createLogoPinMarker(logo);
-
+    final customPin = await _createLogoPinMarker(logo);
 
     _markers.clear();
 
@@ -158,7 +157,7 @@ final customPin = await _createLogoPinMarker(logo);
 
           // GMap default red pin, highlighted if selected
           icon: customPin,
-          anchor: const Offset(0.5, 1.0), 
+          anchor: const Offset(0.5, 1.0),
 
           onTap: () async {
             context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
@@ -289,13 +288,23 @@ final customPin = await _createLogoPinMarker(logo);
                               child: GoogleMap(
                                 onMapCreated: (controller) {
                                   _mapController = controller;
+
+                                  // Delay to ensure map is ready before moving camera
+                                  Future.delayed(
+                                    const Duration(milliseconds: 300),
+                                    () {
+                                      controller.animateCamera(
+                                        CameraUpdate.newLatLngZoom(
+                                          LatLng(-36.8485, 174.7633),
+                                          14, // initial zoom
+                                        ),
+                                      );
+                                    },
+                                  );
                                 },
                                 initialCameraPosition: CameraPosition(
-                                  target: LatLng(
-                                    -36.8485,
-                                    174.7633,
-                                  ), // Dummy, will be overridden by fit
-                                  zoom: 2,
+                                  target: LatLng(-36.8485, 174.7633),
+                                  zoom: 2, // world view
                                 ),
                                 markers: _markers,
                                 myLocationEnabled: true,

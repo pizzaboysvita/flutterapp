@@ -172,7 +172,7 @@ class PopularPicks extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 12.w,
                     mainAxisSpacing: 12.h,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.85,
                   ),
                   itemBuilder: (context, index) {
                     final dish = dishes[index];
@@ -268,19 +268,19 @@ class PopularPicks extends StatelessWidget {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Icon(
-                                            Icons.star,
-                                            color: Colors.amber,
-                                            size: 12.sp,
-                                          ),
-                                          SizedBox(width: 2.w),
-                                          Text(
-                                            "$rating",
-                                            style: TextStyle(
-                                              fontSize: 10.sp,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
+                                          // Icon(
+                                          //   Icons.star,
+                                          //   color: Colors.amber,
+                                          //   size: 12.sp,
+                                          // ),
+                                          // SizedBox(width: 2.w),
+                                          // Text(
+                                          //   "$",
+                                          //   style: TextStyle(
+                                          //     fontSize: 10.sp,
+                                          //     fontWeight: FontWeight.w500,
+                                          //   ),
+                                          // ),
                                           SizedBox(width: 6.w),
                                           Text(
                                             "\$$price",
@@ -293,14 +293,14 @@ class PopularPicks extends StatelessWidget {
                                           ),
                                         ],
                                       ),
-                                      SizedBox(height: 4.h),
-                                      Text(
-                                        "2 Coupons • Upto 30% off",
-                                        style: TextStyle(
-                                          fontSize: 9.sp,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
+                                      // SizedBox(height: 4.h),
+                                      // Text(
+                                      //   "2 Coupons • Upto 30% off",
+                                      //   style: TextStyle(
+                                      //     fontSize: 9.sp,
+                                      //     color: Colors.black54,
+                                      //   ),
+                                      // ),
                                       SizedBox(height: 6.h),
                                       SizedBox(
                                         width: double.infinity,
@@ -373,7 +373,7 @@ class PopularPicks extends StatelessWidget {
                                       vertical: 3.h,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.secondaryBlack,
+                                      color: AppColors.secondaryBlack(context),
                                       borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(12.r),
                                         bottomRight: Radius.circular(8.r),

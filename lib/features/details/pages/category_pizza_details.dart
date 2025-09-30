@@ -10,6 +10,8 @@ import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_state.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_state.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
@@ -68,7 +70,9 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // backgroundColor: Colors.grey[800],
       appBar: AppBar(
+        // backgroundColor: Colors.grey[800],
         title: RichText(
           text: TextSpan(
             children: [
@@ -97,54 +101,99 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: BlocBuilder<DishBloc, DishState>(
-        builder: (context, state) {
-          print("📢 BlocBuilder State: ${state.runtimeType}");
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MinimalCategoryRow(
+            selectedCategoryId: categoryId.toString(),
+            onCategorySelected: (id) {
+              setState(() => categoryId = int.tryParse(id) ?? -1);
+            },
+          ),
 
-          if (state is DishLoading) {
-            print("⏳ Loading dishes...");
-            return const Center(child: LottieLoader());
-          } else if (state is DishLoaded) {
-            print("✅ Dishes loaded: ${state.dishes.length} items");
+          Expanded(
+            child: BlocBuilder<DishBloc, DishState>(
+              builder: (context, state) {
+                print("📢 BlocBuilder State: ${state.runtimeType}");
 
-            final filteredDishes = state.dishes.where((dish) {
-              print(
-                "🔹 Dish: ${dish.name} | dishCategoryId: ${dish.dishCategoryId} | Filter categoryId: $categoryId",
-              );
-              return dish.dishCategoryId == categoryId;
-            }).toList();
+                if (state is DishLoading) {
+                  print("⏳ Loading dishes...");
+                  return const Center(child: LottieLoader());
+                } else if (state is DishLoaded) {
+                  print("✅ Dishes loaded: ${state.dishes.length} items");
 
-            print(
-              "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
-            );
+                  final filteredDishes = state.dishes.where((dish) {
+                    print(
+                      "🔹 Dish: ${dish.name} | dishCategoryId: ${dish.dishCategoryId} | Filter categoryId: $categoryId",
+                    );
+                    return dish.dishCategoryId == categoryId;
+                  }).toList();
 
-            print(
-              "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
-            );
+                  print(
+                    "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
+                  );
 
-            if (filteredDishes.isEmpty) {
-              print("⚠️ No dishes found for this category.");
-              return const Center(child: Text("No items in this category."));
-            }
+                  print(
+                    "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
+                  );
 
-            return ListView.separated(
-              padding: EdgeInsets.all(18.w),
-              itemCount: filteredDishes.length,
-              separatorBuilder: (_, __) => SizedBox(height: 12.h),
-              itemBuilder: (context, index) {
-                final item = filteredDishes[index];
-                print("🍕 Rendering dish: ${item.name} | Price: ${item.price}");
-                return _buildDishCard(item);
+                  if (filteredDishes.isEmpty) {
+                    print("⚠️ No dishes found for this category.");
+                    return const Center(
+                      child: Text("No items in this category."),
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 22.0.w,
+                          vertical: 6.0.h,
+                        ),
+                        child: Text(
+                          'Recommended for You',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'Poppins',
+                            color: Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.separated(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 14.w,
+                            vertical: 8.h,
+                          ),
+                          itemCount: filteredDishes.length,
+                          separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                          itemBuilder: (context, index) {
+                            final item = filteredDishes[index];
+                            print(
+                              "🍕 Rendering dish: ${item.name} | Price: ${item.price}",
+                            );
+                            return _buildDishCard(item);
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                } else if (state is DishError) {
+                  print("❌ DishError: ${state.message}");
+                  return Center(child: Text(state.message));
+                } else {
+                  print("ℹ️ State not recognized: ${state.runtimeType}");
+                  return const SizedBox();
+                }
               },
-            );
-          } else if (state is DishError) {
-            print("❌ DishError: ${state.message}");
-            return Center(child: Text(state.message));
-          } else {
-            print("ℹ️ State not recognized: ${state.runtimeType}");
-            return const SizedBox();
-          }
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -154,210 +203,257 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
         ? dish.imageUrl
         : "https://wallpapers.com/images/hd/error-placeholder-image-2e1q6z01rfep95v0.jpg";
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12.r),
-        color: Colors.white,
-      ),
-      child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.center, // ✅ start instead of center
-        children: [
-          // ✅ Dish Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10.r),
-            child: CachedNetworkImage(
-              height: 70.w,
-              width: 70.w,
-              imageUrl: safeImage,
-              fit: BoxFit.cover,
-              memCacheWidth: 200,
-              memCacheHeight: 200,
-              placeholder: (context, url) => Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  color: Colors.white,
+    return Stack(
+      children: [
+        InkWell(
+          onTap: () {
+            context.read<PizzaDetailsBloc>().add(ResetPizzaDetailsEvent());
+            Navigator.pushNamed(
+              context,
+              AppRoutes.pizzaDetails,
+              arguments: dish.id,
+            );
+          },
+          child: Container(
+            margin: EdgeInsets.symmetric(vertical: 0.h, horizontal: 8.w),
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10.r),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              errorWidget: (context, url, error) =>
-                  const Icon(Icons.broken_image, size: 30, color: Colors.grey),
+              ],
             ),
-          ),
-          SizedBox(width: 12.w),
-
-          // ✅ Dish Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // ✅ Name + Favorite Button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        dish.name,
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                // Dish Image
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: CachedNetworkImage(
+                    height: 70.w,
+                    width: 70.w,
+                    imageUrl: safeImage,
+                    fit: BoxFit.cover,
+                    memCacheWidth: 200,
+                    memCacheHeight: 200,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: 70.w,
+                        height: 70.w,
+                        color: Colors.grey[300],
                       ),
                     ),
-                    BlocBuilder<FavoriteBloc, FavoriteState>(
-                      builder: (context, state) {
-                        bool isFavorite = false;
-                        if (state is FavoriteLoaded) {
-                          isFavorite = state.favorites.any(
-                            (d) => d.id == dish.id,
-                          );
-                        }
-                        return IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: AppColors.redAccent,
-                            size: 20.sp,
+                    errorWidget: (context, url, error) => const Icon(
+                      Icons.broken_image,
+                      size: 30,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+
+                SizedBox(width: 10.w),
+
+                // Dish Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name + Favorite icon
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              dish.name,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Poppins',
+                                color: Colors.black87,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          onPressed: () {
-                            if (isFavorite) {
-                              // ✅ Remove only if wishlistId exists
-                              if (dish.wishlistId != null) {
-                                context.read<FavoriteBloc>().add(
-                                  RemoveFromFavoriteEvent(
-                                    dishId: dish.id,
-                                    wishlistId: dish.wishlistId,
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Removed from Favorites"),
-                                  ),
-                                );
-                              } else {
-                                // ❌ Show error if wishlistId is null
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      "Cannot remove: wishlistId is missing!",
-                                    ),
-                                  ),
-                                );
-                              }
-                            } else {
-                              // ✅ Add to favorites
-                              context.read<FavoriteBloc>().add(
-                                AddToFavoriteEvent(dish),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("❤️ Added to Favorites!"),
-                                ),
-                              );
-                            }
-                          },
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                        ],
+                      ),
 
-                // ✅ Price + Rating
-                Row(
-                  children: [
-                    Text(
-                      "\$${dish.price.toStringAsFixed(2)}",
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.green,
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Icon(
-                      Icons.star,
-                      color: AppColors.ratingYellow,
-                      size: 14.sp,
-                    ),
-                    SizedBox(width: 2.w),
-                    Flexible(
-                      child: Text(
-                        dish.rating.toString(),
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: Colors.black87,
-                          fontFamily: 'Poppins',
+                      // Description
+                      if (dish.description.isNotEmpty) ...[
+                        SizedBox(height: 4.h),
+                        Text(
+                          dish.description,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.black54,
+                            fontFamily: 'Poppins',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+                        SizedBox(height: 6.h),
+                      ],
 
-                // ✅ Coupons + Add to Cart
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        "2 Coupons • Upto 30% off",
+                      // Price
+                      Text(
+                        "\$${dish.price.toStringAsFixed(2)}",
                         style: TextStyle(
-                          fontSize: 10.sp,
-                          color: Colors.grey,
-                          fontFamily: 'Poppins',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.redPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6.r),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 4.h,
-                        ),
-                        minimumSize: Size(70.w, 28.h),
-                      ),
-                      onPressed: () {
-                        context.read<PizzaDetailsBloc>().add(
-                          ResetPizzaDetailsEvent(),
-                        );
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.pizzaDetails,
-                          arguments: dish.id,
-                        );
-                      },
-                      child: Text(
-                        "Order now",
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          color: AppColors.whiteColor,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
                           fontFamily: 'Poppins',
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+
+        Positioned(
+          top: 0.0.h,
+          right: 6.0.w,
+          child: BlocBuilder<FavoriteBloc, FavoriteState>(
+            builder: (context, state) {
+              bool isFavorite = false;
+              if (state is FavoriteLoaded) {
+                isFavorite = state.favorites.any((d) => d.id == dish.id);
+              }
+              return IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: Colors.redAccent,
+                  size: 24.sp,
+                ),
+                onPressed: () {
+                  if (isFavorite) {
+                    if (dish.wishlistId != null) {
+                      context.read<FavoriteBloc>().add(
+                        RemoveFromFavoriteEvent(
+                          dishId: dish.id,
+                          wishlistId: dish.wishlistId!,
+                        ),
+                      );
+                    }
+                  } else {
+                    context.read<FavoriteBloc>().add(AddToFavoriteEvent(dish));
+                  }
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class MinimalCategoryRow extends StatelessWidget {
+  final String selectedCategoryId;
+  final ValueChanged<String> onCategorySelected;
+
+  const MinimalCategoryRow({
+    super.key,
+    required this.selectedCategoryId,
+    required this.onCategorySelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CategoryBloc, CategoryState>(
+      builder: (context, state) {
+        if (state is! CategoryLoaded) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          height: 92.h, // responsive height
+          child: Builder(
+            builder: (context) {
+              // copy categories list
+              final categories = List.of(state.categories);
+
+              // find the special category
+              final specialIndex = categories.indexWhere(
+                (c) => c.id == 108 || c.name.toLowerCase() == "specials",
+              );
+
+              // if found, move it to the front
+              if (specialIndex != -1) {
+                final special = categories.removeAt(specialIndex);
+                categories.insert(0, special);
+              }
+              return ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                itemCount: categories.length,
+                separatorBuilder: (_, __) => SizedBox(width: 16.w),
+                itemBuilder: (context, index) {
+                  final item = categories[index];
+                  final isActive = item.id.toString() == selectedCategoryId;
+
+                  return GestureDetector(
+                    onTap: () => onCategorySelected(item.id.toString()),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(height: 6.h),
+                        CircleAvatar(
+                          radius: 22.r, // responsive radius
+                          backgroundImage: item.categoryImage.isNotEmpty
+                              ? NetworkImage(item.categoryImage)
+                              : const NetworkImage(
+                                  "https://via.placeholder.com/150",
+                                ),
+                          backgroundColor: Colors.grey[200],
+                        ),
+                        SizedBox(height: 4.h),
+                        SizedBox(
+                          width: 80.w,
+                          child: Text(
+                            item.name,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 10.sp,
+                              fontWeight: isActive
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isActive
+                                  ? AppColors.redAccent
+                                  : Colors.black87,
+                            ),
+                            // maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isActive)
+                          Container(
+                            margin: EdgeInsets.only(top: 3.h),
+                            height: 2.h,
+                            width: 18.w,
+                            color: AppColors.redAccent,
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
