@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_bloc.dart';
 import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_event.dart';
 import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_state.dart';
-import 'package:pizza_boys/core/bloc/loading_button/loading_button_bloc.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
 import 'package:pizza_boys/core/helpers/buttons/outline_button.dart';
+import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
 import 'package:pizza_boys/data/repositories/auth/login_repo.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/login/login_bloc.dart';
@@ -56,34 +55,28 @@ class _LoginState extends State<Login> {
           body: BlocConsumer<LoginBloc, LoginState>(
             listener: (context, state) {
               if (state is LoginSuccess) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.data["message"] ?? "Login Successful"),
-                    backgroundColor: AppColors.redPrimary,
-                  ),
+                SnackbarHelper.green(
+                  context,
+                  state.data["message"] ?? "Login Successful",
                 );
 
                 // Delay navigation until after the current frame
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.pushReplacementNamed(
                     context,
-                    AppRoutes.chooseStoreLocation,
-                    arguments: {
-                      "token": state.data["access_token"],
-                      "user": state.data["user"],
-                    },
+                    AppRoutes.home,
+                    // arguments: {
+                    //   "token": state.data["access_token"],
+                    //   "user": state.data["user"],
+                    // },
                   );
                 });
               } else if (state is LoginFailure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.error),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                SnackbarHelper.red(context, state.error);
               }
             },
             builder: (context, state) {
+              bool isLoading = state is LoginLoading;
               return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,43 +175,33 @@ class _LoginState extends State<Login> {
 
                             SizedBox(height: 16.h),
 
-                            BlocProvider(
-                              create: (_) => LoadingButtonBloc(),
-                              child: LoadingFillButton(
-                                text: "Login",
-                                onPressedAsync: () async {
-                                  if (formKey.currentState!.validate()) {
-                                    context.read<LoginBloc>().add(
-                                      LoginButtonPressed(
-                                        emailController.text.trim(),
-                                        passwordController.text.trim(),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
+                            LoadingFillButton(
+                              text: "Login",
+                              isLoading: isLoading,
+                              onPressedAsync: () async {
+                                if (formKey.currentState!.validate()) {
+                                  context.read<LoginBloc>().add(
+                                    LoginButtonPressed(
+                                      emailController.text.trim(),
+                                      passwordController.text.trim(),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
 
                             SizedBox(height: 14.h),
 
-                           LoadingOutlineButton(
-  text: "Continue as Guest",
-  icon: FontAwesomeIcons.solidUser,
-  onPressedAsync: () async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text("Functionality under processing..."),
-        backgroundColor: AppColors.redPrimary,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating, // nicer UI
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
-  },
-),
-
+                            LoadingOutlineButton(
+                              text: "Continue as Guest",
+                              icon: FontAwesomeIcons.solidUser,
+                              onPressedAsync: () async {
+                                SnackbarHelper.red(
+                                  context,
+                                  "Functionality under processing...",
+                                );
+                              },
+                            ),
 
                             SizedBox(height: 12.h),
 

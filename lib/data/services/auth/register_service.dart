@@ -4,9 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:pizza_boys/core/constant/api_urls.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
+import 'package:pizza_boys/core/helpers/error_handling_helper.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 
 class AuthService {
-
   Future<Map<String, dynamic>> registerUser({
     required String firstName,
     required String lastName,
@@ -22,12 +23,17 @@ class AuthService {
   }) async {
     try {
       print("📌 Starting registerUser()...");
+      final storeIdStr = await TokenStorage.getChosenStoreId();
+      print(  "Retrieved storeId: $storeIdStr");
 
-      // Construct body JSON
+      if (storeIdStr == null) {
+        throw Exception("Store ID not available.");
+      }
+
       final Map<String, dynamic> body = {
         "type": "insert",
         "role_id": 1,
-        "store_id": 4,
+        "store_id": int.parse(storeIdStr),
         "first_name": firstName,
         "last_name": lastName,
         "phone_number": phone,
@@ -63,7 +69,6 @@ class AuthService {
         },
       };
 
-      // Multipart form data
       FormData formData = FormData.fromMap({
         "body": jsonEncode(body),
         if (imageFile != null)
@@ -76,34 +81,37 @@ class AuthService {
 
       print("📝 FormData prepared: $formData");
 
-      // Send request via Dio
+      final registerUrl = await ApiUrls.getRegisterUrl();
+      print("🔗 Register URL: $registerUrl");
+
       final response = await ApiClient.dio.post(
-        ApiUrls.register,
+        registerUrl ,
         data: formData,
-        options: Options(
-          headers: {"Content-Type": "multipart/form-data"},
-        ),
+        options: Options(headers: {"Content-Type": "multipart/form-data"}),
       );
 
       print("📥 Response status: ${response.statusCode}");
       print("🔍 Response body: ${response.data}");
 
       if (response.statusCode == 200) {
-        print("✅ Registration successful!");
         return response.data;
       } else {
-        throw Exception("❌ Failed: ${response.data}");
+        throw Exception(
+          ApiErrorHandler.handle(
+            DioException(
+              requestOptions: RequestOptions(path: registerUrl),
+              response: response,
+            ),
+          ),
+        );
       }
     } on DioException catch (e) {
-      print("⚠️ DioException: ${e.message}");
-      throw Exception("⚠️ Register Error: ${e.message}");
+      throw ApiErrorHandler.handle(e);
     } catch (e) {
-      print("⚠️ Unknown Exception: $e");
-      throw Exception("⚠️ Register Error: $e");
+      throw ApiErrorHandler.handle(e);
     }
   }
 
-  // Helper to get correct MediaType for image
   MediaType _getMediaType(File file) {
     final ext = file.path.split('.').last.toLowerCase();
     switch (ext) {

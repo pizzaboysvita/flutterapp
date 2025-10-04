@@ -2,10 +2,10 @@ abstract class CategoryEvent {}
 
 // category_event.dart
 class LoadCategories extends CategoryEvent {
-  final int userId;
+  final int storeId;
   final String type;
   final bool? forceRefresh; // ✅ Optional
 
-  LoadCategories({required this.userId, required this.type, this.forceRefresh});
+  LoadCategories({required this.storeId, required this.type, this.forceRefresh});
 }
 

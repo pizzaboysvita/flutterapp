@@ -26,7 +26,6 @@ import 'package:pizza_boys/data/repositories/dish/dish_repo.dart';
 import 'package:pizza_boys/data/services/category/category_service.dart';
 import 'package:pizza_boys/data/services/dish/dish_service.dart';
 import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
 import 'package:pizza_boys/routes/app_pages.dart';
 import 'package:pizza_boys/routes/app_routes.dart';

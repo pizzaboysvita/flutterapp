@@ -87,4 +87,6 @@ class FavoriteService {
       throw Exception("Failed to load wishlist");
     }
   }
+
+
 }

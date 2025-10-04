@@ -4,9 +4,14 @@ import 'addon_model.dart'; // 👈 import Addon
 /// 🔹 Represents a set of options, like "Pizza Base" or "Extra Toppings"
 class OptionSet {
   final String name;
+  final String optionType; // NEW
   final List<Addon> options;
 
-  OptionSet({required this.name, required this.options});
+  OptionSet({
+    required this.name,
+    required this.optionType,
+    required this.options,
+  });
 
   factory OptionSet.fromJson(dynamic json) {
     Map<String, dynamic> map;
@@ -37,6 +42,7 @@ class OptionSet {
 
     return OptionSet(
       name: map['dispaly_name'] ?? map['option_set_name'] ?? 'Option Set',
+      optionType: map['option_type'] ?? "Radio", // Default Radio
       options: combos.map((e) => Addon.fromJson(e)).toList(),
     );
   }
@@ -44,13 +50,13 @@ class OptionSet {
   Map<String, dynamic> toJson() {
     return {
       'dispaly_name': name,
+      'option_type': optionType,
       'option_set_combo_json': jsonEncode(
         options.map((e) => e.toJson()).toList(),
       ),
     };
   }
 }
-
 
 /// 🔹 Represents a dish/item in the menu
 class DishModel {
@@ -65,9 +71,10 @@ class DishModel {
   final String? storeName;
   final int? wishlistId;
 
-  final List<OptionSet> optionSets; // ✅ Dynamic options like bases, toppings
-  final List<Addon> ingredients; // ✅ Extra ingredients
-  final List<Addon> choices; // ✅ Side items
+  final List<OptionSet> optionSets; // Dynamic options like bases, toppings
+  final List<Addon> ingredients; // Extra ingredients
+  final List<Addon> choices; // Side items
+  final List<DishModel> comboDishes; // Combo dishes (for combo type)
 
   DishModel({
     required this.id,
@@ -83,10 +90,18 @@ class DishModel {
     required this.optionSets,
     required this.ingredients,
     required this.choices,
+    this.comboDishes = const [],
   });
 
   /// 🔹 Parse from API JSON
-  factory DishModel.fromJson(Map<String, dynamic> json) {
+  factory DishModel.fromJson(
+    Map<String, dynamic> json, {
+    List<DishModel>? allDishes,
+  }) {
+    print("🛠 DishModel.fromJson → Dish Type: ${json['dish_type']}");
+    print("   Dish Name: ${json['dish_name']}");
+    print("   Dish ID: ${json['dish_id']}");
+
     List<Addon> parseAddons(dynamic jsonData) {
       if (jsonData == null) return [];
       if (jsonData is String) {
@@ -117,6 +132,43 @@ class DishModel {
       return [];
     }
 
+    // Parse side choices
+    List<Addon> comboChoices = [];
+    // Parse combo dishes
+    List<DishModel> comboDishes = [];
+    if (json['dish_type'] == "combo" && json['dish_choices_json'] != null) {
+      try {
+        final choicesDecoded = jsonDecode(json['dish_choices_json']);
+        for (var choice in choicesDecoded) {
+          for (var menuItem in choice["menuItems"] ?? []) {
+            for (var category in menuItem["categories"] ?? []) {
+              for (var dishChoice in category["dishes"] ?? []) {
+                comboDishes.add(
+                  DishModel(
+                    id: dishChoice["dishId"] ?? 0,
+                    name: dishChoice["dishName"] ?? "",
+                    price:
+                        0.0, // 👈 you can fill from dishChoice if API gives price
+                    imageUrl: dishChoice["image_url"] ?? "",
+                    rating: 0.0,
+                    dishCategoryId: category["categoryId"] ?? -1,
+                    description: "",
+                    storeId: json["store_id"] ?? 0,
+                    optionSets: [],
+                    ingredients: [],
+                    choices: [],
+                    comboDishes: [],
+                  ),
+                );
+              }
+            }
+          }
+        }
+      } catch (e) {
+        print("❗ Error parsing combo: $e");
+      }
+    }
+
     return DishModel(
       id: json['dish_id'] ?? 0,
       name: json['dish_name'] ?? "",
@@ -128,9 +180,14 @@ class DishModel {
       storeId: json['store_id'] ?? 0,
       storeName: json['store_name']?.toString(),
       wishlistId: json['wishlist_id'],
-      optionSets: parseOptionSets(json['dish_option_set_json']),
-      ingredients: parseAddons(json['dish_ingredients_json']),
-      choices: parseAddons(json['dish_choices_json']),
+      optionSets: json['dish_type'] == "standard"
+          ? parseOptionSets(json['dish_option_set_json'])
+          : [],
+      ingredients: json['dish_type'] == "standard"
+          ? parseAddons(json['dish_ingredients_json'])
+          : [],
+      choices: comboChoices,
+      comboDishes: comboDishes, // Assign parsed combo dishes
     );
   }
 
@@ -159,7 +216,6 @@ class DishModel {
 }
 
 extension DishModelExtensions on DishModel {
-  /// Returns the "size/base" option set, if any
   OptionSet? get sizeOptionSet {
     if (optionSets.isEmpty) return null;
     return optionSets.firstWhere(
@@ -170,10 +226,27 @@ extension DishModelExtensions on DishModel {
     );
   }
 
-  /// Returns all size options (Small, Large, etc.) as Addon list
   List<Addon> get sizes => sizeOptionSet?.options ?? [];
 
-  /// Returns "Large" options dynamically if present
   List<Addon> get largeOptions =>
       sizes.where((e) => e.name.toLowerCase().contains('large')).toList();
+}
+
+extension DishModelExtensionsEmpty on DishModel {
+  static DishModel empty() {
+    return DishModel(
+      id: 0,
+      name: "",
+      price: 0.0,
+      imageUrl: "",
+      rating: 0.0,
+      dishCategoryId: -1,
+      description: "",
+      storeId: 0,
+      optionSets: [],
+      ingredients: [],
+      choices: [],
+      comboDishes: [],
+    );
+  }
 }

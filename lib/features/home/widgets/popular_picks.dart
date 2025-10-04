@@ -164,8 +164,26 @@ class PopularPicks extends StatelessWidget {
                 );
               } else if (state is DishLoaded) {
                 final List<DishModel> dishes = state.dishes;
+                if (dishes.isEmpty) {
+                  // ✅ Show fallback when no dishes available
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text(
+                        "No Popular Picks Available 🍕",
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black54,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
                 return GridView.builder(
-                  itemCount: 4,
+                  itemCount: dishes.length < 4 ? dishes.length : 4,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

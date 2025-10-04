@@ -18,7 +18,6 @@ import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_state.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/dish/dish_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
@@ -37,13 +36,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
   List<String> selectedToppings = [];
   Map<String, int> sauceQuantity = {};
   List<String> selectedIngredients = [];
-  // final Map<String, double> addonPrices = const {
-  //   'Extra Cheese': 0.00,
-  //   'Olives Topping': 0.00,
-  //   'Coke (500ml)': 1.50,
-  //   'Garlic Bread': 2.00,
-  //   'French Fries': 2.50,
-  // };
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +49,15 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
           scrolledUnderElevation: 0,
           backgroundColor: AppColors.scaffoldColor(context),
           elevation: 0,
+          centerTitle: true,
+          title: Padding(
+            padding: EdgeInsets.only(left: 2.0.w),
+            child: Image.asset(
+              ImageUrls.logo, // replace with your image path
+              height: 23.sp, // matches your text height
+              fit: BoxFit.contain,
+            ),
+          ),
         ),
         body: BlocBuilder<DishBloc, DishState>(
           builder: (context, state) {
@@ -93,6 +94,16 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               print(
                 "✅ PizzaDetailsView → Selected dish: id=${dish.id}, name=${dish.name}",
               );
+
+              print(
+                "🎯 UI → ComboDishes available for ${dish.name}: ${dish.comboDishes.length}",
+              );
+
+              for (var cd in dish.comboDishes) {
+                print(
+                  "   → ComboDish: id=${cd.id}, name=${cd.name}, price=${cd.price}, image=${cd.imageUrl}",
+                );
+              }
 
               /// ✅ Safe fallbacks if backend sends nulls
               final imageUrl = (dish.imageUrl?.isNotEmpty ?? false)
@@ -229,13 +240,191 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                             bloc,
                           ),
 
-                        SizedBox(height: 80.h),
+                        if (dish.comboDishes.isNotEmpty)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: dish.comboDishes.map((comboDish) {
+                              final isSelected =
+                                  detailsState.selectedComboDish?.id ==
+                                  comboDish.id;
+                              final bloc = context.read<PizzaDetailsBloc>();
+
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                margin: EdgeInsets.symmetric(
+                                  vertical: 6.h,
+                                  horizontal: 8.w,
+                                ),
+                                padding: EdgeInsets.all(10.w),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Colors.grey[100]
+                                      : Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.black26
+                                        : Colors.grey.shade300,
+                                    width: isSelected ? 1.2 : 0.8,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.black12,
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ]
+                                      : [],
+                                ),
+
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    /// Combo Dish Header
+                                    InkWell(
+                                      borderRadius: BorderRadius.circular(10.r),
+                                      onTap: () {
+                                        final isAlreadySelected =
+                                            bloc.state.selectedComboDish.id ==
+                                            comboDish.id;
+
+                                        if (isAlreadySelected) {
+                                          bloc.add(ResetPizzaDetailsEvent());
+                                        } else {
+                                          bloc.add(
+                                            FetchComboDishDetailsEvent(
+                                              comboDish.id,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 10.h,
+                                          horizontal: 8.w,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                comboDish.name,
+                                                style: TextStyle(
+                                                  fontSize: 15.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontFamily: 'Poppins',
+                                                  color: isSelected
+                                                      ? Colors.black
+                                                      : Colors.black87,
+                                                ),
+                                              ),
+                                            ),
+                                            AnimatedRotation(
+                                              turns: isSelected ? 0.5 : 0,
+                                              duration: const Duration(
+                                                milliseconds: 250,
+                                              ),
+                                              child: Icon(
+                                                Icons
+                                                    .keyboard_arrow_down_rounded,
+                                                size: 22.sp,
+                                                color: isSelected
+                                                    ? Colors.black
+                                                    : Colors.black54,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+
+                                    /// Expanded Section (Accordion Body)
+                                    AnimatedCrossFade(
+                                      firstChild: const SizedBox.shrink(),
+                                      secondChild: Container(
+                                        margin: EdgeInsets.only(top: 8.h),
+                                        padding: EdgeInsets.all(12.w),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            12.r,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            ...detailsState
+                                                .selectedComboDish
+                                                .optionSets
+                                                .map(
+                                                  (optionSet) =>
+                                                      _buildDynamicOptionSet(
+                                                        optionSet,
+                                                        detailsState,
+                                                        bloc,
+                                                      ),
+                                                ),
+
+                                            /// Ingredients
+                                            if (detailsState
+                                                .selectedComboDish
+                                                .ingredients
+                                                .isNotEmpty)
+                                              _buildIngredientsSection(
+                                                detailsState
+                                                    .selectedComboDish
+                                                    .ingredients,
+                                                detailsState,
+                                                bloc,
+                                              ),
+
+                                            /// Choices
+                                            if (detailsState
+                                                .selectedComboDish
+                                                .choices
+                                                .isNotEmpty)
+                                              _buildChoicesSection(
+                                                detailsState
+                                                    .selectedComboDish
+                                                    .choices,
+                                                detailsState,
+                                                bloc,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      crossFadeState: isSelected
+                                          ? CrossFadeState.showSecond
+                                          : CrossFadeState.showFirst,
+                                      duration: const Duration(
+                                        milliseconds: 350,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          )
+                        else
+                          const SizedBox.shrink(),
+
+                        SizedBox(height: 10.h),
                       ],
                     ),
                   );
                 },
               );
             }
+
             return const SizedBox.shrink();
           },
         ),
@@ -264,10 +453,11 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                       //     content: Text("✅ Added to cart successfully!"),
                       //   ),
                       // );
-                      print(  
+                      print(
                         "✅ CartBloc → Added to cart: dishId=${dish.id}, quantity=${detailsState.quantity}, total=\$$total",
                       );
-                      Navigator.pushNamed(
+
+                      Navigator.pushReplacementNamed(
                         context,
                         AppRoutes.cartView,
                         arguments: {
@@ -446,13 +636,34 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
     );
   }
 
+  // dynamic option_type(radio,counter,checkbox)
+  Widget _buildDynamicOptionSet(
+    OptionSet optionSet,
+    PizzaDetailsState state,
+    PizzaDetailsBloc bloc,
+  ) {
+    switch (optionSet.optionType.toLowerCase()) {
+      case "radio":
+        return _buildBaseOptionSet(optionSet, state, bloc);
+
+      case "checkbox":
+        return _buildToppingsOptionSet(optionSet, state, bloc);
+
+      case "counter":
+        return _buildSaucesOptionSet(optionSet, state, bloc);
+
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
   Widget _buildBaseOptionSet(
     OptionSet optionSet,
     PizzaDetailsState state,
     PizzaDetailsBloc bloc,
   ) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 8.h),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: AppColors.whiteColor,
         borderRadius: BorderRadius.circular(12.r),
@@ -460,128 +671,106 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🔽 Header Row with toggle (no splash)
-          GestureDetector(
-            onTap: () => bloc.add(ToggleBaseExpandEvent()),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-              child: Row(
-                children: [
-                  Text(
-                    optionSet.name,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const Spacer(),
-                  AnimatedRotation(
-                    turns: state.isBaseExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 250),
-                    child: Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 22.sp,
-                      color: Colors.black54,
-                    ),
+          /// Section title
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.h),
+            child: Text(
+              optionSet.name,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+
+          /// Base radio options (one selectable)
+          ...optionSet.options.map((opt) {
+            final isSelected = state.selectedBase == opt.name;
+
+            return Container(
+              margin: EdgeInsets.symmetric(vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-            ),
-          ),
-
-          // 🔽 Expandable content with animation
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            height: state.isBaseExpanded
-                ? optionSet.options.length * 56.h
-                : 0, // collapses to 0
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: ListView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: optionSet.options.length,
-              itemBuilder: (context, index) {
-                final opt = optionSet.options[index];
-                final isSelected = state.selectedBase == opt.name;
-
-                return GestureDetector(
-                  onTap: () => bloc.add(SelectBaseEvent(opt.name, opt.price)),
-                  behavior: HitTestBehavior.translucent,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                    child: Row(
-                      children: [
-                        Icon(
-                          FontAwesomeIcons.pizzaSlice,
-                          size: 16.sp,
-                          color: Colors.black87,
-                        ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: Text(
-                            opt.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontFamily: 'Poppins',
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                        Text(
-                          '\$${opt.price.toStringAsFixed(2)}',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12.r),
+                onTap: () => bloc.add(SelectBaseEvent(opt.name, opt.price)),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 12.h,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      /// Base name
+                      Expanded(
+                        child: Text(
+                          opt.name,
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 15.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.black87,
                           ),
                         ),
+                      ),
 
-                        SizedBox(width: 12.w),
-                        _buildCustomRadio(isSelected),
-                      ],
-                    ),
+                      /// Price
+                      Text(
+                        '\$${opt.price.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+
+                      /// Custom radio button (like checkbox style but circular)
+                      Container(
+                        width: 22.w,
+                        height: 22.h,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.black45,
+                            width: 1.2.w,
+                          ),
+                        ),
+                        child: isSelected
+                            ? Center(
+                                child: Container(
+                                  width: 12.w,
+                                  height: 12.h,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              )
+                            : null,
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCustomRadio(bool isSelected) {
-    return Container(
-      width: 20.w,
-      height: 20.h,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: isSelected ? Colors.red : Colors.grey,
-          width: 2.w,
-        ),
-      ),
-      child: isSelected
-          ? Center(
-              child: Container(
-                width: 10.w,
-                height: 10.h,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.red,
                 ),
               ),
-            )
-          : null,
+            );
+          }).toList(),
+          SizedBox(height: 8.0.h),
+        ],
+      ),
     );
   }
 
