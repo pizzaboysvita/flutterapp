@@ -1,69 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:pizza_boys/core/bloc/loading_button/loading_button_bloc.dart';
-import 'package:pizza_boys/core/bloc/loading_button/loading_button_event.dart';
-import 'package:pizza_boys/core/bloc/loading_button/loading_button_state.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 
 class LoadingFillButton extends StatelessWidget {
   final String text;
   final Future<void> Function()? onPressedAsync;
+  final Color backgroundColor;
+  final Color textColor;
+  final double borderRadius;
+  final bool isLoading;
 
-  const LoadingFillButton({super.key, required this.text, this.onPressedAsync});
+  const LoadingFillButton({
+    super.key,
+    required this.text,
+    this.onPressedAsync,
+    this.backgroundColor = AppColors.redPrimary,
+    this.textColor = Colors.white,
+    this.borderRadius = 8.0,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LoadingButtonBloc, LoadingBtnState>(
-      builder: (context, state) {
-        final bool isLoading = state is ButtonLoading;
-
-        return SizedBox(
-          width: double.infinity,
-          child: Material(
-            color: AppColors.redPrimary,
-            borderRadius: BorderRadius.circular(8.r),
-            child: InkWell(
-              onTap: isLoading
-                  ? null
-                  : () => context.read<LoadingButtonBloc>().add(
-                      ButtonPressed(onPressedAsync: onPressedAsync),
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(borderRadius),
+          splashColor: Colors.white.withOpacity(0.3),
+          highlightColor: Colors.white.withOpacity(0.1),
+          onTap: isLoading
+              ? null
+              : () async {
+                  if (onPressedAsync != null) {
+                    await onPressedAsync!();
+                  }
+                },
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 14.h),
+            alignment: Alignment.center,
+            child: isLoading
+                ? SizedBox(
+                    width: 20.w,
+                    height: 20.w,
+                    child: CircularProgressIndicator(
+                      color: textColor,
+                      strokeWidth: 2,
                     ),
-              borderRadius: BorderRadius.circular(8.r),
-              splashColor: Colors.white.withOpacity(0.3),
-              highlightColor: Colors.white.withOpacity(0.1),
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 14.h),
-                alignment: Alignment.center,
-                child: isLoading
-                    ? SizedBox(
-                        width: 24.w,
-                        height: 24.w,
-                        child: const CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+                  )
+                : Text(
+                    text,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      shadows: const [
+                        Shadow(
+                          blurRadius: 20,
+                          offset: Offset(0, 3),
+                          color: Colors.black45,
                         ),
-                      )
-                    : Text(
-                        text,
-                        style: TextStyle(
-                          color: Colors.grey.shade200,
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                          shadows: const [
-                            Shadow(
-                              blurRadius: 20,
-                              offset: Offset(0, 3),
-                              color: Colors.black45,
-                            ),
-                          ],
-                        ),
-                      ),
-              ),
-            ),
+                      ],
+                    ),
+                  ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

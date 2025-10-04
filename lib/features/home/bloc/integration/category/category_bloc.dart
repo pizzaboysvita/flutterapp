@@ -22,7 +22,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
 
       try {
         final categories = await repository.getCategories(
-          event.userId,
+          event.storeId,
           event.type,
           forceRefresh: event.forceRefresh ?? false,
         );
@@ -35,6 +35,8 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   emit(CategoryError(message)); 
       }
     });
+
+    
   }
 }
 

@@ -1,3 +1,5 @@
+import 'package:pizza_boys/data/models/dish/dish_model.dart';
+
 abstract class PizzaDetailsEvent {}
 
 /// ♻️ Reset everything
@@ -50,4 +52,20 @@ class ToggleChoiceEvent extends PizzaDetailsEvent {
 class UpdateQuantityEvent extends PizzaDetailsEvent {
   final int quantity;
   UpdateQuantityEvent(this.quantity);
+}
+
+// /for combo
+/// 🍱 Toggle Combo Dish
+class SelectComboDishEvent extends PizzaDetailsEvent {
+  final DishModel comboDish;
+
+  SelectComboDishEvent(this.comboDish);
+
+  @override
+  List<Object?> get props => [comboDish];
+}
+
+class FetchComboDishDetailsEvent extends PizzaDetailsEvent {
+  final int dishId;
+  FetchComboDishDetailsEvent(this.dishId);
 }

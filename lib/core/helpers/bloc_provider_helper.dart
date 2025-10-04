@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
-import 'package:pizza_boys/core/bloc/loading_button/loading_button_bloc.dart';
 import 'package:pizza_boys/data/repositories/auth/register_repo.dart';
 import 'package:pizza_boys/data/repositories/cart/cart_repo.dart';
+import 'package:pizza_boys/data/repositories/dish/dish_repo.dart';
 import 'package:pizza_boys/data/repositories/order/order_repo.dart';
 import 'package:pizza_boys/data/repositories/whishlist/whishlist_repo.dart';
 import 'package:pizza_boys/data/services/cart/cart_service.dart';
+import 'package:pizza_boys/data/services/dish/dish_service.dart';
 import 'package:pizza_boys/data/services/order/order_service.dart';
 import 'package:pizza_boys/data/services/whishlist/whishlist_service.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/register/register_bloc.dart';
@@ -42,12 +43,14 @@ class BlocProviderHelper {
       providers: [
         BlocProvider(create: (_) => ConnectivityBloc()),
         BlocProvider(create: (_) => CartUIBloc()),
-        BlocProvider(create: (_) => LoadingButtonBloc()),
         BlocProvider(create: (_) => LoginCheckboxBloc()),
         BlocProvider(create: (_) => RegisterBloc(AuthRepository())),
         BlocProvider(create: (_) => BikeAnimationBloc()),
         BlocProvider(create: (_) => BannerCarouselBloc()),
-        BlocProvider(create: (_) => PizzaDetailsBloc()),
+       BlocProvider(
+  create: (_) => PizzaDetailsBloc(dishRepository: DishRepository(DishService())),
+),
+
         BlocProvider(create: (_) => NavCubit()),
         BlocProvider(create: (_) => CheckoutCubit()),
         BlocProvider(create: (_) => PaymentBloc()),

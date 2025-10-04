@@ -74,6 +74,54 @@ class TokenStorage {
     }
   }
 
+  // user flow existing/new user
+// user flow existing/new user
+static const String _isFirstLaunchKey = "is_first_launch";
+
+static Future<bool> getIsFirstLaunch() async {
+  try {
+    final value = await _storage.read(key: _isFirstLaunchKey);
+    if (value == null) return true; // treat null as first launch
+    return value == "true";
+  } catch (e) {
+    print("⚠️ [TokenStorage] Error reading isFirstLaunch: $e");
+    return true;
+  }
+}
+
+static Future<void> setIsFirstLaunch(bool value) async {
+  try {
+    await _storage.write(key: _isFirstLaunchKey, value: value.toString());
+  } catch (e) {
+    print("⚠️ [TokenStorage] Error writing isFirstLaunch: $e");
+  }
+}
+
+// location chosen flag
+static const String _locationChosenKey = "location_chosen";
+
+static Future<bool> isLocationChosen() async {
+  try {
+    final value = await _storage.read(key: _locationChosenKey);
+    if (value == null) return false;
+    return value == "true";
+  } catch (e) {
+    print("⚠️ [TokenStorage] Error reading locationChosen: $e");
+    return false;
+  }
+}
+
+static Future<void> setLocationChosen(bool value) async {
+  try {
+    await _storage.write(key: _locationChosenKey, value: value.toString());
+  } catch (e) {
+    print("⚠️ [TokenStorage] Error writing locationChosen: $e");
+  }
+}
+
+
+
+
   // Getters
   static Future<String?> getAccessToken() async => _readKey(_accessTokenKey);
   static Future<String?> getRefreshToken() async => _readKey(_refreshTokenKey);
@@ -108,7 +156,7 @@ class TokenStorage {
   static Future<void> saveSelectedStore(Store store) async {
     try {
       await _storage.write(key: _storeNameKey, value: store.name);
-      print("📦 [TokenStorage] Selected store name saved: ${store.name}");
+      // print("📦 [TokenStorage] Selected store name saved: ${store.name}");
     } catch (e) {
       print("⚠️ [TokenStorage] Error saving selected store name: $e");
     }
@@ -119,7 +167,7 @@ class TokenStorage {
     try {
       final name = await _storage.read(key: _storeNameKey);
       if (name != null) {
-        print("📦 [TokenStorage] Loaded store: $name");
+        // print("📦 [TokenStorage] Loaded store: $name");
       }
       return name;
     } catch (e) {

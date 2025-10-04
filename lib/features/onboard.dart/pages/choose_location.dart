@@ -9,6 +9,15 @@ import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/map/address_to_latlang.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_state.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_event.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_state.dart';
+import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
+import 'package:pizza_boys/features/home/bloc/integration/dish/dish_event.dart';
+import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
@@ -17,13 +26,19 @@ import 'package:pizza_boys/routes/app_routes.dart';
 
 class StoreSelectionPage extends StatefulWidget {
   final ScrollController? scrollController;
-  const StoreSelectionPage({super.key, this.scrollController});
+  final bool isChangeLocation;
+  const StoreSelectionPage({
+    super.key,
+    this.scrollController,
+    this.isChangeLocation = false,
+  });
 
   @override
   State<StoreSelectionPage> createState() => _StoreSelectionPageState();
 }
 
 class _StoreSelectionPageState extends State<StoreSelectionPage> {
+  final ValueNotifier<bool> _isLoading = ValueNotifier(false);
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {}; //Google-Map
   BitmapDescriptor? normalIcon;
@@ -162,9 +177,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
           onTap: () async {
             context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
 
-            _mapController?.animateCamera(
-              CameraUpdate.newLatLngZoom(storeLocation, 15),
-            );
+            _safeAnimateCamera(CameraUpdate.newLatLngZoom(storeLocation, 15));
           },
         ),
       );
@@ -214,6 +227,18 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
   }
 
+  Future<void> _safeAnimateCamera(CameraUpdate update) async {
+    if (_mapController != null) {
+      try {
+        await _mapController!.animateCamera(update);
+      } catch (e) {
+        debugPrint("⚠️ animateCamera failed: $e");
+      }
+    } else {
+      debugPrint("⚠️ MapController is not ready");
+    }
+  }
+
   // .......... Google-Map ............
   Future<void> updateMarkers(List<Store> stores, String? selectedId) async {
     _markers.clear();
@@ -232,9 +257,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
           onTap: () async {
             context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
 
-            _mapController?.animateCamera(
-              CameraUpdate.newLatLngZoom(storeLocation, 15),
-            );
+            _safeAnimateCamera(CameraUpdate.newLatLngZoom(storeLocation, 15));
           },
         ),
       );
@@ -289,14 +312,13 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                                 onMapCreated: (controller) {
                                   _mapController = controller;
 
-                                  // Delay to ensure map is ready before moving camera
                                   Future.delayed(
                                     const Duration(milliseconds: 300),
                                     () {
-                                      controller.animateCamera(
+                                      _safeAnimateCamera(
                                         CameraUpdate.newLatLngZoom(
                                           LatLng(-36.8485, 174.7633),
-                                          14, // initial zoom
+                                          14,
                                         ),
                                       );
                                     },
@@ -408,9 +430,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
             // Get coordinates dynamically
             final latLng = await getStoreLatLng(store);
-            _mapController?.animateCamera(
-              CameraUpdate.newLatLngZoom(latLng, 15),
-            );
+            _safeAnimateCamera(CameraUpdate.newLatLngZoom(latLng, 15));
           },
 
           child: Container(
@@ -517,63 +537,138 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // SizedBox(height: 12.h),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    // ✅ Save selected store to secure storage
-                    await TokenStorage.saveChosenLocation(
-                      storeId: selectedStore.id.toString(),
-                      locationName: selectedStore.name,
-                    );
+              ValueListenableBuilder<bool>(
+                valueListenable: _isLoading,
+                builder: (context, isLoading, _) {
+                  return SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              _isLoading.value = true; // Start spinner
+                              debugPrint("👉 Continue button clicked");
 
-                    debugPrint(
-                      "✅ Store persisted: ${selectedStore.name} (ID: ${selectedStore.id})",
-                    );
+                              // Save latest store id and location name
+                              await TokenStorage.saveChosenLocation(
+                                storeId: selectedStore.id.toString(),
+                                locationName: selectedStore.name,
+                              );
 
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      AppRoutes.home,
-                      (route) => false,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.redPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
+                              // Optionally also save store name separately
+                              await TokenStorage.saveSelectedStore(
+                                selectedStore,
+                              );
+
+                              // Mark location as chosen
+                              await TokenStorage.setLocationChosen(true);
+
+                              debugPrint(
+                                "✅ Store saved: ${selectedStore.name} (ID: ${selectedStore.id})",
+                              );
+
+                              try {
+                                // 🚀 Load categories
+                                context.read<CategoryBloc>().add(
+                                  LoadCategories(
+                                    storeId: selectedStore.id,
+                                    type: "web",
+                                    forceRefresh: true,
+                                  ),
+                                );
+
+                                await context
+                                    .read<CategoryBloc>()
+                                    .stream
+                                    .firstWhere(
+                                      (state) =>
+                                          state is CategoryLoaded ||
+                                          state is CategoryError,
+                                    );
+
+                                debugPrint("✅ Categories loaded");
+
+                                // 🚀 Load dishes
+                                context.read<DishBloc>().add(
+                                  GetAllDishesEvent(),
+                                );
+
+                                await context
+                                    .read<DishBloc>()
+                                    .stream
+                                    .firstWhere(
+                                      (state) =>
+                                          state is DishLoaded ||
+                                          state is DishError,
+                                    );
+
+                                debugPrint("✅ Dishes loaded");
+
+                               
+                              } catch (e) {
+                                debugPrint("❌ Error loading data: $e");
+                              }
+
+                              _isLoading.value = false; // Stop spinner
+
+                              final args = ModalRoute.of(
+                                context,
+                              )?.settings.arguments;
+                              final isChangeLocation =
+                                  (args is Map &&
+                                  args["isChangeLocation"] == true);
+
+                              debugPrint(
+                                "🔎 isChangeLocation = $isChangeLocation",
+                              );
+
+                              if (widget.isChangeLocation) {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  AppRoutes.home,
+                                  (route) => false,
+                                );
+                              } else {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  AppRoutes.login,
+                                  (route) => false,
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.redPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                      ),
+                      child: isLoading
+                          ? SizedBox(
+                              height: 20.h,
+                              width: 20.h,
+                              child: const CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Continue',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontFamily: 'Poppins',
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
-                    padding: EdgeInsets.symmetric(
-                      vertical: 14.h,
-                    ), // ✅ Adaptive padding
-                  ),
-                  child: Text(
-                    'Continue',
-                    style: TextStyle(
-                      fontSize: 14.sp, // ✅ Slightly larger font for readability
-                      fontFamily: 'Poppins',
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           ),
         );
       },
     );
-  }
-
-  LatLng _getStoreLocation(int storeId) {
-    switch (storeId) {
-      case 1:
-        return const LatLng(-36.8485, 174.7633); // Example: Auckland
-      case 2:
-        return const LatLng(-37.8136, 144.9631); // Example: Melbourne
-      case 3:
-        return const LatLng(-33.8688, 151.2093); // Example: Sydney
-      default:
-        return const LatLng(-36.8485, 174.7633); // fallback
-    }
   }
 
   Future<void> _fitMarkersToBounds(List<Store> stores) async {
@@ -588,7 +683,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     if (positions.isEmpty) return;
 
     final bounds = _createLatLngBounds(positions);
-    _mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 60));
+    _safeAnimateCamera(CameraUpdate.newLatLngBounds(bounds, 60));
   }
 
   LatLngBounds _createLatLngBounds(List<LatLng> positions) {

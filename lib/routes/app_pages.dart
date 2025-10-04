@@ -30,7 +30,10 @@ import 'package:pizza_boys/routes/app_routes.dart';
 
 class AppPages {
   static Route<dynamic> generateRoutes(RouteSettings setting) {
+    print("🛣 Navigating to route: ${setting.name}");
+
     switch (setting.name) {
+      
       case AppRoutes.pizzaDetails:
         final dishId = setting.arguments as int;
         return MaterialPageRoute(
@@ -102,8 +105,13 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => SecuritySettingsView());
       case AppRoutes.aiChatbot:
         return MaterialPageRoute(builder: (context) => AIChatBot());
-      case AppRoutes.chooseStoreLocation:
-        return MaterialPageRoute(builder: (context) => StoreSelectionPage());
+     case AppRoutes.chooseStoreLocation:
+  final args = setting.arguments as Map<String, dynamic>?;
+  final isChangeLocation = args?["isChangeLocation"] ?? false;
+  return MaterialPageRoute(
+    builder: (context) => StoreSelectionPage(isChangeLocation: isChangeLocation),
+  );
+
       case AppRoutes.googleMaps:
         return MaterialPageRoute(builder: (context) => Googlemap());
 

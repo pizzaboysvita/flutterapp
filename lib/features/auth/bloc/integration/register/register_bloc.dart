@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pizza_boys/core/helpers/error_handling_helper.dart';
 import 'package:pizza_boys/data/repositories/auth/register_repo.dart';
 import 'register_event.dart';
 import 'register_state.dart';
@@ -24,9 +25,9 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
           imageFile: event.imageFile,
         );
         emit(RegisterSuccess(result));
-        
       } catch (e) {
-        emit(RegisterFailure(e.toString()));
+        final errorMsg = ApiErrorHandler.handle(e);
+        emit(RegisterFailure(errorMsg));
       }
     });
   }

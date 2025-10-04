@@ -4,43 +4,54 @@ import 'package:pizza_boys/routes/app_routes.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/error_screen_tracker.dart';
 
 class SessionManager {
-  static Future<void> checkSession(BuildContext context) async {
-    await Future.delayed(const Duration(seconds: 2));
+static Future<void> checkSession(BuildContext context) async {
 
-    if (!context.mounted) return;
+  if (!context.mounted) return;
 
-    if (ErrorScreenTracker.isShowing) {
-      debugPrint("⚠️ Error screen is showing. Skipping session navigation.");
-      return; // Prevent overlapping navigation
-    }
-
-    final token = await TokenStorage.getAccessToken();
-    debugPrint("🔍 Token: $token");
-
-    if (token == null || token.isEmpty) {
-      debugPrint("🆕 No token found. Navigating to landing.");
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.landing);
-      }
-      return;
-    }
-
-    final chosenLocation = await TokenStorage.getChosenLocation();
-    debugPrint("🔍 Chosen Location: $chosenLocation");
-
-    if (chosenLocation == null || chosenLocation.isEmpty) {
-      debugPrint("✅ Location not chosen. Navigating to ChooseStoreLocation.");
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.chooseStoreLocation);
-      }
-    } else {
-      debugPrint("🎉 Session OK. Navigating to Home.");
-   if (!ErrorScreenTracker.isShowing) {
-  Navigator.pushReplacementNamed(context, AppRoutes.home);
-}
-
-    }
+  if (ErrorScreenTracker.isShowing) {
+    debugPrint("⚠️ Error screen is showing. Skipping session navigation.");
+    return;
   }
+
+  // ✅ Check if first time app launch
+  final isFirstLaunch = await TokenStorage.getIsFirstLaunch();
+  if (isFirstLaunch) {
+    debugPrint("🆕 First launch detected. Navigating to Landing.");
+    await TokenStorage.setIsFirstLaunch(false); // mark first launch complete
+    if (context.mounted) {
+      Navigator.pushReplacementNamed(context, AppRoutes.landing);
+    }
+    return;
+  }
+
+  // ✅ Check if location is chosen
+  final isLocationChosen = await TokenStorage.isLocationChosen();
+  if (!isLocationChosen) {
+    debugPrint("📍 Location not chosen. Navigating to ChooseStoreLocation.");
+    if (context.mounted) {
+      Navigator.pushReplacementNamed(context, AppRoutes.chooseStoreLocation);
+    }
+    return;
+  }
+
+  // ✅ Check if user is logged in
+  final token = await TokenStorage.getAccessToken();
+  debugPrint("🔍 Token: $token");
+
+  if (token == null || token.isEmpty) {
+    debugPrint("🔑 Location chosen but not logged in. Navigating to Login.");
+    if (context.mounted) {
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    }
+    return;
+  }
+
+  // ✅ Everything is fine → go to Home
+  debugPrint("🎉 Session OK. Navigating to Home.");
+  if (context.mounted && !ErrorScreenTracker.isShowing) {
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
+  }
+}
 
   static Future<void> clearSession(BuildContext context) async {
     await TokenStorage.clearSession();

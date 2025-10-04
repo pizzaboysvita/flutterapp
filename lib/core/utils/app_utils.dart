@@ -2,7 +2,6 @@ import 'dart:developer';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';

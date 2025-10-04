@@ -184,19 +184,35 @@ class PizzaCategoriesRow extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(horizontal: 16.w),
-              itemCount: 5,
+              itemCount: 5, // Number of shimmer placeholders
               separatorBuilder: (_, __) => SizedBox(width: 12.w),
-              itemBuilder: (_, __) => Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(
-                  width: 65.w,
-                  height: 65.w,
-                  decoration: BoxDecoration(
-                    // color: AppColors.whiteColor,
-                    borderRadius: BorderRadius.circular(12.r),
+              itemBuilder: (_, __) => Column(
+                children: [
+                  // Circle/Image shimmer
+                  Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(
+                      width: 50.w,
+                      height: 50.w,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25.r),
+                      ),
+                    ),
                   ),
-                ),
+                  SizedBox(height: 4.h),
+                  // Text shimmer
+                  Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(
+                      width: 60.w,
+                      height: 12.h,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
           );

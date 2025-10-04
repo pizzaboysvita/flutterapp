@@ -3,10 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
-import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_event.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_state.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/network_issue_helper.dart';
@@ -69,9 +66,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // ApiClient.init(context);
 
-    // Load categories
-    final categoryBloc = BlocProvider.of<CategoryBloc>(context, listen: false);
-    categoryBloc.add(LoadCategories(userId: 1, type: 'web'));
+   
 
     await Future.delayed(const Duration(seconds: 2));
     await SessionManager.checkSession(context);

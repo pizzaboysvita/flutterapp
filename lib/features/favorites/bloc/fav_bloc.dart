@@ -96,4 +96,7 @@ Future<void> _onRemove(RemoveFromFavoriteEvent event, Emitter<FavoriteState> emi
       emit(FavoriteError(e.toString()));
     }
   }
+
+
+
 }

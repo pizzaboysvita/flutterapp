@@ -6,6 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
+import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/register/register_bloc.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/register/register_event.dart';
@@ -49,18 +51,15 @@ class _RegisterState extends State<Register> {
     return BlocConsumer<RegisterBloc, RegisterState>(
       listener: (context, state) {
         if (state is RegisterSuccess) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("✅ Registered successfully")));
-          Navigator.pushNamedAndRemoveUntil(
+         SnackbarHelper.green(context, "Registered successfully");
+                   Navigator.pushNamedAndRemoveUntil(
             context,
             AppRoutes.login, // replace with your login route
             (route) => false,
           );
         } else if (state is RegisterFailure) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("Error: ${state.error}")));
+         SnackbarHelper.red(context, state.error);
+
         }
       },
       builder: (context, state) {
@@ -188,84 +187,40 @@ class _RegisterState extends State<Register> {
                             builder: (context, state) {
                               final isLoading = state is RegisterLoading;
 
-                              return SizedBox(
-                                width: double.infinity,
-                                child: Material(
-                                  color: AppColors.redPrimary,
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  child: InkWell(
-                                    onTap: isLoading
-                                        ? null
-                                        : () {
-                                            if (_formKey.currentState!
-                                                .validate()) {
-                                              context.read<RegisterBloc>().add(
-                                                SubmitRegister(
-                                                  firstName: _firstNameCtrl.text
-                                                      .trim(),
-                                                  lastName: _lastNameCtrl.text
-                                                      .trim(),
-                                                  phone: _phoneCtrl.text.trim(),
-                                                  email: emailCtrl.text.trim(),
-                                                  password: passwordCtrl.text
-                                                      .trim(),
-                                                  address: _addressCtrl.text
-                                                      .trim(),
-                                                  country: _countryCtrl.text
-                                                      .trim(),
-                                                  state: _stateCtrl.text.trim(),
-                                                  city: _cityCtrl.text.trim(),
-                                                  pinCode:
-                                                      int.tryParse(
-                                                        _pinCtrl.text.trim(),
-                                                      ) ??
-                                                      0,
-                                                  imageFile: _image,
-                                                ),
-                                              );
-                                            }
-                                          },
-                                    borderRadius: BorderRadius.circular(8.r),
-                                    splashColor: Colors.white.withOpacity(0.3),
-                                    highlightColor: Colors.white.withOpacity(
-                                      0.1,
-                                    ),
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: 14.h,
+                              return LoadingFillButton(
+                                text: "Register",
+                                isLoading:
+                                    isLoading, // This tells the button to show spinner
+                                backgroundColor: AppColors.redPrimary,
+                                textColor: Colors.grey.shade200,
+                                borderRadius: 8.r,
+                                onPressedAsync: () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    context.read<RegisterBloc>().add(
+                                      SubmitRegister(
+                                        firstName: _firstNameCtrl.text.trim(),
+                                        lastName: _lastNameCtrl.text.trim(),
+                                        phone: _phoneCtrl.text.trim(),
+                                        email: emailCtrl.text.trim(),
+                                        password: passwordCtrl.text.trim(),
+                                        address: _addressCtrl.text.trim(),
+                                        country: _countryCtrl.text.trim(),
+                                        state: _stateCtrl.text.trim(),
+                                        city: _cityCtrl.text.trim(),
+                                        pinCode:
+                                            int.tryParse(
+                                              _pinCtrl.text.trim(),
+                                            ) ??
+                                            0,
+                                        imageFile: _image,
                                       ),
-                                      alignment: Alignment.center,
-                                      child: isLoading
-                                          ? SizedBox(
-                                              width: 24.w,
-                                              height: 24.w,
-                                              child:
-                                                  const CircularProgressIndicator(
-                                                    color: Colors.white,
-                                                    strokeWidth: 2,
-                                                  ),
-                                            )
-                                          : Text(
-                                              "Register",
-                                              style: TextStyle(
-                                                color: Colors.grey.shade200,
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.w600,
-                                                shadows: const [
-                                                  Shadow(
-                                                    blurRadius: 20,
-                                                    offset: Offset(0, 3),
-                                                    color: Colors.black45,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                ),
+                                    );
+                                  }
+                                },
                               );
                             },
                           ),
+
                           SizedBox(height: 12.h),
 
                           // 🔹 Already have an account? Login

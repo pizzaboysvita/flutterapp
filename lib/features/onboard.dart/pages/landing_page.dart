@@ -126,13 +126,10 @@ class LandingPage extends StatelessWidget {
                                     child: LoadingFillButton(
                                       text: "Get Started",
                                       onPressedAsync: () async {
-                                        // Example async task
-                                        await Future.delayed(
-                                          const Duration(seconds: 1),
-                                        );
+                                    
                                         Navigator.pushNamedAndRemoveUntil(
                                           context,
-                                          AppRoutes.login,
+                                          AppRoutes.chooseStoreLocation,
                                           (route) =>
                                               false, // removes all previous routes
                                         );

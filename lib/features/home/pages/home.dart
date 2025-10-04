@@ -6,11 +6,15 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/dialogs/offers_popup.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_event.dart';
 import 'package:pizza_boys/features/home/widgets/accordian.dart';
 import 'package:pizza_boys/features/home/widgets/dashboard_hero.dart';
 import 'package:pizza_boys/features/home/widgets/popular_picks.dart';
 import 'package:pizza_boys/features/home/widgets/promotional_banner.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
+import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
 import 'package:pizza_boys/features/onboard.dart/model/store_selection_model.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
@@ -34,6 +38,23 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   void initState() {
     super.initState();
 
+    // Load categories
+    // Load categories dynamically using storeId from TokenStorage
+    final categoryBloc = BlocProvider.of<CategoryBloc>(context, listen: false);
+
+    TokenStorage.getChosenStoreId().then((storeId) {
+      if (storeId != null && storeId.isNotEmpty) {
+        final parsedId = int.tryParse(storeId);
+        if (parsedId != null) {
+          debugPrint("📦 Loading categories for storeId=$parsedId, type=web");
+          categoryBloc.add(LoadCategories(storeId: parsedId, type: 'web'));
+        } else {
+          debugPrint("⚠️ Invalid storeId in storage → $storeId");
+        }
+      } else {
+        debugPrint("⚠️ No storeId found in storage → cannot load categories");
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasShownPopup) {
@@ -64,8 +85,6 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
 
   @override
   Widget build(BuildContext context) {
-    
- 
     super.build(context);
     return Scaffold(
       appBar: AppBar(
@@ -88,53 +107,87 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
             BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
               builder: (context, state) {
                 String selectedStore = "Select Store";
+
                 if (state is StoreSelectionLoaded) {
-                  selectedStore = state.stores
-                      .firstWhere(
-                        (store) => store.id == state.selectedStoreId,
-                        orElse: () => Store(
-                          id: 0,
-                          name: "Select Store",
-                          address: "",
-                          phone: "",
-                          image: '',
-                        ),
-                      )
-                      .name;
+                  final current = state.stores.firstWhere(
+                    (store) => store.id == state.selectedStoreId,
+                    orElse: () => Store(
+                      id: 0,
+                      name: "",
+                      address: "",
+                      phone: "",
+                      image: "",
+                    ),
+                  );
+
+                  if (current.id != 0 && current.name.isNotEmpty) {
+                    selectedStore = current.name;
+                    // 💾 Persist selection
+                    TokenStorage.saveSelectedStore(current);
+                  }
                 }
 
-                return InkWell(
-                  onTap: () async {
-                    await Navigator.pushNamed(
-                      context,
-                      AppRoutes.chooseStoreLocation,
+                return FutureBuilder<String?>(
+                  future: TokenStorage.loadSelectedStoreName(),
+                  builder: (context, snapshot) {
+                    final storedName = snapshot.data;
+                    // if Bloc didn’t give valid name, fallback to stored one
+                    if (selectedStore == "Select Store" &&
+                        storedName != null &&
+                        storedName.isNotEmpty) {
+                      selectedStore = storedName;
+                    }
+
+                    return InkWell(
+                      onTap: () async {
+                        debugPrint("📍 Change Location tapped");
+
+                        final changed = await Navigator.pushNamed(
+                          context,
+                          AppRoutes.chooseStoreLocation,
+                          arguments: {"isChangeLocation": true},
+                        );
+
+                        debugPrint(
+                          "⬅️ Returned from Location page → changed = $changed",
+                        );
+
+                        if (changed == true) {
+                          debugPrint("🔄 Reloading store selection...");
+                          context.read<StoreSelectionBloc>().add(
+                            LoadStoresEvent(),
+                          );
+                        } else {
+                          debugPrint(
+                            "⚠️ No store change detected → keeping stored store",
+                          );
+                        }
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: AppColors.whiteColor,
+                            size: 14.w,
+                          ),
+                          SizedBox(width: 2.w),
+                          Flexible(
+                            child: Text(
+                              selectedStore,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.white70,
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        color: AppColors.whiteColor,
-                        size: 14.w,
-                      ),
-                      SizedBox(width: 2.w),
-
-                      // ✅ Make text flexible + ellipsis
-                      Flexible(
-                        child: Text(
-                          selectedStore,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.white70,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 );
               },
             ),

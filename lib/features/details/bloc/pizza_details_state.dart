@@ -5,6 +5,9 @@ class PizzaDetailsState {
   final bool isBaseExpanded;
   final DishModel? dish;
 
+  final Map<String, bool> selectedCombo;
+  final double comboExtraPrice;
+
   /// 🍕 Size
   final String selectedSize;
 
@@ -41,6 +44,9 @@ class PizzaDetailsState {
   /// ⚠ Error
   final String? error;
 
+  /// 🥡 Selected Combo Dish
+  final DishModel selectedComboDish;
+
   PizzaDetailsState({
     required this.isLoading,
     required this.isBaseExpanded,
@@ -59,11 +65,20 @@ class PizzaDetailsState {
     this.selectedIngredients = const {},
     this.selectedChoices = const {},
     this.choicesExtraPrice = 0,
+    this.selectedCombo = const {},    
+    this.comboExtraPrice = 0,  
     this.quantity = 1,
     this.error,
+     required this.selectedComboDish,
   });
 
-  factory PizzaDetailsState.initial() => PizzaDetailsState(isLoading: false,  isBaseExpanded: false,);
+  factory PizzaDetailsState.initial() => PizzaDetailsState(
+        isLoading: false,
+        isBaseExpanded: false,
+        selectedCombo: {},
+        comboExtraPrice: 0,
+        selectedComboDish: DishModelExtensionsEmpty.empty(),
+      );
 
   PizzaDetailsState copyWith({
     bool? isLoading,
@@ -83,12 +98,15 @@ class PizzaDetailsState {
     Map<String, bool>? selectedIngredients,
     Map<String, bool>? selectedChoices,
     double? choicesExtraPrice,
+    Map<String, bool>? selectedCombo,
+    double? comboExtraPrice,
     int? quantity,
-    String? error, 
+    String? error,
+    DishModel? selectedComboDish, // 👈 NEW
   }) {
     return PizzaDetailsState(
       isLoading: isLoading ?? this.isLoading,
-       isBaseExpanded: isBaseExpanded ?? this.isBaseExpanded,
+      isBaseExpanded: isBaseExpanded ?? this.isBaseExpanded,
       dish: dish ?? this.dish,
       selectedSize: selectedSize ?? this.selectedSize,
       selectedLargeOption: selectedLargeOption ?? this.selectedLargeOption,
@@ -104,8 +122,11 @@ class PizzaDetailsState {
       selectedIngredients: selectedIngredients ?? this.selectedIngredients,
       selectedChoices: selectedChoices ?? this.selectedChoices,
       choicesExtraPrice: choicesExtraPrice ?? this.choicesExtraPrice,
+      selectedCombo: selectedCombo ?? this.selectedCombo,
+      comboExtraPrice: comboExtraPrice ?? this.comboExtraPrice,
       quantity: quantity ?? this.quantity,
       error: error ?? this.error,
+      selectedComboDish: selectedComboDish ?? this.selectedComboDish, // 👈 NEW
     );
   }
 }

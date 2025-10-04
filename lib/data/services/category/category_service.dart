@@ -9,9 +9,10 @@ class CategoryService {
   Future<List<CategoryModel>> fetchCategories() async {
     try {
       print("📌 Fetching categories...");
-
+      final categoriesUrl = await ApiUrls.getCategoriesUrl();
+      print("🔗 Categories URL: $categoriesUrl");
       final response = await ApiClient.dio.get(
-        ApiUrls.getCategories,
+        categoriesUrl,
         options: Options(headers: {"Content-Type": "application/json"}),
       );
 
