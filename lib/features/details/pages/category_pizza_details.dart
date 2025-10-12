@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
+import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
@@ -36,36 +38,33 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
 
     if (!_isInitialized) {
       final args = widget.arguments;
-      print("🟨 ModalRoute arguments: $args");
 
       if (args is Map) {
-        print("🟦 Args is a Map");
-
         if (args['categoryId'] != null) {
-          print("🟩 categoryId found: ${args['categoryId']}");
-
           if (args['categoryId'] is int) {
             categoryId = args['categoryId'] as int;
-            print("✅ categoryId assigned as int: $categoryId");
           } else {
-            print("❌ categoryId type: ${args['categoryId'].runtimeType}");
             categoryId = int.tryParse(args['categoryId'].toString()) ?? -1;
-            print("⚠️ categoryId converted to int: $categoryId");
           }
         } else {
-          print("❗ categoryId key missing in args");
           categoryId = -1;
         }
       } else {
-        print("❌ Arguments are not a Map: ${args.runtimeType}");
         categoryId = -1;
       }
 
-      print("🚀 Dispatching GetAllDishesEvent with categoryId: $categoryId");
-      context.read<DishBloc>().add(GetAllDishesEvent(categoryId: categoryId));
+      // _loadDishes();
+
       _isInitialized = true;
     }
   }
+
+  // Future<void> _loadDishes() async {
+  //   final storeId = await TokenStorage.getChosenStoreId() ?? "-1";
+  //   context.read<DishBloc>().add(
+  //     GetAllDishesEvent(storeId: storeId, categoryId: categoryId),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -100,100 +99,121 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
         centerTitle: true,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          MinimalCategoryRow(
-            selectedCategoryId: categoryId.toString(),
-            onCategorySelected: (id) {
-              setState(() => categoryId = int.tryParse(id) ?? -1);
+
+        actions: [
+          IconButton(
+            onPressed: () async {
+              final storeIdStr = await TokenStorage.getChosenStoreId();
+              final storeNameStr = await TokenStorage.getChosenStoreId();
+
+              final storeId = storeIdStr ?? "-1";
+              final storeName = storeNameStr ?? "";
+
+              // ignore: use_build_context_synchronously
+              context.read<StoreWatcherCubit>().updateStore(storeId, storeName);
             },
+            icon: Icon(Icons.refresh),
           ),
-
-          Expanded(
-            child: BlocBuilder<DishBloc, DishState>(
-              builder: (context, state) {
-                print("📢 BlocBuilder State: ${state.runtimeType}");
-
-                if (state is DishLoading) {
-                  print("⏳ Loading dishes...");
-                  return const Center(child: LottieLoader());
-                } else if (state is DishLoaded) {
-                  print("✅ Dishes loaded: ${state.dishes.length} items");
-
-                  final filteredDishes = state.dishes.where((dish) {
-                    print(
-                      "🔹 Dish: ${dish.name} | dishCategoryId: ${dish.dishCategoryId} | Filter categoryId: $categoryId",
-                    );
-                    return dish.dishCategoryId == categoryId;
-                  }).toList();
-
-                  print(
-                    "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
-                  );
-
-                  print(
-                    "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
-                  );
-
-                  if (filteredDishes.isEmpty) {
-                    print("⚠️ No dishes found for this category.");
-                    return const Center(
-                      child: Text("No items in this category."),
-                    );
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 22.0.w,
-                          vertical: 6.0.h,
-                        ),
-                        child: Text(
-                          'Recommended for You',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'Poppins',
-                            color: Colors.black87,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.separated(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 8.h,
-                          ),
-                          itemCount: filteredDishes.length,
-                          separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                          itemBuilder: (context, index) {
-                            final item = filteredDishes[index];
-                            print(
-                              "🍕 Rendering dish: ${item.name} | Price: ${item.price}",
-                            );
-                            return _buildDishCard(item);
-                          },
-                        ),
-                      ),
-                    ],
-                  );
-                } else if (state is DishError) {
-                  print("❌ DishError: ${state.message}");
-                  return Center(child: Text(state.message));
-                } else {
-                  print("ℹ️ State not recognized: ${state.runtimeType}");
-                  return const SizedBox();
-                }
+          SizedBox(width: 4.0.w),
+        ],
+      ),
+      body: BlocListener<CategoryBloc, CategoryState>(
+        listener: (context, state) {
+          if (state is CategoryLoaded && state.categories.isNotEmpty) {
+            Future.microtask(() {
+              setState(() {
+                categoryId = state.categories.first.id;
+                print("✅ Updated categoryId after store change: $categoryId");
+              });
+            });
+          }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MinimalCategoryRow(
+              selectedCategoryId: categoryId.toString(),
+              onCategorySelected: (id) {
+                setState(() => categoryId = int.tryParse(id) ?? -1);
               },
             ),
-          ),
-        ],
+
+            Expanded(
+              child: BlocBuilder<DishBloc, DishState>(
+                builder: (context, state) {
+                  if (state is DishLoading) {
+                    return const Center(child: LottieLoader());
+                  } else if (state is DishLoaded) {
+                    final filteredDishes = state.dishes.where((dish) {
+                      print(
+                        "🔹 Dish: ${dish.name} | dishCategoryId: ${dish.dishCategoryId} | Filter categoryId: $categoryId",
+                      );
+                      return dish.dishCategoryId == categoryId;
+                    }).toList();
+
+                    print(
+                      "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
+                    );
+
+                    print(
+                      "🔍 Filtered dishes count: ${filteredDishes.length} (categoryId: $categoryId)",
+                    );
+
+                    if (filteredDishes.isEmpty) {
+                      return const Center(
+                        child: Text("No items in this category."),
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 22.0.w,
+                            vertical: 6.0.h,
+                          ),
+                          child: Text(
+                            'Recommended for You',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w400,
+                              fontFamily: 'Poppins',
+                              color: Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Expanded(
+                          child: ListView.separated(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 14.w,
+                              vertical: 8.h,
+                            ),
+                            itemCount: filteredDishes.length,
+                            separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                            itemBuilder: (context, index) {
+                              final item = filteredDishes[index];
+                              print(
+                                "🍕 Rendering dish: ${item.name} | Price: ${item.price}",
+                              );
+                              return _buildDishCard(item);
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  } else if (state is DishError) {
+                    return Center(child: Text(state.message));
+                  } else {
+                    return const SizedBox();
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -282,6 +302,7 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          SizedBox(width: 6.w),
                         ],
                       ),
 

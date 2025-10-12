@@ -40,8 +40,11 @@ class _LoginState extends State<Login> {
       emailController.text = args['prefillEmail'] ?? '';
       passwordController.text = args['prefillPassword'] ?? '';
     }
-    return BlocProvider(
-      create: (_) => LoginBloc(LoginRepo()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => LoginCheckboxBloc()),
+        BlocProvider(create: (_) => LoginBloc(LoginRepo()),),
+      ],
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () {

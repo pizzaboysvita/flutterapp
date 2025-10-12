@@ -25,10 +25,10 @@ class _FavoritesViewState extends State<FavoritesView> {
   @override
   void initState() {
     super.initState();
-    // ✅ Trigger fetch event when the view is loaded
-    Future.microtask(() {
-      context.read<FavoriteBloc>().add(FetchWishlistEvent());
-    });
+    // // ✅ Trigger fetch event when the view is loaded
+    // Future.microtask(() {
+    //   context.read<FavoriteBloc>().add(FetchWishlistEvent());
+    // });
   }
 
   @override

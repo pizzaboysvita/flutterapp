@@ -4,7 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
+import 'package:pizza_boys/data/repositories/whishlist/whishlist_repo.dart';
+import 'package:pizza_boys/data/services/whishlist/whishlist_service.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
@@ -16,13 +20,32 @@ import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 import 'package:shimmer/shimmer.dart';
 
-class PopularPicks extends StatelessWidget {
+class PopularPicks extends StatefulWidget {
   const PopularPicks({super.key});
 
   @override
+  State<PopularPicks> createState() => _PopularPicksState();
+}
+
+class _PopularPicksState extends State<PopularPicks> {
+    @override
+  void initState() {
+    super.initState();
+    _loadDishes();
+  }
+
+  void _loadDishes() async {
+    final storeId = await TokenStorage.getChosenStoreId() ?? "-1";
+    if (mounted) {
+      context.read<DishBloc>().add(
+            GetAllDishesEvent(storeId: storeId, categoryId: 1),
+          );
+    }
+  }
+  
+  @override
   Widget build(BuildContext context) {
-    // 🔥 Trigger fetching when widget builds
-    context.read<DishBloc>().add(GetAllDishesEvent(categoryId: 1));
+
 
     final List<Map<String, dynamic>> fallbackData = [
       {
@@ -71,7 +94,7 @@ class PopularPicks extends StatelessWidget {
             ],
           ),
           SizedBox(height: 16.h),
-
+    
           /// BlocBuilder for API data
           BlocBuilder<DishBloc, DishState>(
             builder: (context, state) {
@@ -111,7 +134,7 @@ class PopularPicks extends StatelessWidget {
                               ),
                             ),
                             SizedBox(height: 8.h),
-
+    
                             /// Name placeholder
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 8.w),
@@ -124,10 +147,11 @@ class PopularPicks extends StatelessWidget {
                                     color: Colors.white,
                                   ),
                                   SizedBox(height: 6.h),
-
+    
                                   /// Rating + price placeholder
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
                                     children: [
                                       Container(
                                         height: 10.h,
@@ -143,14 +167,16 @@ class PopularPicks extends StatelessWidget {
                                     ],
                                   ),
                                   SizedBox(height: 8.h),
-
+    
                                   /// Button placeholder
                                   Container(
                                     height: 32.h,
                                     width: double.infinity,
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(10.r),
+                                      borderRadius: BorderRadius.circular(
+                                        10.r,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -194,8 +220,9 @@ class PopularPicks extends StatelessWidget {
                   ),
                   itemBuilder: (context, index) {
                     final dish = dishes[index];
-                    final fallback = fallbackData[index % fallbackData.length];
-
+                    final fallback =
+                        fallbackData[index % fallbackData.length];
+    
                     final name = (dish.name.isNotEmpty)
                         ? dish.name
                         : fallback['name'];
@@ -205,12 +232,12 @@ class PopularPicks extends StatelessWidget {
                     final rating = (dish.rating != 0.0)
                         ? dish.rating
                         : fallback['rating'];
-
+    
                     /// ✅ Safe Image with fallback placeholder
                     final safeImage = (dish.imageUrl.isNotEmpty)
                         ? dish.imageUrl
                         : "https://wallpapers.com/images/hd/error-placeholder-image-2e1q6z01rfep95v0.jpg";
-
+    
                     return GestureDetector(
                       onTap: () {},
                       child: Stack(
@@ -280,7 +307,7 @@ class PopularPicks extends StatelessWidget {
                                           fontFamily: 'Poppins',
                                         ),
                                       ),
-
+    
                                       SizedBox(height: 4.h),
                                       Row(
                                         mainAxisAlignment:
@@ -344,7 +371,7 @@ class PopularPicks extends StatelessWidget {
                                                     .add(
                                                       ResetPizzaDetailsEvent(),
                                                     );
-
+    
                                                 // ✅ Then navigate to PizzaDetailsView with dishId
                                                 Navigator.pushNamed(
                                                   context,
@@ -352,19 +379,20 @@ class PopularPicks extends StatelessWidget {
                                                   arguments: dish
                                                       .id, // pass correct id
                                                 );
-
+    
                                                 print(
                                                   '👉 Passing Selected Dish ID: ${dish.id}',
                                                 );
                                               },
-
+    
                                               child: Center(
                                                 child: Text(
                                                   'Add to Cart',
                                                   style: TextStyle(
                                                     fontSize: 12.sp,
                                                     color: Colors.white,
-                                                    fontWeight: FontWeight.w500,
+                                                    fontWeight:
+                                                        FontWeight.w500,
                                                     fontFamily: 'Poppins',
                                                   ),
                                                 ),
@@ -379,7 +407,7 @@ class PopularPicks extends StatelessWidget {
                               ],
                             ),
                           ),
-
+    
                           /// Top Choice Tag
                           name == 'Hawaiian Pizza'
                               ? Positioned(
@@ -391,7 +419,9 @@ class PopularPicks extends StatelessWidget {
                                       vertical: 3.h,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.secondaryBlack(context),
+                                      color: AppColors.secondaryBlack(
+                                        context,
+                                      ),
                                       borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(12.r),
                                         bottomRight: Radius.circular(8.r),
@@ -409,7 +439,7 @@ class PopularPicks extends StatelessWidget {
                                   ),
                                 )
                               : const SizedBox(),
-
+    
                           /// Favorite Icon
                           Positioned(
                             top: 0.h,
@@ -417,13 +447,13 @@ class PopularPicks extends StatelessWidget {
                             child: BlocBuilder<FavoriteBloc, FavoriteState>(
                               builder: (context, state) {
                                 bool isFavorite = false;
-
+    
                                 if (state is FavoriteLoaded) {
                                   isFavorite = state.favorites.any(
                                     (d) => d.id == dish.id,
                                   );
                                 }
-
+    
                                 return IconButton(
                                   icon: Icon(
                                     isFavorite

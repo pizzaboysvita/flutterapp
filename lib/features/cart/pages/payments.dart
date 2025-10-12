@@ -237,8 +237,6 @@ class _PaymentPageState extends State<PaymentPage> {
             // ScaffoldMessenger.of(
             //   context,
             // ).showSnackBar(SnackBar(content: Text("Error: ${state.error}")));
-
-            print("Error: ${state.error}");
           }
         },
         builder: (context, state) {
@@ -413,7 +411,6 @@ class _PaymentPageState extends State<PaymentPage> {
               );
               return;
             }
-            print('item.totalPrice ${order.totalPrice}');
 
             final amountInCents = (order.totalPrice * 100).toInt();
 

@@ -133,7 +133,7 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                   reverse: false,
                   itemBuilder: (context, index) {
                     final order = sortedOrders[index];
-                    print('UnitNumber of Order ${order.unitNumber}');
+
                     // total price from order_items total frontend total calc
                     // Suppose this is your orderItems list from the API
                     final List<Map<String, dynamic>> orderItems =

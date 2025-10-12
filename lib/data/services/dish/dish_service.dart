@@ -1,12 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:pizza_boys/core/constant/api_urls.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 
 class DishService {
-  Future<List<dynamic>> fetchAllDishes() async {
+  Future<List<dynamic>> fetchAllDishes(String storeId) async {
     try {
-      final dishUrl = await ApiUrls.getDishUrl();
-      print("🔗 Fetching dishes from URL: $dishUrl");
+      final dishUrl = "dish?store_id=$storeId&type=web";
+
+      print('🔄 dishurl : $dishUrl');
+
       final response = await ApiClient.dio.get(dishUrl);
 
       if (response.statusCode == 200) {

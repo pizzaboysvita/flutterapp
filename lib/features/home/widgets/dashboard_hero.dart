@@ -4,9 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/category/category_state.dart';
+import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
+import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/features/home/bloc/ui/carosel_text/carosel_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/ui/carosel_text/carosel_event.dart';
 import 'package:pizza_boys/features/home/bloc/ui/carosel_text/carosel_state.dart';
@@ -247,13 +252,25 @@ class PizzaCategoriesRow extends StatelessWidget {
                     final isActive = item.id == selectedCategoryId;
 
                     return GestureDetector(
-                      onTap: () {
+                      onTap: () async {
+                        final storeIdStr =
+                            await TokenStorage.getChosenStoreId();
+                        final storeNameStr =
+                            await TokenStorage.getChosenStoreId();
+
+                        final storeId = storeIdStr ?? "-1";
+                        final storeName = storeNameStr ?? "";
+
+                        // ignore: use_build_context_synchronously
+                        context.read<StoreWatcherCubit>().updateStore(
+                          storeId,
+                          storeName,
+                        );
                         Navigator.pushNamed(
                           context,
                           AppRoutes.categoryPizzaDetails,
                           arguments: {'categoryId': item.id},
                         );
-                        print(item.id);
                       },
                       child: Column(
                         children: [

@@ -20,16 +20,11 @@ class FavoriteService {
       "store_id": int.parse(storeIdStr),
     };
 
-    print("FavoriteService: POST ${ApiUrls.wishlist}");
-    print("Body: $body");
-
     try {
       final response = await ApiClient.dio.post(ApiUrls.wishlist, data: body);
-      print("Response: ${response.data}");
 
       return response.data['success'] == true;
     } catch (e) {
-      print("FavoriteService: toggleFavorite error: $e");
       throw Exception("Failed to toggle favorite");
     }
   }
@@ -54,16 +49,11 @@ class FavoriteService {
       "wishlist_id": wishlistId,
     };
 
-    print("FavoriteService: DELETE (POST) ${ApiUrls.wishlist}");
-    print("Body: $body");
-
     try {
       final response = await ApiClient.dio.post(ApiUrls.wishlist, data: body);
-      print("Response: ${response.data}");
 
       return response.data['success'] == true;
     } catch (e) {
-      print("FavoriteService: removeFavorite error: $e");
       throw Exception("Failed to remove favorite");
     }
   }
@@ -74,19 +64,15 @@ class FavoriteService {
     if (userIdStr == null) throw Exception("User ID not available.");
 
     final url = "${ApiUrls.wishlist}?user_id=$userIdStr";
-    print("FavoriteService: GET $getWishlist");
+    print('.#Fav Url: $url');
 
     try {
       final response = await ApiClient.dio.get(url);
-      print("Response: ${response.data}");
 
       final List<dynamic> data = response.data['data'];
       return data.map((json) => DishModel.fromJson(json)).toList();
     } catch (e) {
-      print("FavoriteService: getWishlist error: $e");
       throw Exception("Failed to load wishlist");
     }
   }
-
-
 }

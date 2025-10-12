@@ -98,10 +98,6 @@ class DishModel {
     Map<String, dynamic> json, {
     List<DishModel>? allDishes,
   }) {
-    print("🛠 DishModel.fromJson → Dish Type: ${json['dish_type']}");
-    print("   Dish Name: ${json['dish_name']}");
-    print("   Dish ID: ${json['dish_id']}");
-
     List<Addon> parseAddons(dynamic jsonData) {
       if (jsonData == null) return [];
       if (jsonData is String) {
@@ -164,9 +160,7 @@ class DishModel {
             }
           }
         }
-      } catch (e) {
-        print("❗ Error parsing combo: $e");
-      }
+      } catch (e) {}
     }
 
     return DishModel(

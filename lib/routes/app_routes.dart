@@ -2,7 +2,6 @@ class AppRoutes {
   static const String pizzaDetails = '/pizza_details';
   static const String home = '/home';
   static const String cartView = '/cart_view';
-  static const String cartUiView = '/cart_ui_view';
   static const String checkOut = '/checkout';
   static const String payments = '/payments';
   static const String orderDetails = '/order_details';

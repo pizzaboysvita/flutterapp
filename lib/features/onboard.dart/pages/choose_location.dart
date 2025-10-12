@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/helpers/map/address_to_latlang.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
@@ -231,12 +232,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     if (_mapController != null) {
       try {
         await _mapController!.animateCamera(update);
-      } catch (e) {
-        debugPrint("⚠️ animateCamera failed: $e");
-      }
-    } else {
-      debugPrint("⚠️ MapController is not ready");
-    }
+      } catch (e) {}
+    } else {}
   }
 
   // .......... Google-Map ............
@@ -543,99 +540,39 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   return SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              _isLoading.value = true; // Start spinner
-                              debugPrint("👉 Continue button clicked");
+                     onPressed: isLoading
+    ? null
+    : () async {
+        _isLoading.value = true;
 
-                              // Save latest store id and location name
-                              await TokenStorage.saveChosenLocation(
-                                storeId: selectedStore.id.toString(),
-                                locationName: selectedStore.name,
-                              );
+        await TokenStorage.saveChosenLocation(
+          storeId: selectedStore.id.toString(),
+          locationName: selectedStore.name,
+        );
 
-                              // Optionally also save store name separately
-                              await TokenStorage.saveSelectedStore(
-                                selectedStore,
-                              );
+        await TokenStorage.saveSelectedStore(selectedStore);
+        await TokenStorage.setLocationChosen(true);
 
-                              // Mark location as chosen
-                              await TokenStorage.setLocationChosen(true);
+        // ✅ Update StoreWatcherCubit → triggers CategoryBloc & DishBloc automatically
+        context.read<StoreWatcherCubit>().updateStore(selectedStore.id.toString(),selectedStore.name,);
 
-                              debugPrint(
-                                "✅ Store saved: ${selectedStore.name} (ID: ${selectedStore.id})",
-                              );
+        _isLoading.value = false;
 
-                              try {
-                                // 🚀 Load categories
-                                context.read<CategoryBloc>().add(
-                                  LoadCategories(
-                                    storeId: selectedStore.id,
-                                    type: "web",
-                                    forceRefresh: true,
-                                  ),
-                                );
+        if (widget.isChangeLocation) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.home,
+            (route) => false,
+          );
+        } else {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.login,
+            (route) => false,
+          );
+        }
+      },
 
-                                await context
-                                    .read<CategoryBloc>()
-                                    .stream
-                                    .firstWhere(
-                                      (state) =>
-                                          state is CategoryLoaded ||
-                                          state is CategoryError,
-                                    );
-
-                                debugPrint("✅ Categories loaded");
-
-                                // 🚀 Load dishes
-                                context.read<DishBloc>().add(
-                                  GetAllDishesEvent(),
-                                );
-
-                                await context
-                                    .read<DishBloc>()
-                                    .stream
-                                    .firstWhere(
-                                      (state) =>
-                                          state is DishLoaded ||
-                                          state is DishError,
-                                    );
-
-                                debugPrint("✅ Dishes loaded");
-
-                               
-                              } catch (e) {
-                                debugPrint("❌ Error loading data: $e");
-                              }
-
-                              _isLoading.value = false; // Stop spinner
-
-                              final args = ModalRoute.of(
-                                context,
-                              )?.settings.arguments;
-                              final isChangeLocation =
-                                  (args is Map &&
-                                  args["isChangeLocation"] == true);
-
-                              debugPrint(
-                                "🔎 isChangeLocation = $isChangeLocation",
-                              );
-
-                              if (widget.isChangeLocation) {
-                                Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  AppRoutes.home,
-                                  (route) => false,
-                                );
-                              } else {
-                                Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  AppRoutes.login,
-                                  (route) => false,
-                                );
-                              }
-                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.redPrimary,
                         shape: RoundedRectangleBorder(

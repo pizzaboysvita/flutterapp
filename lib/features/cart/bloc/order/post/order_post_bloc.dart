@@ -8,22 +8,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   final OrderRepository repository;
 
   OrderBloc({required this.repository}) : super(OrderInitial()) {
-   on<PlaceOrderEvent>((event, emit) async {
-  print("OrderBloc received PlaceOrderEvent: ${event.order.totalPrice}");
-  emit(OrderLoading());
-  try {
-    final success = await repository.placeOrder(event.order);
-    print("Order API response: $success");
-    if (success) {
-      emit(OrderSuccess(message:"Order placed successfully",order: event.order));
-    } else {
-      emit(OrderFailure("Failed to place order"));
-    }
-  } catch (e) {
-    print("OrderBloc error: $e");
-    emit(OrderFailure(e.toString()));
-  }
-});
+    on<PlaceOrderEvent>((event, emit) async {
+      emit(OrderLoading());
+      try {
+        final success = await repository.placeOrder(event.order);
 
+        if (success) {
+          emit(
+            OrderSuccess(
+              message: "Order placed successfully",
+              order: event.order,
+            ),
+          );
+        } else {
+          emit(OrderFailure("Failed to place order"));
+        }
+      } catch (e) {
+        emit(OrderFailure(e.toString()));
+      }
+    });
   }
 }

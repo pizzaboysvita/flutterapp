@@ -10,12 +10,8 @@ import 'package:pizza_boys/data/models/order/order_post_model.dart';
 class OrderService {
   // Post API: Place Order
   Future<bool> placeOrder(OrderModel order) async {
-    print('hiited order post api');
     try {
       final orderJson = order.toJson();
-      print("📤 Sending order JSON: $orderJson");
-      print("📤 Sending order JSON keys: ${orderJson.keys}");
-      print("📤 Sending order JSON: ${jsonEncode(orderJson)}");
 
       final response = await ApiClient.dio.post(
         ApiUrls.postOrders,
@@ -23,18 +19,15 @@ class OrderService {
         options: Options(headers: {"Content-Type": "application/json"}),
       );
 
-      print("📥 Response: ${response.statusCode} ${response.data}");
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data["code"].toString() == "1";
       } else {
         // Log backend error
-        print("❌ Backend returned error: ${response.data}");
+
         throw Exception("Failed to place order: ${response.data}");
       }
     } on DioException catch (e) {
       // Print Dio exception type and message
-      print("⚠️ DioException: ${e.type} → ${e.message}");
 
       // If backend responded with 4xx/5xx, print the response
       if (e.response != null) {
@@ -48,7 +41,6 @@ class OrderService {
         "Failed to place order: ${e.message} | Backend: ${e.response?.data}",
       );
     } catch (e) {
-      print("❌ Unknown error: $e");
       throw Exception("Failed to place order: $e");
     }
   }
@@ -60,10 +52,7 @@ class OrderService {
       final userId = await TokenStorage.getUserId();
       final storeId = await TokenStorage.getChosenStoreId();
 
-      final getOrders =
-          'order?user_id=$userId&store_id=$storeId&type=web';
-
-      print("Fetching orders from: $getOrders");
+      final getOrders = 'order?user_id=$userId&store_id=$storeId&type=web';
 
       final response = await ApiClient.dio.get(
         getOrders,
@@ -85,7 +74,6 @@ class OrderService {
         throw Exception('Failed to load orders: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      print("❌ Error fetching orders: ${e.message}");
       throw Exception('Failed to fetch orders: ${e.message}');
     }
   }

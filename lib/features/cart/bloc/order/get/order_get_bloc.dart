@@ -8,15 +8,13 @@ class OrderGetBloc extends Bloc<OrderGetEvent, OrderGetState> {
 
   OrderGetBloc(this.repository) : super(OrderInitial()) {
     on<LoadOrdersEvent>((event, emit) async {
-      print("🟠 LoadOrdersEvent triggered");
       emit(OrderLoading());
       try {
-        final orders = await repository.fetchOrders(); // should return List<OrderGetModel>
-        print("✅ Orders fetched successfully: ${orders.length} orders");
+        final orders = await repository
+            .fetchOrders(); // should return List<OrderGetModel>
+
         emit(OrderLoaded(orders));
       } catch (e, stackTrace) {
-        print("❌ Error fetching orders: $e");
-        print(stackTrace);
         emit(OrderError(e.toString()));
       }
     });
