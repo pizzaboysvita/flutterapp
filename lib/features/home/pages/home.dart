@@ -7,8 +7,7 @@ import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/dialogs/offers_popup.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_event.dart';
+
 import 'package:pizza_boys/features/home/widgets/accordian.dart';
 import 'package:pizza_boys/features/home/widgets/dashboard_hero.dart';
 import 'package:pizza_boys/features/home/widgets/popular_picks.dart';
@@ -37,24 +36,6 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
-
-    // Load categories
-    // Load categories dynamically using storeId from TokenStorage
-    final categoryBloc = BlocProvider.of<CategoryBloc>(context, listen: false);
-
-    TokenStorage.getChosenStoreId().then((storeId) {
-      if (storeId != null && storeId.isNotEmpty) {
-        final parsedId = int.tryParse(storeId);
-        if (parsedId != null) {
-          debugPrint("📦 Loading categories for storeId=$parsedId, type=web");
-          categoryBloc.add(LoadCategories(storeId: parsedId, type: 'web'));
-        } else {
-          debugPrint("⚠️ Invalid storeId in storage → $storeId");
-        }
-      } else {
-        debugPrint("⚠️ No storeId found in storage → cannot load categories");
-      }
-    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasShownPopup) {
@@ -140,8 +121,6 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
 
                     return InkWell(
                       onTap: () async {
-                        debugPrint("📍 Change Location tapped");
-
                         final changed = await Navigator.pushNamed(
                           context,
                           AppRoutes.chooseStoreLocation,
@@ -153,7 +132,6 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                         );
 
                         if (changed == true) {
-                          debugPrint("🔄 Reloading store selection...");
                           context.read<StoreSelectionBloc>().add(
                             LoadStoresEvent(),
                           );

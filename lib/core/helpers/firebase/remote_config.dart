@@ -5,15 +5,16 @@ class RemoteConfigService {
 
   Future<bool> init() async {
     try {
-      await _remoteConfig.setConfigSettings(RemoteConfigSettings(
-        fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval: Duration.zero, // Always check for changes
-      ));
+      await _remoteConfig.setConfigSettings(
+        RemoteConfigSettings(
+          fetchTimeout: const Duration(seconds: 10),
+          minimumFetchInterval: Duration.zero, // Always check for changes
+        ),
+      );
 
       await _remoteConfig.fetchAndActivate();
       return true;
     } catch (e) {
-      print("❌ RemoteConfig fetch failed: $e");
       return false;
     }
   }

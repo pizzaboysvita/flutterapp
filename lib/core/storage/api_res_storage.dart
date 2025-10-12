@@ -20,8 +20,6 @@ class TokenStorage {
 
   // Save all user session data (access + refresh + profile)
   static Future<void> saveSession(Map<String, dynamic> data) async {
-    print("🔐 [TokenStorage] Saving session data...");
-
     try {
       // Always overwrite tokens with latest
       final accessToken = data["access_token"];
@@ -53,9 +51,7 @@ class TokenStorage {
       print(
         "🎉 [TokenStorage] Session saved → Access + Refresh tokens updated",
       );
-    } catch (e) {
-      print("⚠️ [TokenStorage] Error saving session: $e");
-    }
+    } catch (e) {}
   }
 
   // Centralized safe read
@@ -63,64 +59,53 @@ class TokenStorage {
     try {
       return await _storage.read(key: key);
     } on PlatformException catch (e) {
-      print("⚠️ [TokenStorage] PlatformException reading $key: ${e.message}");
       if (e.message?.contains("BAD_DECRYPT") == true) {
         await clearSession();
       }
       return null;
     } catch (e) {
-      print("⚠️ [TokenStorage] Unknown error reading $key: $e");
       return null;
     }
   }
 
   // user flow existing/new user
-// user flow existing/new user
-static const String _isFirstLaunchKey = "is_first_launch";
+  // user flow existing/new user
+  static const String _isFirstLaunchKey = "is_first_launch";
 
-static Future<bool> getIsFirstLaunch() async {
-  try {
-    final value = await _storage.read(key: _isFirstLaunchKey);
-    if (value == null) return true; // treat null as first launch
-    return value == "true";
-  } catch (e) {
-    print("⚠️ [TokenStorage] Error reading isFirstLaunch: $e");
-    return true;
+  static Future<bool> getIsFirstLaunch() async {
+    try {
+      final value = await _storage.read(key: _isFirstLaunchKey);
+      if (value == null) return true; // treat null as first launch
+      return value == "true";
+    } catch (e) {
+      return true;
+    }
   }
-}
 
-static Future<void> setIsFirstLaunch(bool value) async {
-  try {
-    await _storage.write(key: _isFirstLaunchKey, value: value.toString());
-  } catch (e) {
-    print("⚠️ [TokenStorage] Error writing isFirstLaunch: $e");
+  static Future<void> setIsFirstLaunch(bool value) async {
+    try {
+      await _storage.write(key: _isFirstLaunchKey, value: value.toString());
+    } catch (e) {}
   }
-}
 
-// location chosen flag
-static const String _locationChosenKey = "location_chosen";
+  // location chosen flag
+  static const String _locationChosenKey = "location_chosen";
 
-static Future<bool> isLocationChosen() async {
-  try {
-    final value = await _storage.read(key: _locationChosenKey);
-    if (value == null) return false;
-    return value == "true";
-  } catch (e) {
-    print("⚠️ [TokenStorage] Error reading locationChosen: $e");
-    return false;
+  static Future<bool> isLocationChosen() async {
+    try {
+      final value = await _storage.read(key: _locationChosenKey);
+      if (value == null) return false;
+      return value == "true";
+    } catch (e) {
+      return false;
+    }
   }
-}
 
-static Future<void> setLocationChosen(bool value) async {
-  try {
-    await _storage.write(key: _locationChosenKey, value: value.toString());
-  } catch (e) {
-    print("⚠️ [TokenStorage] Error writing locationChosen: $e");
+  static Future<void> setLocationChosen(bool value) async {
+    try {
+      await _storage.write(key: _locationChosenKey, value: value.toString());
+    } catch (e) {}
   }
-}
-
-
-
 
   // Getters
   static Future<String?> getAccessToken() async => _readKey(_accessTokenKey);
@@ -147,19 +132,15 @@ static Future<void> setLocationChosen(bool value) async {
       print(
         "📍 [TokenStorage] Saved chosen location: $locationName ($storeId)",
       );
-    } catch (e) {
-      print("⚠️ [TokenStorage] Error saving chosen location: $e");
-    }
+    } catch (e) {}
   }
 
   // Save selected store by name only
   static Future<void> saveSelectedStore(Store store) async {
     try {
       await _storage.write(key: _storeNameKey, value: store.name);
-      // print("📦 [TokenStorage] Selected store name saved: ${store.name}");
-    } catch (e) {
-      print("⚠️ [TokenStorage] Error saving selected store name: $e");
-    }
+      //
+    } catch (e) {}
   }
 
   // Load selected store
@@ -167,11 +148,10 @@ static Future<void> setLocationChosen(bool value) async {
     try {
       final name = await _storage.read(key: _storeNameKey);
       if (name != null) {
-        // print("📦 [TokenStorage] Loaded store: $name");
+        //
       }
       return name;
     } catch (e) {
-      print("⚠️ [TokenStorage] Error loading store name: $e");
       return null;
     }
   }
@@ -180,9 +160,6 @@ static Future<void> setLocationChosen(bool value) async {
   static Future<void> clearSession() async {
     try {
       await _storage.deleteAll();
-      print("🗑️ [TokenStorage] Session cleared");
-    } catch (e) {
-      print("⚠️ [TokenStorage] Error clearing session: $e");
-    }
+    } catch (e) {}
   }
 }

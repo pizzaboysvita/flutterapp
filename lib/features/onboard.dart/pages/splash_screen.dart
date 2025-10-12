@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_state.dart';
@@ -61,15 +62,14 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startSessionCheck(BuildContext context) async {
-    if (_sessionChecked) return; // Prevent multiple calls
+    if (_sessionChecked) return;
     _sessionChecked = true;
-
-    // ApiClient.init(context);
-
-   
 
     await Future.delayed(const Duration(seconds: 2));
     await SessionManager.checkSession(context);
+
+    // Now load store
+    context.read<StoreWatcherCubit>().loadInitialStore();
   }
 
   @override

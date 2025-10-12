@@ -15,23 +15,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     LoginButtonPressed event,
     Emitter<LoginState> emit,
   ) async {
-    print("🎯 [LoginBloc] LoginButtonPressed triggered");
     emit(LoginLoading());
 
     try {
       final data = await repository.loginUser(event.email, event.password);
-      print("📥 [LoginBloc] Repository returned: $data");
 
       if (data["code"] == 1) {
-        print("✅ [LoginBloc] Login success, saving session...");
         await TokenStorage.saveSession(data);
         emit(LoginSuccess(data));
       } else {
-        print("❌ [LoginBloc] Backend error: ${data["message"]}");
         emit(LoginFailure(data["message"] ?? "Unknown error"));
       }
     } catch (error) {
-      print("🔥 [LoginBloc] Exception caught: $error");
       emit(LoginFailure(error.toString()));
     }
   }

@@ -7,13 +7,13 @@ import 'internet_check_state.dart';
 
 class ConnectivityBloc extends Bloc<ConnectivityEvent, ConnectivityState> {
   final Connectivity _connectivity = Connectivity();
-  late final StreamSubscription<List<ConnectivityResult>> _subscription; // ✅ v7 returns List
+  late final StreamSubscription<List<ConnectivityResult>>
+  _subscription; // ✅ v7 returns List
   final Dio _dio = Dio();
 
   ConnectivityBloc() : super(ConnectivityState.initial()) {
     on<ConnectivityChanged>((event, emit) {
       emit(ConnectivityState(hasInternet: event.hasInternet));
-      print("🔌 ConnectivityChanged: ${event.hasInternet}");
     });
 
     // ✅ Listen for network changes (List<ConnectivityResult>)
@@ -42,7 +42,8 @@ class ConnectivityBloc extends Bloc<ConnectivityEvent, ConnectivityState> {
 
   /// Initial connectivity + internet check
   Future<void> _initCheck() async {
-    final results = await _connectivity.checkConnectivity(); // ✅ returns List<ConnectivityResult>
+    final results = await _connectivity
+        .checkConnectivity(); // ✅ returns List<ConnectivityResult>
     if (results.isNotEmpty) {
       _handleConnectivityChange(results.first);
     } else {
@@ -66,7 +67,7 @@ class ConnectivityBloc extends Bloc<ConnectivityEvent, ConnectivityState> {
       final response = await _dio.get(
         'https://www.google.com/generate_204',
         options: Options(
-          sendTimeout: const Duration(seconds: 2),   // ✅ Duration not int
+          sendTimeout: const Duration(seconds: 2), // ✅ Duration not int
           receiveTimeout: const Duration(seconds: 2),
         ),
       );

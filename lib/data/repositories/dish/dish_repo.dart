@@ -3,59 +3,40 @@ import 'package:pizza_boys/data/services/dish/dish_service.dart';
 
 class DishRepository {
   final DishService service;
-  List<DishModel>? _cachedDishes; // 👈 Local cache
+  List<DishModel>? _cachedDishes; // Local cache
 
   DishRepository(this.service);
 
-  /// Fetch all dishes (from cache if available)
-  Future<List<DishModel>> getAllDishes() async {
+  Future<List<DishModel>> getAllDishes(String storeId) async {
     if (_cachedDishes != null && _cachedDishes!.isNotEmpty) {
-      print("⚡ Using cached dishes (${_cachedDishes!.length})");
       return _cachedDishes!;
     }
 
-    print("🌐 Fetching all dishes from API...");
-    final rawData = await service.fetchAllDishes();
+    final rawData = await service.fetchAllDishes(storeId);
     _cachedDishes = rawData.map((e) => DishModel.fromJson(e)).toList();
-    print("✅ Cached ${_cachedDishes!.length} dishes.");
+
     return _cachedDishes!;
   }
 
-  /// Get a specific dish by ID (from cache if possible)
-  Future<DishModel?> getDishById(int dishId) async {
-    print("🔎 Looking for dish with id=$dishId");
-
-    // If we already have the dishes, filter locally
+  Future<DishModel?> getDishById(int dishId, String storeId) async {
     if (_cachedDishes != null && _cachedDishes!.isNotEmpty) {
-      final found =
-          _cachedDishes!.firstWhere((dish) => dish.id == dishId, orElse: () => DishModelExtensionsEmpty.empty());
-      if (found.id != null) {
-        print("🎉 Found dish in cache: ${found.name} (id=${found.id})");
-        return found;
-      } else {
-        print("❌ Dish with id=$dishId not found in cache");
-        return null;
-      }
+      final found = _cachedDishes!.firstWhere(
+        (dish) => dish.id == dishId,
+        orElse: () => DishModelExtensionsEmpty.empty(),
+      );
+      return found.id != null ? found : null;
     }
 
-    // If cache empty, fetch once
-    print("⚠️ Cache empty, fetching all dishes...");
-    final dishes = await getAllDishes();
+    final dishes = await getAllDishes(storeId);
     try {
-      final found = dishes.firstWhere((dish) => dish.id == dishId);
-      print("🎉 Found dish after fetching: ${found.name} (id=${found.id})");
-      return found;
+      return dishes.firstWhere((dish) => dish.id == dishId);
     } catch (e) {
-      print("❌ Dish with id=$dishId not found even after fetching");
       return null;
     }
   }
 
-  /// Optional: force-refresh dishes
-  Future<void> refreshDishes() async {
-    print("🔄 Refreshing dishes...");
-    final rawData = await service.fetchAllDishes();
+  Future<void> refreshDishes(String storeId) async {
+    final rawData = await service.fetchAllDishes(storeId);
     _cachedDishes = rawData.map((e) => DishModel.fromJson(e)).toList();
-    print("✅ Refreshed cache (${_cachedDishes!.length})");
   }
 }

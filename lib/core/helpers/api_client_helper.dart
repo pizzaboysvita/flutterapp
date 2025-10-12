@@ -70,9 +70,9 @@ class ApiClient {
   static final Dio dio =
       Dio(
           BaseOptions(
-            baseUrl: "http://78.142.47.247:3004/api/",
-            connectTimeout: const Duration(seconds: 30),
-            receiveTimeout: const Duration(minutes:2 ),
+            baseUrl: "http://78.142.47.247:3003/api/",
+            connectTimeout: const Duration(minutes: 2),
+            receiveTimeout: const Duration(minutes: 2),
             // 👇 VERY IMPORTANT: Allow all status codes to pass through
             validateStatus: (status) => true,
           ),
@@ -80,22 +80,16 @@ class ApiClient {
         ..interceptors.add(
           InterceptorsWrapper(
             onRequest: (options, handler) async {
-              print("🔹 [ApiClient] Request URL: ${options.uri}");
               String? token = await TokenStorage.getAccessToken();
-              print("🔹 [ApiClient] Token before request: $token");
 
               if (token != null) {
                 bool expired = isTokenExpired(token);
-                print("🔹 [ApiClient] Is token expired? $expired");
 
                 if (expired) {
-                  print("🔹 [ApiClient] Token expired — refreshing...");
                   bool refreshed = await ApiClient._refreshAccessToken();
-                  print("🔹 [ApiClient] Token refresh success? $refreshed");
 
                   if (refreshed) {
                     token = await TokenStorage.getAccessToken();
-                    print("🔹 [ApiClient] Token after refresh: $token");
                   } else {
                     print(
                       "❌ [ApiClient] Token refresh failed — clearing session",
@@ -104,24 +98,18 @@ class ApiClient {
                     return;
                   }
                 }
-              } else {
-                print("⚠️ [ApiClient] No token found before request");
-              }
+              } else {}
 
               if (token != null) {
                 options.headers["Authorization"] = "Bearer $token";
                 print(
                   "🔹 [ApiClient] Request Headers AFTER: ${options.headers}",
                 );
-              } else {
-                print("⚠️ [ApiClient] No Authorization header set");
-              }
+              } else {}
 
               return handler.next(options);
             },
             onResponse: (response, handler) {
-              print("✅ [ApiClient] Success → ${response.statusCode}");
-              print("📥 Response Data: ${response.data}");
               return handler.next(response);
             },
             onError: (e, handler) async {
@@ -156,7 +144,6 @@ class ApiClient {
 
               // Token expired case
               if (hasInternet && e.response?.statusCode == 401) {
-                print("🔄 [ApiClient] Token expired. Starting refresh flow...");
                 Future<void> retry() async {
                   final newToken = await TokenStorage.getAccessToken();
                   if (newToken != null) {
@@ -166,9 +153,7 @@ class ApiClient {
                       final retryResponse = await dio.fetch(e.requestOptions);
                       handler.resolve(retryResponse);
                       return;
-                    } catch (err) {
-                      print("❌ Retry failed: $err");
-                    }
+                    } catch (err) {}
                   }
                   handler.next(e);
                 }
@@ -222,7 +207,6 @@ class ApiClient {
     if (_rootContext == null) return;
 
     if (ErrorScreenTracker.isShowing) {
-      print("⚠️ Error screen already showing — skipping...");
       return;
     }
 
@@ -269,9 +253,8 @@ class ApiClient {
   static Future<bool> _refreshAccessToken() async {
     try {
       final refreshToken = await TokenStorage.getRefreshToken();
-      print("🔹 [ApiClient] Refresh token: $refreshToken");
+
       if (refreshToken == null) {
-        print("⚠️ [ApiClient] No refresh token found");
         return false;
       }
 
@@ -281,21 +264,19 @@ class ApiClient {
         data: {"refresh_token": refreshToken},
         options: Options(headers: {"Content-Type": "application/json"}),
       );
-      print("📥 [ApiClient] Refresh token response: ${response.data}");
+
       if (response.data["code"] == 1) {
         await TokenStorage.saveSession({
           "access_token": response.data["access_token"],
           "refresh_token": response.data["refresh_token"],
           "user": null,
         });
-        print("✅ [ApiClient] Token refreshed successfully");
+
         return true;
       } else {
-        print("❌ [ApiClient] Token refresh failed");
         return false;
       }
     } catch (err) {
-      print("❌ Refresh token error, retrying once...");
       await Future.delayed(const Duration(seconds: 1));
       try {
         return await _refreshAccessToken();
@@ -317,18 +298,16 @@ class TokenRefreshLock {
     }
 
     _isRefreshing = true;
-    print("🔄 [TokenRefreshLock] Starting refresh token flow...");
+
     bool success = await ApiClient._refreshAccessToken();
     _isRefreshing = false;
 
     for (var queuedRetry in _queue) {
-      print("🔁 [TokenRefreshLock] Running queued retry...");
       await queuedRetry(); // ✅ await async retry
     }
     _queue.clear();
 
     if (!success && ApiClient.rootContext != null) {
-      print("⚠️ [TokenRefreshLock] Refresh failed. Clearing session...");
       SessionManager.clearSession(ApiClient.rootContext!);
     }
   }

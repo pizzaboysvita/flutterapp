@@ -22,9 +22,7 @@ class AuthService {
     File? imageFile,
   }) async {
     try {
-      print("📌 Starting registerUser()...");
       final storeIdStr = await TokenStorage.getChosenStoreId();
-      print(  "Retrieved storeId: $storeIdStr");
 
       if (storeIdStr == null) {
         throw Exception("Store ID not available.");
@@ -79,19 +77,13 @@ class AuthService {
           ),
       });
 
-      print("📝 FormData prepared: $formData");
-
       final registerUrl = await ApiUrls.getRegisterUrl();
-      print("🔗 Register URL: $registerUrl");
 
       final response = await ApiClient.dio.post(
-        registerUrl ,
+        registerUrl,
         data: formData,
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
       );
-
-      print("📥 Response status: ${response.statusCode}");
-      print("🔍 Response body: ${response.data}");
 
       if (response.statusCode == 200) {
         return response.data;

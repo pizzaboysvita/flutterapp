@@ -21,14 +21,15 @@ class FBCloudMSG {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initSettings =
-        InitializationSettings(android: androidSettings);
+    const InitializationSettings initSettings = InitializationSettings(
+      android: androidSettings,
+    );
 
     await _localNotificationsPlugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (details) {
         // Handle notification tap
-        print('Notification tapped!');
+
         // Navigate to screen if needed
       },
     );
@@ -51,7 +52,6 @@ class FBCloudMSG {
 
     // 4️⃣ Background / terminated messages
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Notification clicked from background/terminated!');
       // Navigate to screen if needed
     });
 
@@ -76,7 +76,7 @@ class FBCloudMSG {
       ticker: 'ticker',
       styleInformation: imageUrl != null
           ? BigPictureStyleInformation(
-              FilePathAndroidBitmap(imageUrl), 
+              FilePathAndroidBitmap(imageUrl),
               contentTitle: title,
               summaryText: body,
             )

@@ -76,9 +76,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               print(
                 "📦 PizzaDetailsView → Total dishes loaded: ${state.dishes.length}",
               );
-              for (var d in state.dishes) {
-                print("➡ Dish in list: id=${d.id}, name=${d.name}");
-              }
+              for (var d in state.dishes) {}
 
               // ✅ Find the dish matching that id
               final dish = state.dishes.firstWhere(
@@ -109,12 +107,10 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               final imageUrl = (dish.imageUrl?.isNotEmpty ?? false)
                   ? dish.imageUrl
                   : ImageUrls.catergoryPizza; // fallback asset
-              final name = dish.name?.isNotEmpty == true
-                  ? dish.name
-                  : "M and M Pizza";
-              final description = dish.description?.isNotEmpty == true
+              final name = dish.name.isNotEmpty == true ? dish.name : "";
+              final description = dish.description.isNotEmpty == true
                   ? dish.description
-                  : "Delicious handmade pizza with classic toppings & fresh ingredients.";
+                  : "";
               final price = dish.price != null ? dish.price!.toDouble() : 12.99;
               // final rating = dish.rating != null
               //     ? "${dish.rating}/5"
@@ -202,28 +198,11 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
                         // Loop through dynamic option sets
                         ...dish.optionSets.map((optionSet) {
-                          final name = optionSet.name.toLowerCase();
-
-                          if (name.contains("base")) {
-                            return _buildBaseOptionSet(
-                              optionSet,
-                              dishSelection,
-                              bloc,
-                            );
-                          } else if (name.contains("toppings")) {
-                            return _buildToppingsOptionSet(
-                              optionSet,
-                              dishSelection,
-                              bloc,
-                            );
-                          } else if (name.contains("sauce")) {
-                            return _buildSaucesOptionSet(
-                              optionSet,
-                              dishSelection,
-                              bloc,
-                            );
-                          }
-                          return const SizedBox.shrink();
+                          return _buildDynamicOptionSet(
+                            optionSet,
+                            dishSelection,
+                            bloc,
+                          );
                         }).toList(),
 
                         if (dish.ingredients.isNotEmpty)
@@ -1154,20 +1133,20 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section Title
-          // Padding(
-          //   padding: EdgeInsets.symmetric(vertical: 8.h),
-          //   child: Text(
-          //     "Ingredients",
-          //     style: TextStyle(
-          //       fontFamily: 'Poppins',
-          //       fontSize: 15.sp,
-          //       fontWeight: FontWeight.w600,
-          //       color: Colors.black87,
-          //     ),
-          //   ),
-          // ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.h),
+            child: Text(
+              "Ingredients",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ),
           ...ingredients.map((ing) {
-            final isSelected = state.selectedIngredients[ing.name] ?? false;
+            final isSelected = state.selectedIngredients[ing.name] ?? true;
 
             return Container(
               margin: EdgeInsets.symmetric(vertical: 6.h),
@@ -1212,18 +1191,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                         ),
                       ),
                     ),
-
-                    // Price with decimals
-                    Text(
-                      '\$${ing.price.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600, // Semi-bold for price
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
 
                     // Custom checkbox
                     Container(
@@ -1311,8 +1278,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
   double _getTotal(PizzaDetailsState state, DishModel dish) {
     double total = dish.price ?? 0;
 
-    print("💲 Base price: ${dish.price}");
-
     // 👇 Base extra price
     total += state.baseExtraPrice;
 
@@ -1327,8 +1292,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
     // 👇 Multiply by quantity
     double finalTotal = total * state.quantity;
-
-    print("🔢 Final total (x${state.quantity}): $finalTotal");
 
     return finalTotal;
   }

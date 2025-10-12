@@ -8,16 +8,12 @@ import 'package:pizza_boys/data/models/category/category_model.dart';
 class CategoryService {
   Future<List<CategoryModel>> fetchCategories() async {
     try {
-      print("📌 Fetching categories...");
       final categoriesUrl = await ApiUrls.getCategoriesUrl();
-      print("🔗 Categories URL: $categoriesUrl");
+
       final response = await ApiClient.dio.get(
         categoriesUrl,
         options: Options(headers: {"Content-Type": "application/json"}),
       );
-
-      print("📥 Response status: ${response.statusCode}");
-      print("🔍 Response body: ${response.data}");
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -28,10 +24,8 @@ class CategoryService {
         throw Exception("Failed to fetch categories: ${response.data}");
       }
     } on DioException catch (e) {
-      print("⚠️ DioException while fetching categories: ${e.message}");
       throw Exception("Failed to fetch categories: ${e.message}");
     } catch (e) {
-      print("⚠️ Unknown error while fetching categories: $e");
       throw Exception("Failed to fetch categories: $e");
     }
   }

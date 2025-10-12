@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/data/repositories/dish/dish_repo.dart';
 import 'package:pizza_boys/data/services/dish/dish_service.dart';
@@ -62,7 +63,7 @@ class PizzaDetailsBloc extends Bloc<PizzaDetailsEvent, PizzaDetailsState> {
 
     on<ToggleIngredientEvent>((event, emit) {
       final updated = Map<String, bool>.from(state.selectedIngredients);
-      updated[event.ingredientName] = !(updated[event.ingredientName] ?? false);
+      updated[event.ingredientName] = !(updated[event.ingredientName] ?? true);
       emit(state.copyWith(selectedIngredients: updated));
     });
 
@@ -92,7 +93,9 @@ class PizzaDetailsBloc extends Bloc<PizzaDetailsEvent, PizzaDetailsState> {
       emit(state.copyWith(isLoading: true));
 
       try {
-        final dish = await dishRepository.getDishById(event.dishId);
+        final storeIdStr = await TokenStorage.getChosenStoreId();
+        final storeId = storeIdStr ?? "-1";
+        final dish = await dishRepository.getDishById(event.dishId, storeId);
 
         emit(
           state.copyWith(
