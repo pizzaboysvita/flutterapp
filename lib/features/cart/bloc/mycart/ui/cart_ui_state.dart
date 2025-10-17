@@ -1,4 +1,3 @@
-
 import 'package:pizza_boys/data/models/cart/cart_item_model.dart';
 
 abstract class CartUIState {}

@@ -1,3 +1,5 @@
+// ignore_for_file: library_prefixes
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/helpers/bloc_observer_helper.dart' as Bloc;
 

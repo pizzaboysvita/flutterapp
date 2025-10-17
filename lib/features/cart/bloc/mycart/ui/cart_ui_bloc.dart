@@ -3,7 +3,6 @@ import 'package:pizza_boys/data/models/cart/cart_item_model.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/ui/cart_ui_event.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/ui/cart_ui_state.dart';
 
-
 class CartUIBloc extends Bloc<CartUIEvent, CartUIState> {
   final List<CartItem> _cartItems = [];
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/device_helper.dart';
 import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
@@ -126,7 +125,6 @@ class LandingPage extends StatelessWidget {
                                     child: LoadingFillButton(
                                       text: "Get Started",
                                       onPressedAsync: () async {
-                                    
                                         Navigator.pushNamedAndRemoveUntil(
                                           context,
                                           AppRoutes.chooseStoreLocation,

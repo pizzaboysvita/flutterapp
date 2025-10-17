@@ -6,7 +6,5 @@ class LottieUrls {
   static const String networkIssue = 'assets/lotties/network_issue.json';
   static const String serverError = 'assets/lotties/serverError.json';
   static const String maintenance = 'assets/lotties/maintenance.json';
-
-
-
+  static const String promoCode = "assets/lotties/Coupon.json";
 }

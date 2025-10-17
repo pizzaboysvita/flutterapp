@@ -55,11 +55,7 @@ class LoadingOutlineButton extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (icon != null) ...[
-                        Icon(
-                          icon,
-                          color: AppColors.blackColor,
-                          size: 16.sp,
-                        ),
+                        Icon(icon, color: AppColors.blackColor, size: 16.sp),
                         SizedBox(width: 8.w),
                       ],
                       Text(

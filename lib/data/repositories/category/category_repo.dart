@@ -9,9 +9,14 @@ class CategoryRepository {
   CategoryRepository(this._service);
 
   Future<List<CategoryModel>> getCategories(
-      int userId, String type, {bool forceRefresh = false}) async {
+    int userId,
+    String type, {
+    bool forceRefresh = false,
+  }) async {
     // ✅ Use cache unless force refresh is true
-    if (!forceRefresh && _cachedCategories != null && _cachedCategories!.isNotEmpty) {
+    if (!forceRefresh &&
+        _cachedCategories != null &&
+        _cachedCategories!.isNotEmpty) {
       return _cachedCategories!;
     }
 
@@ -19,4 +24,3 @@ class CategoryRepository {
     return _cachedCategories!;
   }
 }
-

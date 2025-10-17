@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'addon_model.dart'; // 👈 import Addon
+import 'package:pizza_boys/data/models/dish/combo_model.dart';
+import 'addon_model.dart';
 
 /// 🔹 Represents a set of options, like "Pizza Base" or "Extra Toppings"
 class OptionSet {
@@ -75,6 +76,9 @@ class DishModel {
   final List<Addon> ingredients; // Extra ingredients
   final List<Addon> choices; // Side items
   final List<DishModel> comboDishes; // Combo dishes (for combo type)
+  final List<ComboSide> comboSides; // new field
+
+  final bool hasDynamicOptions;
 
   DishModel({
     required this.id,
@@ -91,6 +95,8 @@ class DishModel {
     required this.ingredients,
     required this.choices,
     this.comboDishes = const [],
+    this.comboSides = const [],
+    this.hasDynamicOptions = false,
   });
 
   /// 🔹 Parse from API JSON
@@ -128,9 +134,17 @@ class DishModel {
       return [];
     }
 
-    // Parse side choices
-    List<Addon> comboChoices = [];
-    // Parse combo dishes
+    List<ComboSide> parseComboSides(String? jsonString) {
+      if (jsonString == null || jsonString.isEmpty) return [];
+      try {
+        final List decoded = jsonDecode(jsonString);
+        return decoded.map((e) => ComboSide.fromJson(e)).toList();
+      } catch (_) {
+        return [];
+      }
+    }
+
+    // 🔹 Parse combo dishes
     List<DishModel> comboDishes = [];
     if (json['dish_type'] == "combo" && json['dish_choices_json'] != null) {
       try {
@@ -139,12 +153,19 @@ class DishModel {
           for (var menuItem in choice["menuItems"] ?? []) {
             for (var category in menuItem["categories"] ?? []) {
               for (var dishChoice in category["dishes"] ?? []) {
+                bool willHaveDynamicOptions =
+                    (dishChoice["optionSets"] != null &&
+                        (dishChoice["optionSets"] as List).isNotEmpty) ||
+                    (dishChoice["ingredients"] != null &&
+                        (dishChoice["ingredients"] as List).isNotEmpty) ||
+                    (dishChoice["choices"] != null &&
+                        (dishChoice["choices"] as List).isNotEmpty);
+
                 comboDishes.add(
                   DishModel(
                     id: dishChoice["dishId"] ?? 0,
                     name: dishChoice["dishName"] ?? "",
-                    price:
-                        0.0, // 👈 you can fill from dishChoice if API gives price
+                    price: 0.0,
                     imageUrl: dishChoice["image_url"] ?? "",
                     rating: 0.0,
                     dishCategoryId: category["categoryId"] ?? -1,
@@ -154,14 +175,31 @@ class DishModel {
                     ingredients: [],
                     choices: [],
                     comboDishes: [],
+                    comboSides: [],
+                    hasDynamicOptions: willHaveDynamicOptions,
                   ),
                 );
               }
             }
           }
         }
-      } catch (e) {}
+      } catch (_) {}
     }
+
+    // 🔹 Parse option sets and ingredients for standard dishes
+    final parsedOptionSets = json['dish_type'] == "standard"
+        ? parseOptionSets(json['dish_option_set_json'])
+        : [];
+    final parsedIngredients = json['dish_type'] == "standard"
+        ? parseAddons(json['dish_ingredients_json'])
+        : [];
+
+    // 🔹 Detect if this dish has dynamic options
+    bool hasDynamicOptions =
+        parsedOptionSets.isNotEmpty ||
+        parsedIngredients.isNotEmpty ||
+        (json['dish_choices_json'] != null &&
+            json['dish_choices_json'].toString().isNotEmpty);
 
     return DishModel(
       id: json['dish_id'] ?? 0,
@@ -174,14 +212,15 @@ class DishModel {
       storeId: json['store_id'] ?? 0,
       storeName: json['store_name']?.toString(),
       wishlistId: json['wishlist_id'],
-      optionSets: json['dish_type'] == "standard"
-          ? parseOptionSets(json['dish_option_set_json'])
-          : [],
-      ingredients: json['dish_type'] == "standard"
-          ? parseAddons(json['dish_ingredients_json'])
-          : [],
-      choices: comboChoices,
-      comboDishes: comboDishes, // Assign parsed combo dishes
+
+      // ✅ Explicitly cast types here
+      optionSets: List<OptionSet>.from(parsedOptionSets),
+      ingredients: List<Addon>.from(parsedIngredients),
+
+      choices: [],
+      comboDishes: comboDishes,
+      comboSides: parseComboSides(json['dish_choices_json']),
+      hasDynamicOptions: hasDynamicOptions, // ✅ correctly computed
     );
   }
 
@@ -205,6 +244,8 @@ class DishModel {
         ingredients.map((e) => e.toJson()).toList(),
       ),
       'dish_choices_json': jsonEncode(choices.map((e) => e.toJson()).toList()),
+      'combo_dishes_json': comboDishes.map((e) => e.toJson()).toList(),
+      'combo_sides_json': comboSides.map((e) => e.toJson()).toList(),
     };
   }
 }
@@ -241,6 +282,7 @@ extension DishModelExtensionsEmpty on DishModel {
       ingredients: [],
       choices: [],
       comboDishes: [],
+      comboSides: [],
     );
   }
 }

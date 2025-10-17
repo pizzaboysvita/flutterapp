@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,7 +14,7 @@ import 'package:pizza_boys/routes/app_routes.dart';
 
 class PaymentPage extends StatefulWidget {
   final OrderModel order;
-  PaymentPage({super.key, required this.order});
+  const PaymentPage({super.key, required this.order});
 
   @override
   State<PaymentPage> createState() => _PaymentPageState();

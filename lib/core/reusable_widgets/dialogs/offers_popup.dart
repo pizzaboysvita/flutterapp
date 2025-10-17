@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
-import 'package:pizza_boys/core/constant/image_urls.dart';
+
+
+import 'package:lottie/lottie.dart';
+import 'package:pizza_boys/core/constant/lottie_urls.dart';
 
 class OfferPopup extends StatelessWidget {
   final String title;
   final String description;
-  final String imagePath;
+  final String? lottiePath; // optional Lottie
   final VoidCallback onGotIt;
   final VoidCallback onClose;
 
@@ -15,7 +17,7 @@ class OfferPopup extends StatelessWidget {
     super.key,
     required this.title,
     required this.description,
-    required this.imagePath,
+    this.lottiePath,
     required this.onGotIt,
     required this.onClose,
   });
@@ -27,10 +29,7 @@ class OfferPopup extends StatelessWidget {
       insetPadding: EdgeInsets.symmetric(horizontal: 24.w),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight:
-              0.8.sh, // Avoid overflow by limiting max height to 80% of screen
-        ),
+        constraints: BoxConstraints(maxHeight: 0.8.sh),
         child: Stack(
           children: [
             Padding(
@@ -39,15 +38,15 @@ class OfferPopup extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: Image.asset(
-                      imagePath,
+                  if (lottiePath != null)
+                    SizedBox(
                       width: double.infinity,
                       height: 160.h,
-                      fit: BoxFit.cover,
+                      child: Lottie.asset(
+                        lottiePath!,
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                  ),
                   SizedBox(height: 16.h),
                   Text(
                     title,
@@ -74,27 +73,27 @@ class OfferPopup extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 16.h),
-                 SizedBox(
-  width: double.infinity,
-  child: ElevatedButton(
-    onPressed: onGotIt,
-    style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.redPrimary,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      padding: EdgeInsets.symmetric(vertical: 12.h), // Use padding instead of fixed height
-    ),
-    child: Text(
-      'Got It!',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 14.sp, // Slightly larger font size for readability
-        fontFamily: 'Poppins',
-      ),
-    ),
-  ),
-),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onGotIt,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.redPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                      ),
+                      child: Text(
+                        'Got It!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -118,39 +117,28 @@ class OfferPopup extends StatelessWidget {
 }
 
 // ✅ Correct Sequential Function
-void showSequentialPopups(BuildContext context) {
-  final List<Map<String, String>> popups = [
-    {
-      'title': "Large Trio Combo – Just \$50!",
-      'description': "3 large pizzas for just \$50 ",
-      'image': ImageUrls.comboOffer,
-    },
-    {
-      'title': "Up to 40% OFF!",
-      'description': "Top flavours, limited time – don’t miss out!",
-      'image': ImageUrls.discountOffer,
-    },
-  ];
+void showDynamicPopups(BuildContext context, List<Map<String, dynamic>> promos) {
+  if (promos.isEmpty) return; // no data, don't show anything
 
   void showNext(int index) {
-    if (index >= popups.length) return;
-    final item = popups[index];
+    if (index >= promos.length) return;
+    final promo = promos[index];
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => OfferPopup(
-        title: item['title']!,
-        description: item['description']!,
-        imagePath: item['image']!,
+        title: promo["promo_name"] ?? "Special Offer",
+        description:
+            "Use code ${promo["promo_code"]} to get ₹${promo["fixed_discount"]} OFF.\nMin order: ₹${promo["min_order"]}",
+        lottiePath: LottieUrls.promoCode, // default Lottie
         onGotIt: () {
           Navigator.of(context).pop();
-          if (index + 1 < popups.length) {
+          if (index + 1 < promos.length) {
             showNext(index + 1);
           }
         },
-        onClose: () {
-          Navigator.of(context).pop();
-        },
+        onClose: () => Navigator.of(context).pop(),
       ),
     );
   }

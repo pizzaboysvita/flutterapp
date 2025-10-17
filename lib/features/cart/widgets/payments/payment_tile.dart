@@ -23,7 +23,8 @@ class PaymentMethodTile extends StatelessWidget {
         final isSelected = state.selectedMethod == value;
 
         return GestureDetector(
-          onTap: () => context.read<PaymentBloc>().add(SelectPaymentMethodEvent(value)),
+          onTap: () =>
+              context.read<PaymentBloc>().add(SelectPaymentMethodEvent(value)),
           child: Container(
             margin: EdgeInsets.only(bottom: 12.h),
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),

@@ -4,7 +4,6 @@ import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_state.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/network_issue_helper.dart';
 
-
 class ConnectivityWrapper extends StatelessWidget {
   final Widget child;
 

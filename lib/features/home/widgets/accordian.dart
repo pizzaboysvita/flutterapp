@@ -47,29 +47,30 @@ class _IconAccordionState extends State<IconAccordion> {
                   _buildIcon(FontAwesomeIcons.solidHeart, () {
                     Navigator.pushNamed(context, AppRoutes.favorites);
                   }),
-      
+
                   SizedBox(width: 11.0.w),
-      
+
                   // 🔹 Cart Badge with dynamic BlocBuilder
                   BlocBuilder<CartGetBloc, CartGetState>(
                     builder: (context, state) {
                       int count = 0;
                       if (state is CartLoaded) {
-                        count = state.cartItems.length; // number of items in cart
+                        count =
+                            state.cartItems.length; // number of items in cart
                       }
                       return _buildIcon(FontAwesomeIcons.cartShopping, () {
                         Navigator.pushNamed(context, AppRoutes.cartView);
                       }, badgeCount: count);
                     },
                   ),
-      
+
                   SizedBox(width: 12.0.w),
                 ],
-      
+
                 _buildIcon(FontAwesomeIcons.solidUser, () {
                   Navigator.pushNamed(context, AppRoutes.profile);
                 }),
-      
+
                 _buildIcon(
                   isExpanded
                       ? FontAwesomeIcons.chevronLeft

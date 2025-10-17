@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/search/bloc/search_bloc.dart';
 import 'package:pizza_boys/features/search/bloc/search_event.dart';
 import 'package:pizza_boys/features/search/bloc/search_state.dart';
@@ -17,33 +18,186 @@ class SearchView extends StatefulWidget {
 
 class _SearchViewState extends State<SearchView> {
   final TextEditingController _searchController = TextEditingController();
+  int storeId = -1;
+  String query = "";
 
-  final List<Map<String, dynamic>> _suggestedItems = [
-    {
-      'name': 'M and M Pizza',
-      'price': 11.99,
-      'image': ImageUrls.catergoryPizza,
-      'rating': 4.4,
-    },
-    {
-      'name': 'Chipotle Chicken Pizza',
-      'price': 10.49,
-      'image': ImageUrls.catergoryPizza,
-      'rating': 4.6,
-    },
-    {
-      'name': 'Melting Hot Pizza',
-      'price': 12.99,
-      'image': ImageUrls.catergoryPizza,
-      'rating': 4.3,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadStoreId();
+  }
+
+  Future<void> _loadStoreId() async {
+    final storeIdStr = await TokenStorage.getChosenStoreId();
+    setState(() {
+      storeId = int.tryParse(storeIdStr ?? "-1") ?? -1;
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      query = value.trim();
+    });
+    if (query.isNotEmpty && storeId != -1) {
+      context.read<SearchBloc>().add(SearchQueryChanged(query, storeId));
+    }
+  }
+
+  Widget _buildRecentSearches(List<String> recent) {
+    if (recent.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Recent Searches",
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+            fontSize: 14.sp,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: recent.map((term) {
+            return ActionChip(
+              label: Text(term),
+              onPressed: () {
+                _searchController.text = term;
+                _onSearchChanged(term);
+              },
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 16.h),
+      ],
+    );
+  }
+
+  Widget _buildSuggestions() {
+    final suggestions = ["Pizza", "Burger", "Cheesy Pizza", "Combo Meal"];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Popular Searches",
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+            fontSize: 14.sp,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: suggestions.map((term) {
+            return ActionChip(
+              label: Text(term),
+              onPressed: () {
+                _searchController.text = term;
+                _onSearchChanged(term);
+              },
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 16.h),
+      ],
+    );
+  }
+
+  Widget _buildSearchResults(List<Map<String, dynamic>> results) {
+    if (results.isEmpty) {
+      return Center(
+        child: Text(
+          "No results found",
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontFamily: 'Poppins',
+            color: Colors.grey,
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: results.length,
+      separatorBuilder: (_, __) => SizedBox(height: 12.h),
+      itemBuilder: (context, index) {
+        final dish = results[index];
+        return Container(
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: Image.network(
+                  dish["dish_image"] ?? ImageUrls.catergoryPizza,
+                  height: 70.h,
+                  width: 70.w,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      dish["dish_name"] ?? "Unknown Dish",
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      "₹${dish["dish_price"] ?? "--"}",
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchBody(SearchState state) {
+    if (query.isNotEmpty) {
+      if (state.isLoading)
+        return const Center(child: CircularProgressIndicator());
+      if (state.error != null) return Center(child: Text("❌ ${state.error}"));
+      return _buildSearchResults(state.results);
+    }
+
+    // Show recent or suggestions
+    if (state.recentSearches.isNotEmpty) {
+      return SingleChildScrollView(
+        child: _buildRecentSearches(state.recentSearches),
+      );
+    }
+
+    return SingleChildScrollView(child: _buildSuggestions());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
         automaticallyImplyLeading: widget.showBackBtn,
         title: Text.rich(
           TextSpan(
@@ -66,174 +220,39 @@ class _SearchViewState extends State<SearchView> {
       ),
       body: Padding(
         padding: EdgeInsets.all(16.w),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search bar inside body
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Search bar
+            TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              onSubmitted: (value) {
+                if (value.trim().isNotEmpty) {
+                  context.read<SearchBloc>().add(AddRecentSearchEvent(value));
+                  _onSearchChanged(value);
+                }
+              },
+              decoration: InputDecoration(
+                hintText: 'Search for pizzas, combos...',
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onSubmitted: (value) {
-                    if (value.trim().isNotEmpty) {
-                      context.read<SearchBloc>().add(
-                        AddRecentSearchEvent(value.trim()),
-                      );
-                    }
-                  },
-                  style: TextStyle(fontSize: 14.sp, fontFamily: 'Poppins'),
-                  decoration: InputDecoration(
-                    hintText: 'Search for pizzas, combos...',
-                    prefixIcon: Icon(Icons.search, color: Colors.white),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16.w,
-                      vertical: 12.h,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+                  borderSide: BorderSide.none,
                 ),
               ),
+            ),
+            SizedBox(height: 20.h),
 
-              SizedBox(height: 24.h),
-
-              // Recent Searches via BLoC
-              BlocBuilder<SearchBloc, SearchState>(
-                builder: (context, state) {
-                  if (state.recentSearches.isEmpty) return SizedBox.shrink();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Recent Searches',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Wrap(
-                        spacing: 8.w,
-                        children: state.recentSearches
-                            .map(
-                              (item) => Chip(
-                                label: Text(
-                                  item,
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 14.w,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                backgroundColor: Colors.white,
-                                onDeleted: () {
-                                  context.read<SearchBloc>().add(
-                                    RemoveRecentSearchEvent(item),
-                                  );
-                                },
-                              ),
-                            )
-                            .toList(),
-                      ),
-                      SizedBox(height: 24.h),
-                    ],
-                  );
-                },
+            // BlocBuilder for dynamic results / recent searches / suggestions
+            Expanded(
+              child: BlocBuilder<SearchBloc, SearchState>(
+                builder: (context, state) => _buildSearchBody(state),
               ),
-
-              // Suggested Section
-              Text(
-                'Suggested For You',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-              SizedBox(height: 12.h),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                itemCount: _suggestedItems.length,
-                separatorBuilder: (_, __) => SizedBox(height: 16.h),
-                itemBuilder: (context, index) {
-                  final item = _suggestedItems[index];
-                  return Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12.r),
-                      color: Colors.white,
-                    ),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12.r),
-                          child: Image.asset(
-                            item['image'],
-                            height: 70.h,
-                            width: 70.w,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                        SizedBox(width: 12.w),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item['name'],
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
-                                    size: 16.sp,
-                                  ),
-                                  SizedBox(width: 4.w),
-                                  Text(
-                                    '${item['rating']}',
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                  SizedBox(width: 12.w),
-                                  Text(
-                                    '\$${item['price']}',
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.favorite_border, color: Colors.grey),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

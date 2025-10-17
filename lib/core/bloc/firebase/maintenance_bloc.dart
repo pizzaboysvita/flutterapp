@@ -18,7 +18,9 @@ class MaintenanceBloc extends Bloc<MaintenanceEvent, MaintenanceState> {
   }
 
   Future<void> _onCheckMaintenance(
-      CheckMaintenanceEvent event, Emitter<MaintenanceState> emit) async {
+    CheckMaintenanceEvent event,
+    Emitter<MaintenanceState> emit,
+  ) async {
     await _remoteConfigService.init();
 
     if (_remoteConfigService.isAppUnderMaintenance) {

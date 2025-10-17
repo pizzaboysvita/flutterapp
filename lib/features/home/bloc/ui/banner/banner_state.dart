@@ -5,8 +5,6 @@ class BannerCarouselState {
   const BannerCarouselState({required this.currentIndex});
 
   BannerCarouselState copyWith({int? currentIndex}) {
-    return BannerCarouselState(
-      currentIndex: currentIndex ?? this.currentIndex,
-    );
+    return BannerCarouselState(currentIndex: currentIndex ?? this.currentIndex);
   }
 }

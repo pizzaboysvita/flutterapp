@@ -4,10 +4,7 @@ part 'checkout_state.dart';
 
 class CheckoutCubit extends Cubit<CheckoutState> {
   CheckoutCubit()
-      : super(CheckoutState(
-          isHomeDelivery: true,
-          saveAddress: false,
-        ));
+    : super(CheckoutState(isHomeDelivery: true, saveAddress: false));
 
   void toggleDeliveryMethod(bool isHome) {
     emit(state.copyWith(isHomeDelivery: isHome));

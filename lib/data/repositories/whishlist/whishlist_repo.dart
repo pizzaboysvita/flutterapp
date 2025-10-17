@@ -10,23 +10,17 @@ class FavoriteRepository {
     required int dishId,
     required String token,
   }) async {
-    return await service.toggleFavorite(
-      dishId: dishId,
-    );
+    return await service.toggleFavorite(dishId: dishId);
   }
 
   // ✅ New method for removeFavorite
-Future<bool> removeFavorite({
-  required int dishId,
-  int? wishlistId, // ✅ optional parameter
-  required String token,
-}) async {
-  return await service.removeFavorite(
-    dishId: dishId,
-    wishlistId: wishlistId,
-  );
-}
-
+  Future<bool> removeFavorite({
+    required int dishId,
+    int? wishlistId, // ✅ optional parameter
+    required String token,
+  }) async {
+    return await service.removeFavorite(dishId: dishId, wishlistId: wishlistId);
+  }
 
   // ✅ Fetch wishlist
   Future<List<DishModel>> getWishlist() async {

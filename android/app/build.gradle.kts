@@ -14,7 +14,7 @@ android {
     defaultConfig {
         applicationId = "com.example.pizza_boys" // App ID
         minSdk = 23 // Minimum supported Android version
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

@@ -1,5 +1,3 @@
 abstract class PsObscureEvent {}
 
-class ObscureText extends PsObscureEvent{}
-
-
+class ObscureText extends PsObscureEvent {}

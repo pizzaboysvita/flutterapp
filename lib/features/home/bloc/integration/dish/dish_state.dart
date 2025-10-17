@@ -1,4 +1,3 @@
-
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 
 abstract class DishState {}

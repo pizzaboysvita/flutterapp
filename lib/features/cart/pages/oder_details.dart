@@ -91,7 +91,7 @@ class _OrderDetailsState extends State<OrderDetails> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Store ${order.storeId.toString()}' ?? "Store Name",
+                      'Store ${order.storeId.toString()}',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14.sp,
@@ -130,7 +130,7 @@ class _OrderDetailsState extends State<OrderDetails> {
                         ),
                         SizedBox(width: 4.w),
                         Text(
-                          order.unitNumber ?? "-",
+                          order.unitNumber,
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12.sp,
@@ -309,7 +309,7 @@ class _OrderDetailsState extends State<OrderDetails> {
                     // Payment Method
                     _infoTilePaymentSummary(
                       "Payment Method",
-                      order.paymentMethod ?? "-",
+                      order.paymentMethod ,
                     ),
 
                     SizedBox(height: 8.h),
@@ -503,6 +503,4 @@ class _OrderDetailsState extends State<OrderDetails> {
       ),
     );
   }
-
-
 }

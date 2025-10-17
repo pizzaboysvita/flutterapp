@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
+import 'package:pizza_boys/core/helpers/internet_helper/global_error_handler.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/repositories/dish/dish_repo.dart';
 import 'dish_event.dart';
@@ -20,12 +21,13 @@ class DishBloc extends Bloc<DishEvent, DishState> {
 
     storeSub = storeWatcherCubit.stream.listen((storeId) {
       if (storeId != null) {
+        repository.clearCache(); // Clear cache when store changes
         add(ClearDishesEvent());
         add(GetAllDishesEvent(storeId: storeId));
       }
     });
 
-    // ✅ Initial load from TokenStorage
+    //  Initial load from TokenStorage
     _loadInitialDishes();
   }
 
@@ -37,15 +39,22 @@ class DishBloc extends Bloc<DishEvent, DishState> {
   }
 
   Future<void> _onGetAllDishes(
-      GetAllDishesEvent event, Emitter<DishState> emit) async {
+    GetAllDishesEvent event,
+    Emitter<DishState> emit,
+  ) async {
     emit(DishLoading());
 
     try {
       final dishes = await repository.getAllDishes(event.storeId);
       emit(DishLoaded(dishes));
-    } catch (e) {
-      emit(DishError(e.toString()));
-    }
+    } catch (e, st) {
+  //  Centralized global error handling
+  GlobalErrorHandler.handleError(e, stackTrace: st);
+
+  // Emit normal Bloc error to show loading/error state
+  emit(DishError(e.toString()));
+}
+
   }
 
   @override

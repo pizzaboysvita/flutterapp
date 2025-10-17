@@ -1,289 +1,176 @@
+// ignore_for_file: empty_catches
+
 import 'dart:io';
+import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
-import 'package:pizza_boys/core/bloc/internet_check/server_error_bloc.dart';
+import 'package:pizza_boys/core/helpers/internet_helper/error_notifier.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/error_screen_tracker.dart';
-import 'package:pizza_boys/core/helpers/internet_helper/network_issue_helper.dart';
-import 'package:pizza_boys/core/helpers/internet_helper/server_error_helper.dart';
+import 'package:pizza_boys/core/helpers/internet_helper/navigation_error.dart';
+import 'package:pizza_boys/core/helpers/internet_helper/global_error_handler.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
-
-import 'dart:convert';
 
 bool isTokenExpired(String token) {
   try {
     final parts = token.split('.');
-    if (parts.length != 3) return true;
+    if (parts.length != 3) {
+      GlobalErrorHandler.handleError("Invalid token format");
+      return true;
+    }
 
     final payload = json.decode(
       utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
     );
     final exp = payload['exp'];
-    if (exp == null) return true;
+    if (exp == null) {
+      GlobalErrorHandler.handleError("No 'exp' claim in token");
+      return true;
+    }
 
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    return exp < now;
-  } catch (e) {
+    final isExpired = exp < now;
+
+    print("🕒 [TokenCheck] Exp: $exp | Now: $now | Expired: $isExpired");
+    return isExpired;
+  } catch (e, s) {
+    GlobalErrorHandler.handleError("Error decoding token: $e", stackTrace: s);
     return true;
   }
 }
 
 class ApiClient {
-  static BuildContext? _rootContext;
-  static bool isShowingServerError = false; // ✅ Prevent multiple screens
-  static BuildContext? get rootContext => _rootContext;
-  static void init(BuildContext context) {
-    _rootContext = context;
-  }
+  static bool isShowingServerError = false; // Prevent multiple screens
 
-  static Future<bool> _hasInternetConnection() async {
+  /// Checks internet connectivity without relying on any Bloc or context
+  static Future<bool> hasInternetConnection() async {
     try {
-      bool stateHasInternet = BlocProvider.of<ConnectivityBloc>(
-        _rootContext!,
-      ).state.hasInternet;
-      if (stateHasInternet) {
-        // Optionally check actual connectivity
-        final result = await InternetAddress.lookup('example.com');
-        return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
-      }
-      return false;
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
     } catch (_) {
       return false;
     }
   }
 
-  static void _showTimeoutSnackbar(String message) {
-    if (_rootContext != null) {
-      ScaffoldMessenger.of(_rootContext!).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
+  static final Dio dio = Dio(
+    BaseOptions(
+      baseUrl: "http://78.142.47.247:3003/api/",
+      connectTimeout: const Duration(minutes: 2),
+      receiveTimeout: const Duration(minutes: 2),
+      validateStatus: (status) => true,
+    ),
+  )..interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          try {
+            final token = await TokenStorage.getAccessToken();
+            if (token != null) {
+              options.headers["Authorization"] = "Bearer $token";
+            }
+          } catch (e, s) {
+            GlobalErrorHandler.handleError(e, stackTrace: s);
+          }
+          return handler.next(options);
+        },
 
-  static final Dio dio =
-      Dio(
-          BaseOptions(
-            baseUrl: "http://78.142.47.247:3003/api/",
-            connectTimeout: const Duration(minutes: 2),
-            receiveTimeout: const Duration(minutes: 2),
-            // 👇 VERY IMPORTANT: Allow all status codes to pass through
-            validateStatus: (status) => true,
-          ),
-        )
-        ..interceptors.add(
-          InterceptorsWrapper(
-            onRequest: (options, handler) async {
-              String? token = await TokenStorage.getAccessToken();
+        onResponse: (response, handler) async {
+          try {
+            if (response.statusCode == 500) {
+              GlobalErrorHandler.handleError(
+                "500 Internal Server Error detected!",
+              );
+if (ApiClient.isShowingServerError) return;
+ApiClient.isShowingServerError = true;
 
-              if (token != null) {
-                bool expired = isTokenExpired(token);
+              await ErrorNotifier.showErrorScreen(
+                response.requestOptions,
+                "Internal Server Error. Please try again later.",
+                ErrorScreenType.server,
+                true,
+              );
+            }
+          } catch (e, s) {
+            GlobalErrorHandler.handleError(e, stackTrace: s);
+          }
+          return handler.next(response);
+        },
 
-                if (expired) {
-                  bool refreshed = await ApiClient._refreshAccessToken();
+       onError: (DioError err, ErrorInterceptorHandler handler) async {
+  try {
+    final requestOptions = err.requestOptions;
 
-                  if (refreshed) {
-                    token = await TokenStorage.getAccessToken();
-                  } else {
-                    print(
-                      "❌ [ApiClient] Token refresh failed — clearing session",
-                    );
-                    SessionManager.clearSession(ApiClient.rootContext!);
-                    return;
-                  }
-                }
-              } else {}
+    // Only retry for 500 server errors
+    if (err.response?.statusCode == 500) {
+      if (ApiClient.isShowingServerError) return;
+      ApiClient.isShowingServerError = true;
 
-              if (token != null) {
-                options.headers["Authorization"] = "Bearer $token";
-                print(
-                  "🔹 [ApiClient] Request Headers AFTER: ${options.headers}",
-                );
-              } else {}
-
-              return handler.next(options);
-            },
-            onResponse: (response, handler) {
-              return handler.next(response);
-            },
-            onError: (e, handler) async {
-              bool hasInternet = await _hasInternetConnection();
-
-              // Handle server responses with messages
-              if (e.response?.data is Map &&
-                  e.response?.data["message"] != null) {
-                return handler.resolve(
-                  Response(
-                    requestOptions: e.requestOptions,
-                    statusCode: e.response?.statusCode,
-                    data: {
-                      "code": e.response?.data["code"] ?? 0,
-                      "message": e.response?.data["message"],
-                    },
-                  ),
-                );
-              }
-
-              // Handle connection timeout or receive timeout
-              if (e.type == DioExceptionType.connectionTimeout ||
-                  e.type == DioExceptionType.receiveTimeout) {
-                _showTimeoutSnackbar(
-                  "It’s taking longer than usual. Please try again.",
-                );
-                return handler.reject(e); // Let it stop the request chain
-              }
-
-              // Handle other connectivity/server errors
-              await _handleError(e.requestOptions, e, hasInternet);
-
-              // Token expired case
-              if (hasInternet && e.response?.statusCode == 401) {
-                Future<void> retry() async {
-                  final newToken = await TokenStorage.getAccessToken();
-                  if (newToken != null) {
-                    e.requestOptions.headers["Authorization"] =
-                        "Bearer $newToken";
-                    try {
-                      final retryResponse = await dio.fetch(e.requestOptions);
-                      handler.resolve(retryResponse);
-                      return;
-                    } catch (err) {}
-                  }
-                  handler.next(e);
-                }
-
-                await TokenRefreshLock.run(retry);
-                return;
-              }
-
-              return handler.next(e);
-            },
-          ),
-        );
-
-  static Future<void> _handleError(
-    RequestOptions options,
-    DioException e,
-    bool hasInternet,
-  ) async {
-    if (!hasInternet) {
-      await _showErrorScreen(
-        options,
-        "No internet connection",
-        ErrorScreenType.network,
-        hasInternet,
-      );
-    } else if (e.type == DioExceptionType.connectionError &&
-        e.response == null) {
-      await _showErrorScreen(
-        options,
-        "Server not reachable. Please try later.",
+      // Show error screen
+      await ErrorNotifier.showErrorScreen(
+        requestOptions, // pass the original request options
+        "Server temporarily unavailable. Please try again.",
         ErrorScreenType.server,
-        hasInternet,
+        true,
       );
-    } else if (e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.connectionTimeout) {
-      await _showErrorScreen(
-        options,
-        "It’s taking too long to connect. Please retry.",
-        ErrorScreenType.server,
-        hasInternet,
-      );
-    }
-  }
 
-  static Future<void> _showErrorScreen(
-    RequestOptions options,
-    String message,
-    ErrorScreenType type,
-    bool hasInternet, // ✅ Avoid re-check
-  ) async {
-    if (_rootContext == null) return;
-
-    if (ErrorScreenTracker.isShowing) {
+      // Stop further handling
       return;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!hasInternet) {
-        if (ErrorScreenTracker.canShow(ErrorScreenType.network)) {
-          ErrorScreenTracker.set(ErrorScreenType.network);
-          Navigator.of(_rootContext!, rootNavigator: true).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => NetworkIssueScreen(
-                onRetry: () {
-                  ErrorScreenTracker.reset();
-                  Navigator.pop(_rootContext!);
-                  BlocProvider.of<ConnectivityBloc>(
-                    _rootContext!,
-                  ).recheckConnection();
-                },
-              ),
-            ),
-            (route) => false,
-          );
-        }
-      } else {
-        if (ErrorScreenTracker.canShow(type)) {
-          ErrorScreenTracker.set(type);
-          Navigator.of(_rootContext!, rootNavigator: true).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => ServerTimeoutScreen(
-                bloc: ServerTimeoutBloc(dio: dio, requestOptions: options),
-                errorMessage: message,
-                onClose: () {
-                  isShowingServerError = false;
-                  ErrorScreenTracker.reset();
-                },
-              ),
-            ),
-            (route) => false,
-          );
-        }
-      }
-    });
+    // Handle token expired if needed
+    if (err.response?.statusCode == 401 && isTokenExpired(await TokenStorage.getAccessToken() ?? "")) {
+      await TokenRefreshLock.run(() async {
+        final retryResponse = await ApiClient.dio.fetch(requestOptions);
+        handler.resolve(retryResponse); // resolves retry automatically
+      });
+      return;
+    }
+  } catch (e, s) {
+    GlobalErrorHandler.handleError(e, stackTrace: s);
   }
 
-  static Future<bool> _refreshAccessToken() async {
-    try {
-      final refreshToken = await TokenStorage.getRefreshToken();
+  return handler.next(err);
+}
+      
+      ),
+    );
 
-      if (refreshToken == null) {
-        return false;
-      }
-
-      final refreshDio = Dio(BaseOptions(baseUrl: dio.options.baseUrl));
-      final response = await refreshDio.post(
-        "refreshToken",
-        data: {"refresh_token": refreshToken},
-        options: Options(headers: {"Content-Type": "application/json"}),
-      );
-
-      if (response.data["code"] == 1) {
-        await TokenStorage.saveSession({
-          "access_token": response.data["access_token"],
-          "refresh_token": response.data["refresh_token"],
-          "user": null,
-        });
-
-        return true;
-      } else {
-        return false;
-      }
-    } catch (err) {
-      await Future.delayed(const Duration(seconds: 1));
+  /// Refresh access token safely, with global error logging
+  static Future<bool> _refreshAccessToken({int maxRetries = 1}) async {
+    int attempt = 0;
+    while (attempt <= maxRetries) {
+      attempt++;
       try {
-        return await _refreshAccessToken();
-      } catch (_) {
-        return false;
+        final refreshToken = await TokenStorage.getRefreshToken();
+        if (refreshToken == null) return false;
+
+        final response = await dio.post(
+          "refreshToken",
+          data: {"refresh_token": refreshToken},
+        );
+
+        if (response.statusCode == 200 && response.data["code"] == 1) {
+          await TokenStorage.saveSession({
+            "access_token": response.data["access_token"],
+            "refresh_token": response.data["refresh_token"],
+            "user": null,
+          });
+          return true;
+        } else {
+          GlobalErrorHandler.handleError(
+            "Refresh failed: ${response.data["message"]}",
+          );
+        }
+      } catch (e, s) {
+        GlobalErrorHandler.handleError(
+          "Refresh attempt $attempt failed: $e",
+          stackTrace: s,
+        );
+      }
+
+      if (attempt <= maxRetries) {
+        await Future.delayed(const Duration(seconds: 1));
       }
     }
+    return false;
   }
 }
 
@@ -293,7 +180,7 @@ class TokenRefreshLock {
 
   static Future<void> run(Future<void> Function() retry) async {
     if (_isRefreshing) {
-      _queue.add(retry); // ✅ now type matches
+      _queue.add(retry);
       return;
     }
 
@@ -303,12 +190,12 @@ class TokenRefreshLock {
     _isRefreshing = false;
 
     for (var queuedRetry in _queue) {
-      await queuedRetry(); // ✅ await async retry
+      await queuedRetry();
     }
     _queue.clear();
 
-    if (!success && ApiClient.rootContext != null) {
-      SessionManager.clearSession(ApiClient.rootContext!);
+    if (!success && NavigatorService.context != null) {
+      SessionManager.clearSession(NavigatorService.context!);
     }
   }
 }

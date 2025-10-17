@@ -9,6 +9,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   LoginBloc(this.repository) : super(LoginInitial()) {
     on<LoginButtonPressed>(_onLoginButtonPressed);
+    // login_bloc.dart
+    on<GuestLoginEvent>((event, emit) async {
+      emit(LoginLoading());
+      try {
+        await repository.guestLogin();
+        emit(LoginSuccess(isGuest: true));
+      } catch (e) {
+        emit(LoginFailure(e.toString()));
+      }
+    });
   }
 
   Future<void> _onLoginButtonPressed(
@@ -22,7 +32,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       if (data["code"] == 1) {
         await TokenStorage.saveSession(data);
-        emit(LoginSuccess(data));
+        emit(LoginSuccess(data: data));
       } else {
         emit(LoginFailure(data["message"] ?? "Unknown error"));
       }

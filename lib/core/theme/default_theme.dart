@@ -98,62 +98,61 @@ class DefaultTheme {
   static TextTheme _textTheme({
     String headingFont = "Poppins",
     String bodyFont = "Poppins",
-  }) =>
-      TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 57,
-          fontFamily: headingFont,
-          fontWeight: FontWeight.w600,
-        ),
-        displayMedium: TextStyle(
-          fontSize: 45,
-          fontFamily: headingFont,
-          fontWeight: FontWeight.w600,
-        ),
-        displaySmall: TextStyle(
-          fontSize: 36,
-          fontFamily: headingFont,
-          fontWeight: FontWeight.w600,
-        ),
-        headlineLarge: TextStyle(
-          fontSize: 32,
-          fontFamily: headingFont,
-          fontWeight: FontWeight.w500,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 28,
-          fontFamily: headingFont,
-          fontWeight: FontWeight.w500,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 24,
-          fontFamily: headingFont,
-          fontWeight: FontWeight.w500,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 22,
-          fontFamily: headingFont,
-          fontWeight: FontWeight.w500,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          letterSpacing: 0.5,
-          fontFamily: bodyFont,
-          fontWeight: FontWeight.w400,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          letterSpacing: 0.25,
-          fontFamily: bodyFont,
-          fontWeight: FontWeight.w400,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          letterSpacing: 0.4,
-          fontFamily: bodyFont,
-          fontWeight: FontWeight.w400,
-        ),
-      );
+  }) => TextTheme(
+    displayLarge: TextStyle(
+      fontSize: 57,
+      fontFamily: headingFont,
+      fontWeight: FontWeight.w600,
+    ),
+    displayMedium: TextStyle(
+      fontSize: 45,
+      fontFamily: headingFont,
+      fontWeight: FontWeight.w600,
+    ),
+    displaySmall: TextStyle(
+      fontSize: 36,
+      fontFamily: headingFont,
+      fontWeight: FontWeight.w600,
+    ),
+    headlineLarge: TextStyle(
+      fontSize: 32,
+      fontFamily: headingFont,
+      fontWeight: FontWeight.w500,
+    ),
+    headlineMedium: TextStyle(
+      fontSize: 28,
+      fontFamily: headingFont,
+      fontWeight: FontWeight.w500,
+    ),
+    headlineSmall: TextStyle(
+      fontSize: 24,
+      fontFamily: headingFont,
+      fontWeight: FontWeight.w500,
+    ),
+    titleLarge: TextStyle(
+      fontSize: 22,
+      fontFamily: headingFont,
+      fontWeight: FontWeight.w500,
+    ),
+    bodyLarge: TextStyle(
+      fontSize: 16,
+      letterSpacing: 0.5,
+      fontFamily: bodyFont,
+      fontWeight: FontWeight.w400,
+    ),
+    bodyMedium: TextStyle(
+      fontSize: 14,
+      letterSpacing: 0.25,
+      fontFamily: bodyFont,
+      fontWeight: FontWeight.w400,
+    ),
+    bodySmall: TextStyle(
+      fontSize: 12,
+      letterSpacing: 0.4,
+      fontFamily: bodyFont,
+      fontWeight: FontWeight.w400,
+    ),
+  );
 
   /// 🔹 Shared button style helper
   static ButtonStyle _buttonStyle({required ColorScheme colorScheme}) =>

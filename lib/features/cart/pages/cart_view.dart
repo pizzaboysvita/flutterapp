@@ -8,10 +8,6 @@ import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/order/order_post_model.dart';
-import 'package:pizza_boys/data/repositories/cart/cart_repo.dart';
-import 'package:pizza_boys/data/repositories/order/order_repo.dart';
-import 'package:pizza_boys/data/services/cart/cart_service.dart';
-import 'package:pizza_boys/data/services/order/order_service.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_event.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_state.dart';
@@ -86,7 +82,7 @@ class _CartViewState extends State<CartView> {
           // ScaffoldMessenger.of(
           //   context,
           // ).showSnackBar(SnackBar(content: Text(state.message)));
-    
+
           // Navigate to order details
           Navigator.pushNamed(
             context,
@@ -142,13 +138,13 @@ class _CartViewState extends State<CartView> {
                 if (cartItems.isEmpty) {
                   return const Center(child: Text("Your cart is empty"));
                 }
-    
+
                 return ListView.builder(
                   controller: widget.scrollController,
                   itemCount: cartItems.length,
                   itemBuilder: (context, index) {
                     final item = cartItems[index];
-    
+
                     return Container(
                       margin: EdgeInsets.only(bottom: 12.h),
                       padding: EdgeInsets.all(12.w),
@@ -168,9 +164,9 @@ class _CartViewState extends State<CartView> {
                               child: buildCartImage(item.dishImage),
                             ),
                           ),
-    
+
                           SizedBox(width: 12.w),
-    
+
                           // 🔹 Dish Info
                           Expanded(
                             child: Column(
@@ -209,7 +205,7 @@ class _CartViewState extends State<CartView> {
                                           );
                                           return;
                                         }
-    
+
                                         final scaffold = ScaffoldMessenger.of(
                                           context,
                                         );
@@ -218,12 +214,12 @@ class _CartViewState extends State<CartView> {
                                             content: Text("Removing item…"),
                                           ),
                                         );
-    
+
                                         // Optimistic removal
                                         context.read<CartGetBloc>().add(
                                           RemoveCartItemLocally(item.cartId),
                                         );
-    
+
                                         try {
                                           context.read<CartBloc>().add(
                                             RemoveFromCartEvent(
@@ -231,7 +227,7 @@ class _CartViewState extends State<CartView> {
                                               userId: int.parse(userId),
                                             ),
                                           );
-    
+
                                           scaffold.hideCurrentSnackBar();
                                           scaffold.showSnackBar(
                                             SnackBar(
@@ -245,7 +241,7 @@ class _CartViewState extends State<CartView> {
                                           context.read<CartGetBloc>().add(
                                             RestoreCartItem(item),
                                           );
-    
+
                                           scaffold.hideCurrentSnackBar();
                                           scaffold.showSnackBar(
                                             const SnackBar(
@@ -271,9 +267,9 @@ class _CartViewState extends State<CartView> {
                                     ),
                                   ],
                                 ),
-    
+
                                 SizedBox(height: 6.h),
-    
+
                                 // Qty + Price Row
                                 Row(
                                   children: [
@@ -318,6 +314,7 @@ class _CartViewState extends State<CartView> {
             },
           ),
         ),
+
         bottomNavigationBar: BlocBuilder<CartGetBloc, CartGetState>(
           builder: (context, state) {
             double total = 0;
@@ -369,7 +366,7 @@ class _CartViewState extends State<CartView> {
                         final cartState = context.read<CartGetBloc>().state;
                         if (cartState is CartLoaded) {
                           final cartItems = cartState.cartItems;
-    
+
                           // Prepare order details
                           final orderDetails = cartItems.map((item) {
                             return OrderDetail(
@@ -383,7 +380,7 @@ class _CartViewState extends State<CartView> {
                                   item.options["basePrice"]?.toDouble() ?? 0.0,
                             );
                           }).toList();
-    
+
                           final toppingDetails = cartItems.map((item) {
                             return ToppingDetail(
                               dishId: item.dishId,
@@ -395,7 +392,7 @@ class _CartViewState extends State<CartView> {
                               quantity: 1,
                             );
                           }).toList();
-    
+
                           final ingredientDetails = cartItems.map((item) {
                             return IngredientDetail(
                               dishId: item.dishId,
@@ -406,13 +403,13 @@ class _CartViewState extends State<CartView> {
                               quantity: 1,
                             );
                           }).toList();
-    
+
                           final userId = await TokenStorage.getUserId();
                           final storeId = await TokenStorage.getChosenStoreId();
                           final formattedDate = DateFormat(
                             'yyyy-MM-dd HH:mm:ss',
                           ).format(DateTime.now());
-    
+
                           final order = OrderModel(
                             totalPrice: calculateTotal(cartItems),
                             totalQuantity: cartItems.length,
@@ -434,7 +431,7 @@ class _CartViewState extends State<CartView> {
                             unitNumber: "POS-001",
                             gstPrice: 0.1,
                           );
-    
+
                           // Dispatch the order event
                           context.read<OrderBloc>().add(PlaceOrderEvent(order));
                         }

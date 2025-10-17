@@ -1,17 +1,14 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
+import 'package:pizza_boys/core/helpers/ui/robust_img_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/category/category_state.dart';
-import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/features/home/bloc/ui/carosel_text/carosel_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/ui/carosel_text/carosel_event.dart';
 import 'package:pizza_boys/features/home/bloc/ui/carosel_text/carosel_state.dart';
@@ -277,24 +274,18 @@ class PizzaCategoriesRow extends StatelessWidget {
                           SizedBox(
                             width: 50.w,
                             height: 50.w,
-                            // decoration: BoxDecoration(
-                            //   color: isActive ? Colors.orangeAccent : bgColor,
-                            //   borderRadius: BorderRadius.circular(12.r),
-                            //   border: isActive
-                            //       ? Border.all(color: Colors.deepOrange, width: 2)
-                            //       : null,
-                            // ),
-                            // padding: EdgeInsets.all(8.w),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(25.r),
-                              child: CachedNetworkImage(
+                              child: RobustImage(
                                 imageUrl: item.categoryImage.isNotEmpty
                                     ? item.categoryImage
                                     : "https://via.placeholder.com/150",
-                                fit: BoxFit.cover,
+                                width: 50.w,
+                                height: 50.w,
                               ),
                             ),
                           ),
+
                           SizedBox(height: 4.h),
                           SizedBox(
                             width: 80.w,

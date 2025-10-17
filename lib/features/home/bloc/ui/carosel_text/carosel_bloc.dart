@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/ui/carosel_text/carosel_event.dart';
 import 'package:pizza_boys/features/home/bloc/ui/carosel_text/carosel_state.dart';
 
-
 class CarouselTextBloc extends Bloc<CarouselTextEvent, CarouselTextState> {
   Timer? _timer;
   final int totalSlides;

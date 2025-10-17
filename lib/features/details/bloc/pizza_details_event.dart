@@ -1,3 +1,5 @@
+// ignore_for_file: override_on_non_overriding_member
+
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 
 abstract class PizzaDetailsEvent {}

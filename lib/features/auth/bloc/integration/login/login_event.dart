@@ -6,3 +6,6 @@ class LoginButtonPressed extends LoginEvent {
 
   LoginButtonPressed(this.email, this.password);
 }
+
+// login_event.dart
+class GuestLoginEvent extends LoginEvent {}
