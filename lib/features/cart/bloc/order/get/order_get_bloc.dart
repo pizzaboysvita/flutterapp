@@ -14,7 +14,7 @@ class OrderGetBloc extends Bloc<OrderGetEvent, OrderGetState> {
             .fetchOrders(); // should return List<OrderGetModel>
 
         emit(OrderLoaded(orders));
-      } catch (e, stackTrace) {
+      } catch (e) {
         emit(OrderError(e.toString()));
       }
     });

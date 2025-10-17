@@ -54,15 +54,14 @@ class _RegisterState extends State<Register> {
       child: BlocConsumer<RegisterBloc, RegisterState>(
         listener: (context, state) {
           if (state is RegisterSuccess) {
-           SnackbarHelper.green(context, "Registered successfully");
-                     Navigator.pushNamedAndRemoveUntil(
+            SnackbarHelper.green(context, "Registered successfully");
+            Navigator.pushNamedAndRemoveUntil(
               context,
               AppRoutes.login, // replace with your login route
               (route) => false,
             );
           } else if (state is RegisterFailure) {
-           SnackbarHelper.red(context, state.error);
-      
+            SnackbarHelper.red(context, state.error);
           }
         },
         builder: (context, state) {
@@ -132,7 +131,7 @@ class _RegisterState extends State<Register> {
                               ),
                             ),
                             SizedBox(height: 24.h),
-      
+
                             // 🔹 Name Fields in one row for better UX
                             Row(
                               children: [
@@ -146,17 +145,17 @@ class _RegisterState extends State<Register> {
                               ],
                             ),
                             SizedBox(height: 10.h),
-      
+
                             _field(
                               "Phone Number",
                               _phoneCtrl,
                               keyboard: TextInputType.phone,
                             ),
                             SizedBox(height: 10.h),
-      
+
                             _field("Email", emailCtrl, isEmail: true),
                             SizedBox(height: 10.h),
-      
+
                             _field(
                               "Password",
                               passwordCtrl,
@@ -164,7 +163,7 @@ class _RegisterState extends State<Register> {
                               isPassword: true,
                             ),
                             SizedBox(height: 10.h),
-      
+
                             // 🔹 Address block
                             _field("Address", _addressCtrl),
                             SizedBox(height: 10.h),
@@ -184,12 +183,12 @@ class _RegisterState extends State<Register> {
                               keyboard: TextInputType.number,
                             ),
                             SizedBox(height: 24.h),
-      
+
                             // 🔹 Register Button with loading
                             BlocBuilder<RegisterBloc, RegisterState>(
                               builder: (context, state) {
                                 final isLoading = state is RegisterLoading;
-      
+
                                 return LoadingFillButton(
                                   text: "Register",
                                   isLoading:
@@ -223,9 +222,9 @@ class _RegisterState extends State<Register> {
                                 );
                               },
                             ),
-      
+
                             SizedBox(height: 12.h),
-      
+
                             // 🔹 Already have an account? Login
                             InkWell(
                               onTap: () {

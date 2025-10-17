@@ -13,6 +13,7 @@ analyzer:
     constant_identifier_names: ignore
     depend_on_referenced_packages: ignore
     deprecated_member_use: ignore
+    empty_catches: ignore
     file_names: ignore
     no_leading_underscores_for_local_identifiers: ignore
     unnecessary_null_comparison: ignore

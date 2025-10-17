@@ -5,7 +5,8 @@ class ConnectivityState extends Equatable {
 
   const ConnectivityState({required this.hasInternet});
 
-  factory ConnectivityState.initial() => const ConnectivityState(hasInternet: true);
+  factory ConnectivityState.initial() =>
+      const ConnectivityState(hasInternet: true);
 
   @override
   List<Object?> get props => [hasInternet];

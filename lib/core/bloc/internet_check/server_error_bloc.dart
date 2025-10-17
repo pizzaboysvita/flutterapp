@@ -2,29 +2,31 @@ import 'package:bloc/bloc.dart';
 import 'package:dio/dio.dart';
 import 'package:pizza_boys/core/bloc/internet_check/server_error_event.dart';
 import 'package:pizza_boys/core/bloc/internet_check/server_error_state.dart';
+import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 
 class ServerTimeoutBloc extends Bloc<ServerTimeoutEvent, ServerTimeoutState> {
   final Dio dio;
   final RequestOptions requestOptions;
 
-  ServerTimeoutBloc({
-    required this.dio,
-    required this.requestOptions,
-  }) : super(ServerTimeoutInitial()) {
+  ServerTimeoutBloc({required this.dio, required this.requestOptions})
+    : super(ServerTimeoutInitial()) {
     on<RetryRequestEvent>(_onRetry);
   }
 
-  Future<void> _onRetry(
-    RetryRequestEvent event,
-    Emitter<ServerTimeoutState> emit,
-  ) async {
-    emit(ServerTimeoutLoading());
+ Future<void> _onRetry(
+  RetryRequestEvent event,
+  Emitter<ServerTimeoutState> emit,
+) async {
+  ApiClient.isShowingServerError = false; 
 
-    try {
-      final response = await dio.fetch(requestOptions);
-      emit(ServerTimeoutSuccess(response));
-    } catch (err) {
-      emit(ServerTimeoutFailure(err.toString()));
-    }
+  emit(ServerTimeoutLoading());
+
+  try {
+    final response = await dio.fetch(requestOptions);
+    emit(ServerTimeoutSuccess(response));
+  } catch (err) {
+    emit(ServerTimeoutFailure(err.toString()));
   }
+}
+
 }

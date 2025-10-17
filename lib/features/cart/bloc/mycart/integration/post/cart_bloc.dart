@@ -31,19 +31,18 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-Future<void> _onRemoveFromCart(
-  RemoveFromCartEvent event,
-  Emitter<CartState> emit,
-) async {
-  try {
-    final response = await cartRepository.removeFromCart(
-      cartId: event.cartId,
-      userId: event.userId,
-    );
-    emit(CartSuccess(response)); // Only emit success/failure
-  } catch (e) {
-    emit(CartFailure(e.toString()));
+  Future<void> _onRemoveFromCart(
+    RemoveFromCartEvent event,
+    Emitter<CartState> emit,
+  ) async {
+    try {
+      final response = await cartRepository.removeFromCart(
+        cartId: event.cartId,
+        userId: event.userId,
+      );
+      emit(CartSuccess(response)); // Only emit success/failure
+    } catch (e) {
+      emit(CartFailure(e.toString()));
+    }
   }
-}
-
 }

@@ -103,7 +103,7 @@ class PizzaDetailsBloc extends Bloc<PizzaDetailsEvent, PizzaDetailsState> {
             isLoading: false,
           ),
         );
-      } catch (e, stackTrace) {
+      } catch (e) {
         emit(
           state.copyWith(
             selectedComboDish: DishModelExtensionsEmpty.empty(),

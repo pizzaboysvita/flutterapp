@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // App Theme Colors
-  static const Color scaffoldColorLight = Color(0xFFF5F5F5); // Light Mode background
-  static const Color scaffoldColorDark = Color(0xFF212121); // Dark Mode background
+  static const Color scaffoldColorLight = Color(
+    0xFFF5F5F5,
+  ); // Light Mode background
+  static const Color scaffoldColorDark = Color(
+    0xFF212121,
+  ); // Dark Mode background
 
   static const Color whiteColor = Colors.white;
   static const Color blackColor = Colors.black;
@@ -83,23 +87,20 @@ class AppColors {
   }
 
   static Color categoryTextColor(BuildContext context, bool isActive) {
-    return isActive
-        ? activeTextColor(context)
-        : inactiveTextColor(context);
+    return isActive ? activeTextColor(context) : inactiveTextColor(context);
   }
 
   static Color borderColor(BuildContext context, bool isActive) {
     return isActive
         ? Colors.deepOrange
         : Theme.of(context).brightness == Brightness.dark
-            ? Colors.white54
-            : Colors.black26;
+        ? Colors.white54
+        : Colors.black26;
   }
 
   static Color bottomCurveColor(BuildContext context) {
-  return Theme.of(context).brightness == Brightness.dark
-      ? Colors.grey[800]! // Dark mode grey
-      : Colors.black; // Light mode black
-}
-
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.grey[800]! // Dark mode grey
+        : Colors.black; // Light mode black
+  }
 }

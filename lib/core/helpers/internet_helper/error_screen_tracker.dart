@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field
+
 import 'package:flutter/material.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/navigation_error.dart';
 
@@ -10,7 +12,6 @@ class ErrorScreenTracker {
   static BuildContext? _context;
 
   static bool get isShowing => _isShowing;
-  
 
   static bool isShowingType(Type screenType) {
     return _currentScreen?.runtimeType == screenType;
@@ -32,34 +33,33 @@ class ErrorScreenTracker {
     _context = null;
   }
 
-static void show(Widget screen, {ErrorScreenType? type}) {
-  if (_isShowing && type == current) return;
+  static void show(Widget screen, {ErrorScreenType? type}) {
+    if (_isShowing && type == current) return;
 
-  if (_isShowing && type != null && type != current) {
-    hide();
+    if (_isShowing && type != null && type != current) {
+      hide();
+    }
+
+    _isShowing = true;
+    _currentScreen = screen;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NavigatorService.navigatorKey.currentState?.push(
+        MaterialPageRoute(builder: (_) => screen),
+      );
+      if (type != null) current = type;
+    });
   }
 
-  _isShowing = true;
-  _currentScreen = screen;
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    NavigatorService.navigatorKey.currentState?.push(
-      MaterialPageRoute(builder: (_) => screen),
-    );
-    if (type != null) current = type;
-  });
-}
-
   static void hide() {
-  if (!_isShowing) return;
+    if (!_isShowing) return;
 
-  NavigatorService.navigatorKey.currentState?.pop();
-  reset();
-}
+    NavigatorService.navigatorKey.currentState?.pop();
+    reset();
+  }
 
-static void replace(Widget screen, {ErrorScreenType? type}) {
+  static void replace(Widget screen, {ErrorScreenType? type}) {
     hide();
     show(screen, type: type);
-}
-
+  }
 }

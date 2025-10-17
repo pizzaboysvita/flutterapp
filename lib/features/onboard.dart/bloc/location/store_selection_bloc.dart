@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart'; // 👈 Dio helper
@@ -27,10 +26,13 @@ class StoreSelectionBloc
     try {
       final response = await ApiClient.dio.get(ApiUrls.storesGet);
 
+      // 🔹 Ignore handled errors (599) from ApiClient
+      if (response.statusCode == 599) return;
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Depending on API, your data might be nested in 'data' key
-        final List<dynamic> data =
-            response.data is List ? response.data : response.data['data'];
+        final List<dynamic> data = response.data is List
+            ? response.data
+            : response.data['data'];
         final stores = data.map((e) => Store.fromJson(e)).toList();
 
         // 👇 Load saved store from storage
@@ -51,6 +53,14 @@ class StoreSelectionBloc
         );
       }
     } on DioException catch (e) {
+      // ✅ Skip errors already handled by ApiClient
+      if (e.response?.statusCode == 599 ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        return;
+      }
+
       emit(StoreSelectionError("Error loading stores: ${e.message}"));
     } catch (e) {
       emit(StoreSelectionError("Unexpected error loading stores: $e"));

@@ -1,5 +1,7 @@
 class ImageUrls {
   static const String heroImage = 'assets/images/hero_pizza.webp';
+  static const String circleLogo = 'assets/images/circle_logo.JPG';
+  static const String circleLogoPng = 'assets/images/logo.webp';
   static const String catergoryPizza = 'assets/images/category_pizza.webp';
   static const String comboOffer = 'assets/images/combo_offer.jpeg';
   static const String superCoins = 'assets/images/super_coins.webp';
@@ -18,7 +20,6 @@ class ImageUrls {
 
   // Logos
   static const String vitaLogo = 'assets/images/vitaLogo.jpg';
-  static const String circleLogo = 'assets/images/logo.webp';
   static const String logo = 'assets/images/pizza_boys_logo.png';
   static const String logoWhite = 'assets/images/pizza_boys_logo_white.png';
 

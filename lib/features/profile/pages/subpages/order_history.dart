@@ -121,11 +121,36 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                 if (state.orders.isEmpty) {
                   return const Center(child: Text("No orders yet 🕒"));
                 }
+                DateTime _safeParseDate(String? dateStr) {
+                  if (dateStr == null || dateStr.trim().isEmpty) {
+                    return DateTime(1970);
+                  }
+                  try {
+                    // Try standard ISO format first
+                    return DateTime.parse(dateStr);
+                  } catch (_) {
+                    // Try common alternative (like dd/MM/yyyy HH:mm)
+                    try {
+                      final parts = dateStr.split(RegExp(r'[/\s:-]'));
+                      if (parts.length >= 5) {
+                        final day = int.tryParse(parts[0]) ?? 1;
+                        final month = int.tryParse(parts[1]) ?? 1;
+                        final year = int.tryParse(parts[2]) ?? 1970;
+                        final hour = int.tryParse(parts[3]) ?? 0;
+                        final minute = int.tryParse(parts[4]) ?? 0;
+                        return DateTime(year, month, day, hour, minute);
+                      }
+                    } catch (_) {}
+                    // Fallback
+                    return DateTime(1970);
+                  }
+                }
+
                 final sortedOrders = List.from(state.orders)
                   ..sort(
-                    (a, b) => DateTime.parse(
+                    (a, b) => _safeParseDate(
                       b.pickupDatetime,
-                    ).compareTo(DateTime.parse(a.pickupDatetime)),
+                    ).compareTo(_safeParseDate(a.pickupDatetime)),
                   );
 
                 return ListView.builder(
@@ -164,15 +189,15 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                     }
 
                     // Step 2: Convert merged items to list if needed
-                    final List<Map<String, dynamic>> uniqueItems = mergedItems
-                        .values
-                        .toList();
+                    // final List<Map<String, dynamic>> uniqueItems = mergedItems
+                    //     .values
+                    //     .toList();
 
-                    // Step 3: Calculate the final total price
-                    final double finalTotalPrice = uniqueItems.fold<double>(
-                      0,
-                      (sum, item) => sum + (item['totalPrice'] as double),
-                    );
+                    // // Step 3: Calculate the final total price
+                    // final double finalTotalPrice = uniqueItems.fold<double>(
+                    //   0,
+                    //   (sum, item) => sum + (item['totalPrice'] as double),
+                    // );
                     return Container(
                       padding: EdgeInsets.all(12.w),
                       margin: EdgeInsets.only(bottom: 12.h),
@@ -282,41 +307,41 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                                         SizedBox(width: 8.w),
 
                                         // 📦 Total Items (tappable)
-                                        InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            6.r,
-                                          ),
-                                          onTap: () {
-                                            print(
-                                              "📦 Order Items for Order ID ${order.orderMasterId}: ${order.orderItems}",
-                                            );
-                                            _showOrderItemsBottomSheet(
-                                              context,
-                                              order.orderItems,
-                                            );
-                                          },
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                "Details",
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 12.sp,
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Poppins',
-                                                ),
-                                              ),
-                                              Icon(
-                                                Icons.chevron_right,
-                                                size: 18.sp,
-                                                color: Colors.black,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                        // InkWell(
+                                        //   borderRadius: BorderRadius.circular(
+                                        //     6.r,
+                                        //   ),
+                                        //   onTap: () {
+                                        //     print(
+                                        //       "📦 Order Items for Order ID ${order.orderMasterId}: ${order.orderItems}",
+                                        //     );
+                                        //     _showOrderItemsBottomSheet(
+                                        //       context,
+                                        //       order.orderItems,
+                                        //     );
+                                        //   },
+                                        //   child: Row(
+                                        //     mainAxisSize: MainAxisSize.min,
+                                        //     children: [
+                                        //       Text(
+                                        //         "Details",
+                                        //         maxLines: 1,
+                                        //         overflow: TextOverflow.ellipsis,
+                                        //         style: TextStyle(
+                                        //           fontSize: 12.sp,
+                                        //           color: Colors.black,
+                                        //           fontWeight: FontWeight.w500,
+                                        //           fontFamily: 'Poppins',
+                                        //         ),
+                                        //       ),
+                                        //       Icon(
+                                        //         Icons.chevron_right,
+                                        //         size: 18.sp,
+                                        //         color: Colors.black,
+                                        //       ),
+                                        //     ],
+                                        //   ),
+                                        // ),
                                       ],
                                     ),
                                   ],

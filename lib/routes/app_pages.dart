@@ -1,4 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:pizza_boys/core/bloc/internet_check/server_error_bloc.dart';
+import 'package:pizza_boys/core/helpers/api_client_helper.dart';
+import 'package:pizza_boys/core/helpers/internet_helper/error_screen_tracker.dart';
+import 'package:pizza_boys/core/helpers/internet_helper/server_error_helper.dart';
 import 'package:pizza_boys/data/models/order/order_post_model.dart';
 import 'package:pizza_boys/features/auth/pages/login.dart';
 import 'package:pizza_boys/features/auth/pages/register.dart';
@@ -44,7 +49,7 @@ class AppPages {
           builder: (context) =>
               CartView(scrollController: ScrollController(), userId: 101),
         );
-    
+
       case AppRoutes.checkOut:
         return MaterialPageRoute(builder: (context) => Checkout());
       case AppRoutes.payments:
@@ -85,6 +90,21 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => OrderTracking());
       case AppRoutes.favorites:
         return MaterialPageRoute(builder: (context) => FavoritesView());
+     case AppRoutes.ServerTimeoutScreen:
+  return MaterialPageRoute(
+    builder: (context) => ServerTimeoutScreen(
+      bloc: ServerTimeoutBloc(
+        dio: ApiClient.dio,
+        requestOptions: RequestOptions(path: 'unknown'),
+      ),
+      errorMessage: "Internal Server Error (500). Please try again later.",
+      onClose: () {
+        ApiClient.isShowingServerError = false;
+        ErrorScreenTracker.reset();
+      },
+    ),
+  );
+
       // Profile Sub Pages
       case AppRoutes.orderHistory:
         return MaterialPageRoute(builder: (context) => OrderHistoryView());

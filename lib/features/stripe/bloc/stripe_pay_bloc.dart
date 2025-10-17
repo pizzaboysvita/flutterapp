@@ -81,7 +81,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     double amount,
     String currency,
   ) async {
-    final int amountInCents = amount .toInt();
+    final int amountInCents = amount.toInt();
     _log(
       "Creating PaymentIntent: ${(amountInCents / 100).toStringAsFixed(2)} $currency",
     );

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:pizza_boys/core/bloc/promocodes/promocode_bloc.dart';
+import 'package:pizza_boys/core/bloc/promocodes/promocode_event.dart';
+import 'package:pizza_boys/core/bloc/promocodes/promocode_state.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/dialogs/offers_popup.dart';
@@ -37,13 +41,24 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_hasShownPopup) {
-        _hasShownPopup = true;
-        showSequentialPopups(context);
-      }
-    });
+ WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Get store ID dynamically
+    final storeIdStr = await TokenStorage.getChosenStoreId();
+    final storeId = int.tryParse(storeIdStr ?? "-1") ?? -1;
 
+    if (storeId != -1) {
+      // Dispatch fetch event
+      context.read<PromoBloc>().add(FetchPromos(storeId));
+
+      // Listen for the state and show popup if data exists
+      context.read<PromoBloc>().stream.listen((state) {
+        if (state is PromoLoaded && state.promos.isNotEmpty) {
+          showDynamicPopups(context, state.promos);
+        }
+      });
+    }
+  });
+  
     widget.scrollController.addListener(() {
       final direction = widget.scrollController.position.userScrollDirection;
       if (direction == ScrollDirection.reverse && _isFabVisible) {
@@ -67,117 +82,123 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.only(left: 2.0.w),
-              child: Image.asset(
-                ImageUrls.logoWhite, // replace with your image path
-                height: 22.sp, // matches your text height
-                fit: BoxFit.contain,
+    return BlocListener<PromoBloc, PromoState>(
+      listener: (context, state) {
+        if (state is PromoLoaded && state.promos.isNotEmpty) {
+          showDynamicPopups(context, state.promos);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          automaticallyImplyLeading: false,
+          systemOverlayStyle: SystemUiOverlayStyle.light,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(left: 2.0.w),
+                child: Image.asset(
+                  ImageUrls.logoWhite, // replace with your image path
+                  height: 22.sp, // matches your text height
+                  fit: BoxFit.contain,
+                ),
               ),
-            ),
-
-            BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
-              builder: (context, state) {
-                String selectedStore = "Select Store";
-
-                if (state is StoreSelectionLoaded) {
-                  final current = state.stores.firstWhere(
-                    (store) => store.id == state.selectedStoreId,
-                    orElse: () => Store(
-                      id: 0,
-                      name: "",
-                      address: "",
-                      phone: "",
-                      image: "",
-                    ),
-                  );
-
-                  if (current.id != 0 && current.name.isNotEmpty) {
-                    selectedStore = current.name;
-                    // 💾 Persist selection
-                    TokenStorage.saveSelectedStore(current);
-                  }
-                }
-
-                return FutureBuilder<String?>(
-                  future: TokenStorage.loadSelectedStoreName(),
-                  builder: (context, snapshot) {
-                    final storedName = snapshot.data;
-                    // if Bloc didn’t give valid name, fallback to stored one
-                    if (selectedStore == "Select Store" &&
-                        storedName != null &&
-                        storedName.isNotEmpty) {
-                      selectedStore = storedName;
-                    }
-
-                    return InkWell(
-                      onTap: () async {
-                        final changed = await Navigator.pushNamed(
-                          context,
-                          AppRoutes.chooseStoreLocation,
-                          arguments: {"isChangeLocation": true},
-                        );
-
-                        debugPrint(
-                          "⬅️ Returned from Location page → changed = $changed",
-                        );
-
-                        if (changed == true) {
-                          context.read<StoreSelectionBloc>().add(
-                            LoadStoresEvent(),
-                          );
-                        } else {
-                          debugPrint(
-                            "⚠️ No store change detected → keeping stored store",
-                          );
-                        }
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            color: AppColors.whiteColor,
-                            size: 14.w,
-                          ),
-                          SizedBox(width: 2.w),
-                          Flexible(
-                            child: Text(
-                              selectedStore,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: Colors.white70,
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+      
+              BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+                builder: (context, state) {
+                  String selectedStore = "Select Store";
+      
+                  if (state is StoreSelectionLoaded) {
+                    final current = state.stores.firstWhere(
+                      (store) => store.id == state.selectedStoreId,
+                      orElse: () => Store(
+                        id: 0,
+                        name: "",
+                        address: "",
+                        phone: "",
+                        image: "",
                       ),
                     );
-                  },
-                );
-              },
-            ),
+      
+                    if (current.id != 0 && current.name.isNotEmpty) {
+                      selectedStore = current.name;
+                      // 💾 Persist selection
+                      TokenStorage.saveSelectedStore(current);
+                    }
+                  }
+      
+                  return FutureBuilder<String?>(
+                    future: TokenStorage.loadSelectedStoreName(),
+                    builder: (context, snapshot) {
+                      final storedName = snapshot.data;
+                      // if Bloc didn’t give valid name, fallback to stored one
+                      if (selectedStore == "Select Store" &&
+                          storedName != null &&
+                          storedName.isNotEmpty) {
+                        selectedStore = storedName;
+                      }
+      
+                      return InkWell(
+                        onTap: () async {
+                          final changed = await Navigator.pushNamed(
+                            context,
+                            AppRoutes.chooseStoreLocation,
+                            arguments: {"isChangeLocation": true},
+                          );
+      
+                          debugPrint(
+                            "⬅️ Returned from Location page → changed = $changed",
+                          );
+      
+                          if (changed == true) {
+                            context.read<StoreSelectionBloc>().add(
+                              LoadStoresEvent(),
+                            );
+                          } else {
+                            debugPrint(
+                              "⚠️ No store change detected → keeping stored store",
+                            );
+                          }
+                        },
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              color: AppColors.whiteColor,
+                              size: 14.w,
+                            ),
+                            SizedBox(width: 2.w),
+                            Flexible(
+                              child: Text(
+                                selectedStore,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.white70,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+          actions: [
+            IconAccordion(),
+            SizedBox(width: 6.0.w),
           ],
         ),
-        actions: [
-          IconAccordion(),
-          SizedBox(width: 6.0.w),
-        ],
-      ),
-      body: SafeArea(
-        child: Stack(
+        body: Stack(
           children: [
             ListView(
               controller: widget.scrollController,
@@ -185,7 +206,7 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                 Column(
                   children: [
                     const DashboardHeroSection(),
-
+      
                     SizedBox(height: 20.h),
                     const PromotionalBanner(),
                     SizedBox(height: 16.h),
@@ -214,7 +235,7 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                 ),
               ],
             ),
-
+      
             // Floating Search Button
             Positioned(
               bottom: 20.h,

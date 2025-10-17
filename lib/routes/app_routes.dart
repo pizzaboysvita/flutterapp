@@ -15,6 +15,8 @@ class AppRoutes {
   static const String splashScreen = '/splash_screen';
   static const String orderTracking = '/order_tracking';
   static const String favorites = '/fav_view';
+  static const String ServerTimeoutScreen = '/server_error_helper';
+
 
   // Profile Sub Pages
   static const String orderHistory = '/order_history';
@@ -26,9 +28,4 @@ class AppRoutes {
   static const String aiChatbot = '/ai_chatbot';
   static const String chooseStoreLocation = '/choose_location';
   static const String googleMaps = '/googleMap';
-
-  
-
-
-
 }

@@ -10,15 +10,6 @@ import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/helpers/map/address_to_latlang.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
-import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
-import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
-import 'package:pizza_boys/features/favorites/bloc/fav_state.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_event.dart';
-import 'package:pizza_boys/features/home/bloc/integration/category/category_state.dart';
-import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/dish/dish_event.dart';
-import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
@@ -55,10 +46,10 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   Future<void> _loadCustomMarkers() async {
     normalIcon = await BitmapDescriptor.fromAssetImage(
       const ImageConfiguration(size: Size(90, 90)),
-      ImageUrls.circleLogo,
+      ImageUrls.circleLogoPng,
     );
 
-    highlightedIcon = await _createBorderedMarker(ImageUrls.circleLogo);
+    highlightedIcon = await _createBorderedMarker(ImageUrls.circleLogoPng);
 
     if (!mounted) return; // <-- check if widget is still in tree
     setState(() {});
@@ -154,7 +145,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   }
 
   Future<void> _updateMarkers(List<Store> stores, String? selectedId) async {
-    final logo = await _loadLogo(ImageUrls.circleLogo);
+    final logo = await _loadLogo(ImageUrls.circleLogoPng);
     final customPin = await _createLogoPinMarker(logo);
 
     _markers.clear();
@@ -285,9 +276,9 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                     if (state.selectedStoreId == null) {
                       _fitMarkersToBounds(state.stores);
                     }
-                    setState(
-                      () {},
-                    ); // ✅ safe, because it's outside the build process
+                    if (mounted) {
+                      setState(() {});
+                    }
                   }
                 },
                 child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
@@ -373,7 +364,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                     } else if (state is StoreSelectionLoaded) {
                       return _buildStoreList(state);
                     } else if (state is StoreSelectionError) {
-                      return Center(child: Text(state.message));
+                      print(state.message);
                     }
                     return const SizedBox();
                   },
@@ -540,38 +531,43 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   return SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                     onPressed: isLoading
-    ? null
-    : () async {
-        _isLoading.value = true;
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              _isLoading.value = true;
 
-        await TokenStorage.saveChosenLocation(
-          storeId: selectedStore.id.toString(),
-          locationName: selectedStore.name,
-        );
+                              await TokenStorage.saveChosenLocation(
+                                storeId: selectedStore.id.toString(),
+                                locationName: selectedStore.name,
+                              );
 
-        await TokenStorage.saveSelectedStore(selectedStore);
-        await TokenStorage.setLocationChosen(true);
+                              await TokenStorage.saveSelectedStore(
+                                selectedStore,
+                              );
+                              await TokenStorage.setLocationChosen(true);
 
-        // ✅ Update StoreWatcherCubit → triggers CategoryBloc & DishBloc automatically
-        context.read<StoreWatcherCubit>().updateStore(selectedStore.id.toString(),selectedStore.name,);
+                              // ✅ Update StoreWatcherCubit → triggers CategoryBloc & DishBloc automatically
+                              context.read<StoreWatcherCubit>().updateStore(
+                                selectedStore.id.toString(),
+                                selectedStore.name,
+                              );
 
-        _isLoading.value = false;
+                              _isLoading.value = false;
 
-        if (widget.isChangeLocation) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.home,
-            (route) => false,
-          );
-        } else {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.login,
-            (route) => false,
-          );
-        }
-      },
+                              if (widget.isChangeLocation) {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  AppRoutes.home,
+                                  (route) => false,
+                                );
+                              } else {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  AppRoutes.login,
+                                  (route) => false,
+                                );
+                              }
+                            },
 
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.redPrimary,

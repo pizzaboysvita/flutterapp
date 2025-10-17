@@ -1,3 +1,5 @@
+// ignore_for_file: empty_catches
+
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pizza_boys/features/onboard.dart/model/store_selection_model.dart';

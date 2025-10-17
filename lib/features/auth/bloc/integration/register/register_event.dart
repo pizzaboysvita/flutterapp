@@ -30,6 +30,5 @@ class SubmitRegister extends RegisterEvent {
     required this.pinCode,
     this.imageFile,
     this.onSuccess,
-
   });
 }

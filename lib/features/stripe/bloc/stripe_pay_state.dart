@@ -5,12 +5,12 @@ abstract class PaymentState {
 
 class PaymentInitial extends PaymentState {
   const PaymentInitial({String selectedMethod = "card"})
-      : super(selectedMethod: selectedMethod);
+    : super(selectedMethod: selectedMethod);
 }
 
 class PaymentLoading extends PaymentState {
   const PaymentLoading({required String selectedMethod})
-      : super(selectedMethod: selectedMethod);
+    : super(selectedMethod: selectedMethod);
 }
 
 class PaymentSheetReady extends PaymentState {
@@ -23,15 +23,13 @@ class PaymentSheetReady extends PaymentState {
 
 class PaymentSuccess extends PaymentState {
   const PaymentSuccess({required String selectedMethod})
-      : super(selectedMethod: selectedMethod);
+    : super(selectedMethod: selectedMethod);
 }
 
 class PaymentFailure extends PaymentState {
   final String error;
-  const PaymentFailure({
-    required this.error,
-    required String selectedMethod,
-  }) : super(selectedMethod: selectedMethod);
+  const PaymentFailure({required this.error, required String selectedMethod})
+    : super(selectedMethod: selectedMethod);
 }
 
 class PaymentBankInstruction extends PaymentState {

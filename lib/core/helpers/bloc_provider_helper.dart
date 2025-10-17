@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
+import 'package:pizza_boys/core/bloc/promocodes/promocode_bloc.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/repositories/cart/cart_repo.dart';
 import 'package:pizza_boys/data/repositories/category/category_repo.dart';
 
 import 'package:pizza_boys/data/repositories/dish/dish_repo.dart';
 import 'package:pizza_boys/data/repositories/order/order_repo.dart';
+import 'package:pizza_boys/data/repositories/promocodes/promocode_repo.dart';
+import 'package:pizza_boys/data/repositories/search/search_repo.dart';
 import 'package:pizza_boys/data/repositories/whishlist/whishlist_repo.dart';
 import 'package:pizza_boys/data/services/cart/cart_service.dart';
 import 'package:pizza_boys/data/services/category/category_service.dart';
@@ -41,6 +44,8 @@ class BlocProviderHelper {
       providers: [
         BlocProvider(create: (_) => ConnectivityBloc()),
         BlocProvider(create: (_) => PizzaDetailsBloc()),
+        BlocProvider(create: (_) => PromoBloc(PromoRepository())),
+
         BlocProvider(
           create: (_) =>
               CartBloc(cartRepository: CartRepository(CartService())),
@@ -56,7 +61,7 @@ class BlocProviderHelper {
               OrderGetBloc(OrderRepository(OrderService()))
                 ..add(LoadOrdersEvent()),
         ),
-        BlocProvider(create: (_) => SearchBloc()),
+        BlocProvider(create: (_) => SearchBloc(SearchRepo())),
         BlocProvider(create: (_) => NavCubit()),
         BlocProvider(create: (_) => PsObscureBloc()),
         BlocProvider(create: (_) => BannerCarouselBloc()),

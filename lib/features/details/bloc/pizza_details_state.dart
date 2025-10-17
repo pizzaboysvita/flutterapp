@@ -65,20 +65,20 @@ class PizzaDetailsState {
     this.selectedIngredients = const {},
     this.selectedChoices = const {},
     this.choicesExtraPrice = 0,
-    this.selectedCombo = const {},    
-    this.comboExtraPrice = 0,  
+    this.selectedCombo = const {},
+    this.comboExtraPrice = 0,
     this.quantity = 1,
     this.error,
-     required this.selectedComboDish,
+    required this.selectedComboDish,
   });
 
   factory PizzaDetailsState.initial() => PizzaDetailsState(
-        isLoading: false,
-        isBaseExpanded: false,
-        selectedCombo: {},
-        comboExtraPrice: 0,
-        selectedComboDish: DishModelExtensionsEmpty.empty(),
-      );
+    isLoading: false,
+    isBaseExpanded: false,
+    selectedCombo: {},
+    comboExtraPrice: 0,
+    selectedComboDish: DishModelExtensionsEmpty.empty(),
+  );
 
   PizzaDetailsState copyWith({
     bool? isLoading,
@@ -110,7 +110,8 @@ class PizzaDetailsState {
       dish: dish ?? this.dish,
       selectedSize: selectedSize ?? this.selectedSize,
       selectedLargeOption: selectedLargeOption ?? this.selectedLargeOption,
-      largeOptionExtraPrice: largeOptionExtraPrice ?? this.largeOptionExtraPrice,
+      largeOptionExtraPrice:
+          largeOptionExtraPrice ?? this.largeOptionExtraPrice,
       selectedAddons: selectedAddons ?? this.selectedAddons,
       addonExtraPrice: addonExtraPrice ?? this.addonExtraPrice,
       selectedBase: selectedBase ?? this.selectedBase,

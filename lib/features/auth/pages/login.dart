@@ -43,7 +43,7 @@ class _LoginState extends State<Login> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => LoginCheckboxBloc()),
-        BlocProvider(create: (_) => LoginBloc(LoginRepo()),),
+        BlocProvider(create: (_) => LoginBloc(LoginRepo())),
       ],
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
@@ -60,7 +60,7 @@ class _LoginState extends State<Login> {
               if (state is LoginSuccess) {
                 SnackbarHelper.green(
                   context,
-                  state.data["message"] ?? "Login Successful",
+                  state.data?["message"] ?? "Login Successful",
                 );
 
                 // Delay navigation until after the current frame
@@ -203,6 +203,8 @@ class _LoginState extends State<Login> {
                                   context,
                                   "Functionality under processing...",
                                 );
+                                //                                print("👤 Guest login button clicked");
+                                // context.read<LoginBloc>().add(GuestLoginEvent());
                               },
                             ),
 

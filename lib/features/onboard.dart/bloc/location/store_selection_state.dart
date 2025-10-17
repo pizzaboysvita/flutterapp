@@ -10,15 +10,9 @@ class StoreSelectionLoaded extends StoreSelectionState {
   final List<Store> stores;
   final int? selectedStoreId;
 
-  StoreSelectionLoaded({
-    required this.stores,
-    this.selectedStoreId,
-  });
+  StoreSelectionLoaded({required this.stores, this.selectedStoreId});
 
-  StoreSelectionLoaded copyWith({
-    List<Store>? stores,
-    int? selectedStoreId,
-  }) {
+  StoreSelectionLoaded copyWith({List<Store>? stores, int? selectedStoreId}) {
     return StoreSelectionLoaded(
       stores: stores ?? this.stores,
       selectedStoreId: selectedStoreId ?? this.selectedStoreId,

@@ -15,7 +15,6 @@ import 'package:pizza_boys/features/favorites/bloc/fav_state.dart';
 import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/integration/category/category_state.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
-import 'package:pizza_boys/features/home/bloc/integration/dish/dish_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 import 'package:shimmer/shimmer.dart';
@@ -286,38 +285,48 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Name + Favorite icon
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              dish.name,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Poppins',
-                                color: Colors.black87,
+                      Padding(
+                        padding: EdgeInsets.only(right: 22.0.w),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                dish.name,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Poppins',
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          SizedBox(width: 6.w),
-                        ],
+                            SizedBox(width: 6.w),
+                          ],
+                        ),
                       ),
 
                       // Description
                       if (dish.description.isNotEmpty) ...[
                         SizedBox(height: 4.h),
-                        Text(
-                          dish.description,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.black54,
-                            fontFamily: 'Poppins',
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                dish.description,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.black54,
+                                  fontFamily: 'Poppins',
+                                ),
+                                maxLines: 2,
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                         SizedBox(height: 6.h),
                       ],
@@ -398,7 +407,7 @@ class MinimalCategoryRow extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return Container(
+        return SizedBox(
           height: 92.h, // responsive height
           child: Builder(
             builder: (context) {
