@@ -4,7 +4,9 @@ import 'package:pizza_boys/core/bloc/internet_check/server_error_bloc.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/error_screen_tracker.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/server_error_helper.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/order/order_post_model.dart';
+import 'package:pizza_boys/features/auth/pages/guest_login.dart';
 import 'package:pizza_boys/features/auth/pages/login.dart';
 import 'package:pizza_boys/features/auth/pages/register.dart';
 import 'package:pizza_boys/features/cart/pages/cart_view.dart';
@@ -44,11 +46,30 @@ class AppPages {
         return MaterialPageRoute(
           builder: (context) => Home(scrollController: ScrollController()),
         );
+
       case AppRoutes.cartView:
-        return MaterialPageRoute(
-          builder: (context) =>
-              CartView(scrollController: ScrollController(), userId: 101),
+  return MaterialPageRoute(
+    builder: (context) => FutureBuilder<String?>(
+      future: TokenStorage.getUserId(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final userId = snapshot.data != null
+            ? int.tryParse(snapshot.data!) ?? 0
+            : 0;
+
+        return CartView(
+          scrollController: ScrollController(),
+          userId: userId,
         );
+      },
+    ),
+  );
+
 
       case AppRoutes.checkOut:
         return MaterialPageRoute(builder: (context) => Checkout());
@@ -68,6 +89,8 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => Register());
       case AppRoutes.login:
         return MaterialPageRoute(builder: (context) => Login());
+        case AppRoutes.guestLogin:
+        return MaterialPageRoute(builder: (context) => GuestCheckout());
       case AppRoutes.landing:
         return MaterialPageRoute(builder: (context) => LandingPage());
       case AppRoutes.profile:

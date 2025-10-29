@@ -7,6 +7,7 @@ import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/search/bloc/search_bloc.dart';
 import 'package:pizza_boys/features/search/bloc/search_event.dart';
 import 'package:pizza_boys/features/search/bloc/search_state.dart';
+import 'package:pizza_boys/routes/app_routes.dart';
 
 class SearchView extends StatefulWidget {
   final bool showBackBtn;
@@ -77,7 +78,7 @@ class _SearchViewState extends State<SearchView> {
   }
 
   Widget _buildSuggestions() {
-    final suggestions = ["Pizza", "Burger", "Cheesy Pizza", "Combo Meal"];
+    final suggestions = ["Pizza", "Chicken Pizza", "Cheesy Pizza", "Tandoori Pizza"];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -127,49 +128,59 @@ class _SearchViewState extends State<SearchView> {
       separatorBuilder: (_, __) => SizedBox(height: 12.h),
       itemBuilder: (context, index) {
         final dish = results[index];
-        return Container(
-          padding: EdgeInsets.all(12.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12.r),
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12.r),
-                child: Image.network(
-                  dish["dish_image"] ?? ImageUrls.catergoryPizza,
-                  height: 70.h,
-                  width: 70.w,
-                  fit: BoxFit.cover,
+        return InkWell(
+          onTap: () {
+           Navigator.pushNamed(
+      context,
+      AppRoutes.pizzaDetails,
+      arguments: dish["dish_id"], // pass the selected dish's ID
+    );
+    print("🔹 Navigating to details of dish ID: ${dish["dish_id"]}");
+          },
+          child: Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: Image.network(
+                    dish["dish_image"] ?? ImageUrls.catergoryPizza,
+                    height: 70.h,
+                    width: 70.w,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      dish["dish_name"] ?? "Unknown Dish",
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14.sp,
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dish["dish_name"] ?? "Unknown Dish",
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14.sp,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      "₹${dish["dish_price"] ?? "--"}",
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                      SizedBox(height: 4.h),
+                      Text(
+                        "₹${dish["dish_price"] ?? "--"}",
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins',
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

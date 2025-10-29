@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -33,61 +35,77 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   bool _hasShownPopup = false;
   bool _isFabVisible = true;
+  late VoidCallback _scrollListener;
 
   @override
   bool get wantKeepAlive => true;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  print("🔹 Home initState called");
 
- WidgetsBinding.instance.addPostFrameCallback((_) async {
-    // Get store ID dynamically
+  // Scroll listener
+  _scrollListener = () {
+    final direction = widget.scrollController.position.userScrollDirection;
+    if (direction == ScrollDirection.reverse && _isFabVisible) {
+      setState(() => _isFabVisible = false);
+    } else if (direction == ScrollDirection.forward && !_isFabVisible) {
+      setState(() => _isFabVisible = true);
+    }
+  };
+  widget.scrollController.addListener(_scrollListener);
+
+  // ✅ Safe post-frame callback
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    if (!mounted) return; // prevent using context after dispose
+    print("🔹 Post-frame callback triggered");
+
     final storeIdStr = await TokenStorage.getChosenStoreId();
     final storeId = int.tryParse(storeIdStr ?? "-1") ?? -1;
+    print("🔹 Current chosen storeId: $storeId");
 
+    if (!mounted) return; // safety check before accessing context
     if (storeId != -1) {
-      // Dispatch fetch event
+      print("🔹 Dispatching FetchPromos for storeId: $storeId");
       context.read<PromoBloc>().add(FetchPromos(storeId));
-
-      // Listen for the state and show popup if data exists
-      context.read<PromoBloc>().stream.listen((state) {
-        if (state is PromoLoaded && state.promos.isNotEmpty) {
-          showDynamicPopups(context, state.promos);
-        }
-      });
+    } else {
+      print("⚠️ No valid storeId found, cannot fetch promos");
     }
   });
-  
-    widget.scrollController.addListener(() {
-      final direction = widget.scrollController.position.userScrollDirection;
-      if (direction == ScrollDirection.reverse && _isFabVisible) {
-        setState(() {
-          _isFabVisible = false;
-        });
-      } else if (direction == ScrollDirection.forward && !_isFabVisible) {
-        setState(() {
-          _isFabVisible = true;
-        });
-      }
-    });
-  }
+}
 
-  @override
-  void dispose() {
-    widget.scrollController.removeListener(() {});
-    super.dispose();
-  }
+
+StreamSubscription? _promoSubscription;
+
+
+@override
+void dispose() {
+  print("🔹 Home dispose called");
+  widget.scrollController.removeListener(_scrollListener);
+  _promoSubscription?.cancel();
+  super.dispose();
+}
+
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
     return BlocListener<PromoBloc, PromoState>(
-      listener: (context, state) {
-        if (state is PromoLoaded && state.promos.isNotEmpty) {
-          showDynamicPopups(context, state.promos);
-        }
-      },
+    listener: (context, state) async {
+    print("🔹 PromoBloc emitted state: $state");
+
+    if (!_hasShownPopup && mounted) {
+  if (state is PromoLoaded && state.promos.isNotEmpty) {
+    _hasShownPopup = true;
+    print("🔹 Triggering showDynamicPopups now");
+    showDynamicPopups(context, state.promos);
+  }
+}
+else {
+      print("🔹 Popup already shown, skipping...");
+    }
+  },
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.black,

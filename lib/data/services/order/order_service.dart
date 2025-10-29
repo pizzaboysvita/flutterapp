@@ -11,34 +11,40 @@ class OrderService {
     try {
       final orderJson = order.toJson();
 
+      print("📤 Sending Order to Backend...");
+      print("🔗 Endpoint: ${ApiUrls.postOrders}");
+      print("🧾 Payload: ${orderJson}");
+
       final response = await ApiClient.dio.post(
         ApiUrls.postOrders,
         data: orderJson,
         options: Options(headers: {"Content-Type": "application/json"}),
       );
 
+      print("✅ Response Status: ${response.statusCode}");
+      print("✅ Response Data: ${response.data}");
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data["code"].toString() == "1";
       } else {
-        // Log backend error
-
+        print("⚠️ Unexpected response: ${response.data}");
         throw Exception("Failed to place order: ${response.data}");
       }
     } on DioException catch (e) {
-      // Print Dio exception type and message
+      print("❌ DioException caught!");
+      print("Type: ${e.type}");
+      print("Message: ${e.message}");
 
-      // If backend responded with 4xx/5xx, print the response
       if (e.response != null) {
-        print(
-          "❌ Backend response: ${e.response?.statusCode} ${e.response?.data}",
-        );
+        print("❌ Backend Response Status: ${e.response?.statusCode}");
+        print("❌ Backend Response Body: ${e.response?.data}");
       }
 
-      // Rethrow to propagate the error
       throw Exception(
         "Failed to place order: ${e.message} | Backend: ${e.response?.data}",
       );
     } catch (e) {
+      print("🔥 Unexpected error: $e");
       throw Exception("Failed to place order: $e");
     }
   }

@@ -7,6 +7,7 @@ class AppRoutes {
   static const String orderDetails = '/order_details';
   static const String register = '/register';
   static const String login = '/login';
+  static const String guestLogin = '/guest_login';
   static const String landing = '/landing_page';
   static const String profile = '/profile';
   static const String profileEdit = '/profile_edit';

@@ -452,7 +452,7 @@ class _PopularPicksState extends State<PopularPicks> {
                                       if (dish.wishlistId != null) {
                                         context.read<FavoriteBloc>().add(
                                           RemoveFromFavoriteEvent(
-                                            dishId: dish.id,
+                                            dish: dish,
                                             wishlistId: dish.wishlistId,
                                           ),
                                         );

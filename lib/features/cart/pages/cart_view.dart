@@ -359,105 +359,116 @@ class _CartViewState extends State<CartView> {
                     ],
                   ),
                   SizedBox(height: 14.h),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final cartState = context.read<CartGetBloc>().state;
-                        if (cartState is CartLoaded) {
-                          final cartItems = cartState.cartItems;
+                 SizedBox(
+  width: double.infinity,
+  child: ElevatedButton(
+    onPressed: () async {
+      final isGuest = await TokenStorage.isGuest(); // 👈 check guest session
 
-                          // Prepare order details
-                          final orderDetails = cartItems.map((item) {
-                            return OrderDetail(
-                              dishId: item.dishId,
-                              dishName: item.dishName ?? "Unknown Dish",
-                              dishNote: item.dishNote ?? "",
-                              quantity: item.quantity,
-                              price: item.price,
-                              base: item.options["base"] ?? "small",
-                              basePrice:
-                                  item.options["basePrice"]?.toDouble() ?? 0.0,
-                            );
-                          }).toList();
+      if (isGuest) {
+        // 👇 redirect guest user to guest login page
+        Navigator.pushNamed(context, AppRoutes.guestLogin);
+        return;
+      }
 
-                          final toppingDetails = cartItems.map((item) {
-                            return ToppingDetail(
-                              dishId: item.dishId,
-                              name:
-                                  item.options["toppingName"] ?? "Extra Cheese",
-                              price:
-                                  item.options["toppingPrice"]?.toDouble() ??
-                                  10.0,
-                              quantity: 1,
-                            );
-                          }).toList();
+      // ✅ Continue existing logic for logged-in users
+      final cartState = context.read<CartGetBloc>().state;
+      if (cartState is CartLoaded) {
+        final cartItems = cartState.cartItems;
 
-                          final ingredientDetails = cartItems.map((item) {
-                            return IngredientDetail(
-                              dishId: item.dishId,
-                              name: item.options["ingredientName"] ?? "Tomato",
-                              price:
-                                  item.options["ingredientPrice"]?.toDouble() ??
-                                  2.0,
-                              quantity: 1,
-                            );
-                          }).toList();
+        // Prepare order details
+        final orderDetails = cartItems.map((item) {
+          return OrderDetail(
+            dishId: item.dishId,
+            dishName: item.dishName ?? "Unknown Dish",
+            dishNote: item.dishNote ?? "",
+            quantity: item.quantity,
+            price: item.price,
+            base: item.options["base"] ?? "small",
+            basePrice: item.options["basePrice"]?.toDouble() ?? 0.0,
+          );
+        }).toList();
 
-                          final userId = await TokenStorage.getUserId();
-                          final storeId = await TokenStorage.getChosenStoreId();
-                          final formattedDate = DateFormat(
-                            'yyyy-MM-dd HH:mm:ss',
-                          ).format(DateTime.now());
+        final toppingDetails = cartItems.map((item) {
+          return ToppingDetail(
+            dishId: item.dishId,
+            name: item.options["toppingName"] ?? "Extra Cheese",
+            price: item.options["toppingPrice"]?.toDouble() ?? 10.0,
+            quantity: 1,
+          );
+        }).toList();
 
-                          final order = OrderModel(
-                            totalPrice: calculateTotal(cartItems),
-                            totalQuantity: cartItems.length,
-                            storeId: int.parse(storeId!),
-                            orderType: "test",
-                            pickupDatetime: formattedDate,
-                            deliveryDatetime: formattedDate,
-                            orderNotes: deliveryNote.isNotEmpty
-                                ? deliveryNote
-                                : "Customer will pick up",
-                            orderStatus: "Order_placed",
-                            orderCreatedBy: int.parse(userId!),
-                            toppingDetails: toppingDetails,
-                            ingredientDetails: ingredientDetails,
-                            orderDetails: orderDetails,
-                            paymentMethod: "Cash",
-                            paymentStatus: "Completed",
-                            paymentAmount: calculateTotal(cartItems),
-                            unitNumber: "POS-001",
-                            gstPrice: 0.1,
-                          );
+        final ingredientDetails = cartItems.map((item) {
+          return IngredientDetail(
+            dishId: item.dishId,
+            name: item.options["ingredientName"] ?? "Tomato",
+            price: item.options["ingredientPrice"]?.toDouble() ?? 2.0,
+            quantity: 1,
+          );
+        }).toList();
 
-                          // Dispatch the order event
-                          context.read<OrderBloc>().add(PlaceOrderEvent(order));
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.redPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          vertical: 14.h,
-                          horizontal: 16.w,
-                        ),
-                      ),
-                      child: Text(
-                        'Proceed to Checkout',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontFamily: 'Poppins',
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ],
+        final userId = await TokenStorage.getUserId();
+        final storeId = await TokenStorage.getChosenStoreId();
+        final formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
+        final order = OrderModel(
+          totalPrice: calculateTotal(cartItems),
+          totalQuantity: cartItems.length,
+          storeId: int.parse(storeId!),
+          orderType: "test",
+          pickupDatetime: formattedDate,
+          deliveryDatetime: formattedDate,
+          deliveryAddress: "",
+          orderNotes: deliveryNote.isNotEmpty ? deliveryNote : "Customer will pick up",
+          orderStatus: "Order_placed",
+          orderCreatedBy: int.parse(userId!),
+          toppingDetails: toppingDetails,
+          ingredientDetails: ingredientDetails,
+          orderDetails: orderDetails,
+          paymentMethod: "Cash",
+          paymentStatus: "Completed",
+          paymentAmount: calculateTotal(cartItems),
+          unitNumber: "POS-001",
+          isPosOrder: 0,
+          gstPrice: 0.1,
+          orderDue: null,
+          orderDueDatetime: null,
+          deliveryNotes: null,
+        );
+
+        print(" ==== ORDER DEBUG START ====");
+        print("userId: $userId | storeId: $storeId");
+        print("Total items: ${cartItems.length}");
+        print("Total price: ${calculateTotal(cartItems)}");
+        print("Order JSON: ${order.toJson()}");
+        print("==== ORDER DEBUG END ====");
+
+        // Dispatch the order event
+        context.read<OrderBloc>().add(PlaceOrderEvent(order));
+      }
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: AppColors.redPrimary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      padding: EdgeInsets.symmetric(
+        vertical: 14.h,
+        horizontal: 16.w,
+      ),
+    ),
+    child: Text(
+      'Proceed to Checkout',
+      style: TextStyle(
+        fontSize: 14.sp,
+        fontFamily: 'Poppins',
+        color: Colors.white,
+      ),
+      textAlign: TextAlign.center,
+    ),
+  ),
+),
+               ],
               ),
             );
           },
