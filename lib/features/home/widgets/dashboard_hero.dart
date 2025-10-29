@@ -263,6 +263,7 @@ class PizzaCategoriesRow extends StatelessWidget {
                           storeId,
                           storeName,
                         );
+                        
                         Navigator.pushNamed(
                           context,
                           AppRoutes.categoryPizzaDetails,

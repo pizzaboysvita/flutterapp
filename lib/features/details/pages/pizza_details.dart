@@ -748,81 +748,74 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                           SizedBox(width: 16.w),
 
                           // 🛒 Order Button with Total
-                          Expanded(
-                            child: SizedBox(
-                              // height: 50.h,
-                              child: ElevatedButton(
-                                onPressed: state is CartLoading
-                                    ? null
-                                    : () async {
-                                        final userId =
-                                            await TokenStorage.getUserId();
-                                        final storeId =
-                                            await TokenStorage.getChosenStoreId();
+                        Expanded(
+  child: SizedBox(
+    child: ElevatedButton(
+      onPressed: state is CartLoading
+          ? null
+          : () async {
+              final isGuest = await TokenStorage.isGuest();
+              final userId = await TokenStorage.getUserId();
+              final storeId = await TokenStorage.getChosenStoreId();
 
-                                        if (userId == null || storeId == null) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "⚠️ User or Store not found in session",
-                                              ),
-                                            ),
-                                          );
-                                          return;
-                                        }
+              // ✅ If guest, skip session check
+              if (!isGuest && (userId == null || storeId == null)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("⚠️ User or Store not found in session"),
+                  ),
+                );
+                return;
+              }
 
-                                        final optionsJson = {
-                                          "size": detailsState.selectedSize,
-                                          "largeOption":
-                                              detailsState.selectedLargeOption,
-                                          "addons": detailsState.selectedAddons,
-                                          "choices":
-                                              detailsState.selectedChoices,
-                                        };
+              final optionsJson = {
+                "size": detailsState.selectedSize,
+                "largeOption": detailsState.selectedLargeOption,
+                "addons": detailsState.selectedAddons,
+                "choices": detailsState.selectedChoices,
+              };
 
-                                        context.read<CartBloc>().add(
-                                          AddToCartEvent(
-                                            type: "insert",
-                                            userId: int.parse(userId),
-                                            dishId: dish.id,
-                                            storeId: int.parse(storeId),
-                                            quantity: detailsState.quantity,
-                                            price: total,
-                                            optionsJson: jsonEncode(
-                                              optionsJson,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.redPrimary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10.r),
-                                  ),
-                                ),
-                                child: state is CartLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.0,
-                                        ),
-                                      )
-                                    : Text(
-                                        'Total \$${total.toStringAsFixed(2)} (NZD)',
-                                        style: TextStyle(
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                              ),
-                            ),
-                          ),
+              // ✅ Dispatch event
+              context.read<CartBloc>().add(
+                AddToCartEvent(
+                  type: "insert",
+                  userId: isGuest ? 0 : int.parse(userId!), // placeholder for guest
+                  dishId: dish.id,
+                  storeId: isGuest ? 0 : int.parse(storeId!), // placeholder for guest
+                  quantity: detailsState.quantity,
+                  price: total,
+                  optionsJson: jsonEncode(optionsJson),
+                  dish: dish, // ✅ required for guest add
+                ),
+              );
+            },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.redPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+      ),
+      child: state is CartLoading
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.0,
+              ),
+            )
+          : Text(
+              'Total \$${total.toStringAsFixed(2)} (NZD)',
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+    ),
+  ),
+),
                         ],
                       ),
                     );
@@ -857,7 +850,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
     }
   }
 
-  Widget _buildBaseOptionSet(
+  Widget _buildBaseOptionSet(for
     OptionSet optionSet,
     PizzaDetailsState state,
     PizzaDetailsBloc bloc,

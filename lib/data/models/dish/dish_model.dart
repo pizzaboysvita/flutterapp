@@ -80,6 +80,7 @@ class DishModel {
 
   final bool hasDynamicOptions;
 
+  /// 🔹 Constructor
   DishModel({
     required this.id,
     required this.name,
@@ -98,6 +99,45 @@ class DishModel {
     this.comboSides = const [],
     this.hasDynamicOptions = false,
   });
+
+  /// 🔹 Create a modified copy of DishModel
+  DishModel copyWith({
+    int? id,
+    String? name,
+    double? price,
+    String? imageUrl,
+    double? rating,
+    int? dishCategoryId,
+    String? description,
+    int? storeId,
+    String? storeName,
+    int? wishlistId,
+    List<OptionSet>? optionSets,
+    List<Addon>? ingredients,
+    List<Addon>? choices,
+    List<DishModel>? comboDishes,
+    List<ComboSide>? comboSides,
+    bool? hasDynamicOptions,
+  }) {
+    return DishModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      imageUrl: imageUrl ?? this.imageUrl,
+      rating: rating ?? this.rating,
+      dishCategoryId: dishCategoryId ?? this.dishCategoryId,
+      description: description ?? this.description,
+      storeId: storeId ?? this.storeId,
+      storeName: storeName ?? this.storeName,
+      wishlistId: wishlistId ?? this.wishlistId,
+      optionSets: optionSets ?? this.optionSets,
+      ingredients: ingredients ?? this.ingredients,
+      choices: choices ?? this.choices,
+      comboDishes: comboDishes ?? this.comboDishes,
+      comboSides: comboSides ?? this.comboSides,
+      hasDynamicOptions: hasDynamicOptions ?? this.hasDynamicOptions,
+    );
+  }
 
   /// 🔹 Parse from API JSON
   factory DishModel.fromJson(
@@ -212,15 +252,12 @@ class DishModel {
       storeId: json['store_id'] ?? 0,
       storeName: json['store_name']?.toString(),
       wishlistId: json['wishlist_id'],
-
-      // ✅ Explicitly cast types here
       optionSets: List<OptionSet>.from(parsedOptionSets),
       ingredients: List<Addon>.from(parsedIngredients),
-
       choices: [],
       comboDishes: comboDishes,
       comboSides: parseComboSides(json['dish_choices_json']),
-      hasDynamicOptions: hasDynamicOptions, // ✅ correctly computed
+      hasDynamicOptions: hasDynamicOptions,
     );
   }
 

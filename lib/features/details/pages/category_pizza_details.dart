@@ -98,23 +98,6 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
         centerTitle: true,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-
-        actions: [
-          IconButton(
-            onPressed: () async {
-              final storeIdStr = await TokenStorage.getChosenStoreId();
-              final storeNameStr = await TokenStorage.getChosenStoreId();
-
-              final storeId = storeIdStr ?? "-1";
-              final storeName = storeNameStr ?? "";
-
-              // ignore: use_build_context_synchronously
-              context.read<StoreWatcherCubit>().updateStore(storeId, storeName);
-            },
-            icon: Icon(Icons.refresh),
-          ),
-          SizedBox(width: 4.0.w),
-        ],
       ),
       body: BlocListener<CategoryBloc, CategoryState>(
         listener: (context, state) {
@@ -371,7 +354,7 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                     if (dish.wishlistId != null) {
                       context.read<FavoriteBloc>().add(
                         RemoveFromFavoriteEvent(
-                          dishId: dish.id,
+                           dish: dish,
                           wishlistId: dish.wishlistId!,
                         ),
                       );

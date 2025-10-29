@@ -122,6 +122,11 @@ class OrderModel {
   final String unitNumber;
   final double gstPrice;
 
+  // 🔹 Missing fields added
+  final double? orderDue;
+  final String? orderDueDatetime;
+  final String? deliveryNotes;
+
   OrderModel({
     required this.totalPrice,
     required this.totalQuantity,
@@ -141,9 +146,12 @@ class OrderModel {
     required this.paymentMethod,
     required this.paymentStatus,
     required this.paymentAmount,
-    this.isPosOrder = 1,
+    this.isPosOrder = 0,
     required this.unitNumber,
     required this.gstPrice,
+    this.orderDue,
+    this.orderDueDatetime,
+    this.deliveryNotes,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -160,15 +168,18 @@ class OrderModel {
       orderNotes: json['order_notes'] ?? '',
       orderStatus: json['order_status'] ?? '',
       orderCreatedBy: json['order_created_by'] ?? 0,
-      toppingDetails: parseToppingList(json['order_toppings']),
-      ingredientDetails: parseIngredientList(json['order_ingredients']),
-      orderDetails: parseOrderItemList(json['order_items']),
+      toppingDetails: parseToppingList(json['topping_details']),
+      ingredientDetails: parseIngredientList(json['ingredients_details']),
+      orderDetails: parseOrderItemList(json['order_details_json']),
       paymentMethod: json['payment_method'] ?? '',
       paymentStatus: json['payment_status'] ?? '',
       paymentAmount: (json['payment_amount'] ?? 0).toDouble(),
-      isPosOrder: json['is_pos_order'] ?? 1,
+      isPosOrder: json['is_pos_order'] ?? 0,
       unitNumber: json['unitnumber'] ?? '',
       gstPrice: (json['gst_price'] ?? 0).toDouble(),
+      orderDue: (json['order_due'] ?? 0).toDouble(),
+      orderDueDatetime: json['order_due_datetime'],
+      deliveryNotes: json['delivery_notes'],
     );
   }
 
@@ -194,6 +205,9 @@ class OrderModel {
       "is_pos_order": isPosOrder,
       "unitnumber": unitNumber,
       "gst_price": gstPrice,
+      "order_due": orderDue ?? 0,
+      "order_due_datetime": orderDueDatetime,
+      "delivery_notes": deliveryNotes,
     };
   }
 
@@ -201,9 +215,7 @@ class OrderModel {
   static List<ToppingDetail> parseToppingList(dynamic jsonValue) {
     if (jsonValue == null) return [];
     try {
-      final List parsed = jsonValue is String
-          ? jsonDecode(jsonValue)
-          : jsonValue;
+      final List parsed = jsonValue is String ? jsonDecode(jsonValue) : jsonValue;
       return parsed.map((e) => ToppingDetail.fromJson(e)).toList();
     } catch (_) {
       return [];
@@ -213,9 +225,7 @@ class OrderModel {
   static List<IngredientDetail> parseIngredientList(dynamic jsonValue) {
     if (jsonValue == null) return [];
     try {
-      final List parsed = jsonValue is String
-          ? jsonDecode(jsonValue)
-          : jsonValue;
+      final List parsed = jsonValue is String ? jsonDecode(jsonValue) : jsonValue;
       return parsed.map((e) => IngredientDetail.fromJson(e)).toList();
     } catch (_) {
       return [];
@@ -225,9 +235,7 @@ class OrderModel {
   static List<OrderDetail> parseOrderItemList(dynamic jsonValue) {
     if (jsonValue == null) return [];
     try {
-      final List parsed = jsonValue is String
-          ? jsonDecode(jsonValue)
-          : jsonValue;
+      final List parsed = jsonValue is String ? jsonDecode(jsonValue) : jsonValue;
       return parsed.map((e) => OrderDetail.fromJson(e)).toList();
     } catch (_) {
       return [];

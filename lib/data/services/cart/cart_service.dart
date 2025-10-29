@@ -7,7 +7,7 @@ import 'package:pizza_boys/data/models/cart/cart_item_model.dart';
 import 'package:pizza_boys/data/services/dish/dish_service.dart';
 
 class CartService {
-  final Dio _dio = ApiClient.dio; 
+  final Dio _dio = ApiClient.dio;
 
   // 🛒 Add to Cart
   Future<Map<String, dynamic>> addToCart({
@@ -61,16 +61,24 @@ class CartService {
   // 📦 Get Cart Items
   Future<List<CartItem>> getCartItems() async {
     final userIdString = await TokenStorage.getUserId();
-    if (userIdString == null) throw Exception("❌ No user ID found.");
+    if (userIdString == null) throw Exception("No user ID found.");
     final userId = int.tryParse(userIdString) ?? 0;
+
+    // ✅ Get storeId once at the top
+    final storeIdString = await TokenStorage.getChosenStoreId();
+    if (storeIdString == null) throw Exception("No store ID found.");
+    final storeId = int.tryParse(storeIdString) ?? 0;
+    print(" Fetching cart for userId: $userId, storeId: $storeId");
 
     try {
       final response = await ApiClient.dio.get(
         "cart",
-        queryParameters: {"user_id": userId},
+        queryParameters: {"user_id": userId, "store_id": storeId},
       );
 
       final decoded = response.data;
+
+      print("🔄 Cart Response: $decoded");
 
       // ✅ Handle both single object and list
       List<CartItem> cartItems;
@@ -84,18 +92,14 @@ class CartService {
 
       // 🔹 Enrich with dish info
       final dishService = DishService();
-
-      // ✅ Get storeId before calling fetchAllDishes
-      final storeIdStr = await TokenStorage.getChosenStoreId();
-      final storeId = storeIdStr ?? "-1";
-
-      final dishes = await dishService.fetchAllDishes(storeId);
+      final dishes = await dishService.fetchAllDishes(storeId.toString());
 
       for (var item in cartItems) {
         final match = dishes.firstWhere(
           (d) => d["dish_id"] == item.dishId,
           orElse: () => {},
         );
+
         if (match.isNotEmpty) {
           item.dishName = match["dish_name"];
           item.dishImage = match["dish_image"];

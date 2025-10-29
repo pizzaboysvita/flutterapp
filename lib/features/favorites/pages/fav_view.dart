@@ -222,7 +222,7 @@ class _FavoritesViewState extends State<FavoritesView> {
                           onTap: () {
                             context.read<FavoriteBloc>().add(
                               RemoveFromFavoriteEvent(
-                                dishId: dish.id, // keep dish id
+                               dish: dish,// keep dish id
                                 wishlistId:
                                     dish.wishlistId, // pass the wishlist_id
                               ),

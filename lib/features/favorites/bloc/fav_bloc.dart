@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/core/storage/guset_local_storage.dart'; // ✅ Add this for guest local storage
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/data/repositories/whishlist/whishlist_repo.dart';
 import 'fav_event.dart';
@@ -14,8 +15,10 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
 
   final List<DishModel> _favorites = [];
 
-  FavoriteBloc({required this.repository, required this.storeWatcherCubit})
-    : super(FavoriteInitial()) {
+  FavoriteBloc({
+    required this.repository,
+    required this.storeWatcherCubit,
+  }) : super(FavoriteInitial()) {
     on<AddToFavoriteEvent>(_onAdd);
     on<RemoveFromFavoriteEvent>(_onRemove);
     on<LoadFavoritesEvent>(_onLoad);
@@ -23,36 +26,47 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
 
     // 🧩 Listen for store change
     storeSub = storeWatcherCubit.stream.listen((storeId) async {
-      if (storeId != null) {
-        print("🏪 [FavoriteBloc] Store changed → $storeId");
-
-        /// ✅ Just trigger the event — don't call emit() directly
-        add(FetchWishlistEvent());
-      }
+      if (storeId != null) add(FetchWishlistEvent());
     });
   }
 
   // ➕ Add to favorites
-  Future<void> _onAdd(
-    AddToFavoriteEvent event,
-    Emitter<FavoriteState> emit,
-  ) async {
+  Future<void> _onAdd(AddToFavoriteEvent event, Emitter<FavoriteState> emit) async {
+    emit(FavoriteLoading());
+
+    final isGuest = await TokenStorage.isGuest();
+
     try {
-      final token = await TokenStorage.getAccessToken();
-      if (token == null) throw Exception("Token not available");
+     if (isGuest) {
+  // ✅ Add store name manually before saving
+  final chosenStoreName = await TokenStorage.loadSelectedStoreName();
 
-      final success = await repository.toggleFavorite(
-        dishId: event.dish.id,
-        token: token,
-      );
+  final updatedDish = event.dish.copyWith(
+    storeName: event.dish.storeName ?? chosenStoreName ?? "Unknown Store",
+  );
 
-      if (success) {
-        if (!_favorites.any((d) => d.id == event.dish.id)) {
-          _favorites.add(event.dish);
+  await LocalCartStorage.addToFavorites(updatedDish);
+  _favorites.add(updatedDish);
+  emit(FavoriteLoaded(List.from(_favorites)));
+}
+ else {
+        // ✅ Logged-in flow — API
+        final token = await TokenStorage.getAccessToken();
+        if (token == null) throw Exception("Token not available");
+
+        final success = await repository.toggleFavorite(
+          dishId: event.dish.id,
+          token: token,
+        );
+
+        if (success) {
+          if (!_favorites.any((d) => d.id == event.dish.id)) {
+            _favorites.add(event.dish);
+          }
+          emit(FavoriteLoaded(List.from(_favorites)));
+        } else {
+          emit(FavoriteError("Failed to add to favorites"));
         }
-        emit(FavoriteLoaded(List.from(_favorites)));
-      } else {
-        emit(FavoriteError("Failed to add to favorites"));
       }
     } catch (e) {
       emit(FavoriteError(e.toString()));
@@ -60,25 +74,33 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
   }
 
   // ➖ Remove from favorites
-  Future<void> _onRemove(
-    RemoveFromFavoriteEvent event,
-    Emitter<FavoriteState> emit,
-  ) async {
+  Future<void> _onRemove(RemoveFromFavoriteEvent event, Emitter<FavoriteState> emit) async {
+    emit(FavoriteLoading());
+    final isGuest = await TokenStorage.isGuest();
+
     try {
-      final token = await TokenStorage.getAccessToken();
-      if (token == null) throw Exception("Token not available");
-
-      final success = await repository.removeFavorite(
-        dishId: event.dishId,
-        wishlistId: event.wishlistId,
-        token: token,
-      );
-
-      if (success) {
-        _favorites.removeWhere((d) => d.wishlistId == event.wishlistId);
+      if (isGuest) {
+        // ✅ Guest flow — local only
+        await LocalCartStorage.removeFromFavorites(event.dish!.id);
+        _favorites.removeWhere((d) => d.id == event.dish!.id);
         emit(FavoriteLoaded(List.from(_favorites)));
       } else {
-        emit(FavoriteError("Failed to remove from favorites"));
+        // ✅ Logged-in flow — API
+        final token = await TokenStorage.getAccessToken();
+        if (token == null) throw Exception("Token not available");
+
+        final success = await repository.removeFavorite(
+          dishId: event.dish!.id,
+          wishlistId: event.wishlistId,
+          token: token,
+        );
+
+        if (success) {
+          _favorites.removeWhere((d) => d.wishlistId == event.wishlistId);
+          emit(FavoriteLoaded(List.from(_favorites)));
+        } else {
+          emit(FavoriteError("Failed to remove from favorites"));
+        }
       }
     } catch (e) {
       emit(FavoriteError(e.toString()));
@@ -86,45 +108,48 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
   }
 
   // 📦 Load local favorites
-  Future<void> _onLoad(
-    LoadFavoritesEvent event,
-    Emitter<FavoriteState> emit,
-  ) async {
+  Future<void> _onLoad(LoadFavoritesEvent event, Emitter<FavoriteState> emit) async {
+    final isGuest = await TokenStorage.isGuest();
+    if (isGuest) {
+      final localFavs = await LocalCartStorage.getFavorites();
+      _favorites
+        ..clear()
+        ..addAll(localFavs);
+    }
     emit(FavoriteLoaded(List.from(_favorites)));
   }
 
   // 🌐 Fetch wishlist from API
-  Future<void> _onFetchWishlist(
-    FetchWishlistEvent event,
-    Emitter<FavoriteState> emit,
-  ) async {
+  Future<void> _onFetchWishlist(FetchWishlistEvent event, Emitter<FavoriteState> emit) async {
+    final isGuest = await TokenStorage.isGuest();
+    if (isGuest) {
+      // ✅ Skip API
+      final localFavs = await LocalCartStorage.getFavorites();
+      _favorites
+        ..clear()
+        ..addAll(localFavs);
+      emit(FavoriteLoaded(List.from(_favorites)));
+      return;
+    }
+
     emit(FavoriteLoading());
     try {
       final token = await TokenStorage.getAccessToken();
       if (token == null) throw Exception("Token not available");
 
       final wishlist = await repository.getWishlist();
-
-      // 🏪 Get current store
       final currentStoreId = await TokenStorage.getChosenStoreId();
 
-      // 🔍 Filter only items matching this store
       final filtered = wishlist
           .where((item) => item.storeId.toString() == currentStoreId)
           .toList();
-
-      print('📍filtered fav items based on store filter: $filtered');
 
       _favorites
         ..clear()
         ..addAll(filtered);
 
-      print(
-        "✅ [FavoriteBloc] Wishlist filtered for store $currentStoreId (${_favorites.length} items)",
-      );
       emit(FavoriteLoaded(List.from(_favorites)));
     } catch (e) {
-      print("❌ [FavoriteBloc] Failed to fetch wishlist: $e");
       emit(FavoriteError(e.toString()));
     }
   }

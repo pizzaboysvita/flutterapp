@@ -18,6 +18,7 @@ import 'package:pizza_boys/core/bloc/firebase/maintenance_state.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_state.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
+import 'package:pizza_boys/core/constant/lottie_urls.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 import 'package:pizza_boys/core/helpers/bloc_observer_helper.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
@@ -84,7 +85,9 @@ class _StartupWrapperState extends State<StartupWrapper> {
   @override
   void initState() {
     super.initState();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
     _initChecks();
+  });
   }
 
 Future<void> _initChecks() async {
@@ -98,32 +101,35 @@ Future<void> _initChecks() async {
     final server = await _checkServer();
     setState(() => serverOk = server);
 
-    if (!server) {
-      print("❌ Server not healthy — showing error screen.");
+   if (!server) {
+  print("❌ Server not healthy — showing error screen.");
 
-      // Safety reset before showing error
-      ApiClient.isShowingServerError = false;
-      ErrorScreenTracker.reset();
+  ApiClient.isShowingServerError = false;
+  ErrorScreenTracker.reset();
 
-      // ✅ Fully valid RequestOptions for retry
-      final retryOptions = RequestOptions(
-        baseUrl: ApiClient.dio.options.baseUrl, // must be set
-        path: "healthCheck",
-        method: "GET",
-        headers: ApiClient.dio.options.headers,
-        connectTimeout: ApiClient.dio.options.connectTimeout,
-        receiveTimeout: ApiClient.dio.options.receiveTimeout,
-      );
+  final retryOptions = RequestOptions(
+    baseUrl: ApiClient.dio.options.baseUrl,
+    path: "healthCheck",
+    method: "GET",
+    headers: ApiClient.dio.options.headers,
+    connectTimeout: ApiClient.dio.options.connectTimeout,
+    receiveTimeout: ApiClient.dio.options.receiveTimeout,
+  );
 
-      await ErrorNotifier.showErrorScreen(
-        retryOptions,
-        "Server temporarily unavailable. Please try again later.",
-        ErrorScreenType.server,
-        true,
-      );
+  // ✅ Use post-frame callback to ensure UI ready before showing error
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    ErrorNotifier.showErrorScreen(
+      retryOptions,
+      "Server temporarily unavailable. Please try again later.",
+      ErrorScreenType.server,
+      true,
+    );
+  });
 
-      return;
-    }
+  // Stop further initialization
+  return;
+}
+
 
     // 3️⃣ Initialize Firebase and other services
     await _initializeServices();
@@ -141,12 +147,15 @@ Future<void> _initChecks() async {
       receiveTimeout: ApiClient.dio.options.receiveTimeout,
     );
 
-    await ErrorNotifier.showErrorScreen(
-      retryOptions,
-      "An unexpected error occurred. Please try again.",
-      ErrorScreenType.server,
-      true,
-    );
+    Future.delayed(const Duration(milliseconds: 400), () {
+  ErrorNotifier.showErrorScreen(
+    retryOptions,
+    "Server temporarily unavailable. Please try again later.",
+    ErrorScreenType.server,
+    true,
+  );
+});
+
   }
 }
 
@@ -180,13 +189,17 @@ Future<void> _initChecks() async {
   }
 
   // Check server health
-  Future<bool> _checkServer() async {
-    try {
-      return await ApiHealthChecker.checkServerHealth();
-    } catch (_) {
-      return false;
-    }
+Future<bool> _checkServer() async {
+  try {
+    final result = await ApiHealthChecker.checkServerHealth();
+    print("🧩 Server health check result: $result");
+    return result;
+  } catch (e) {
+    print("❌ Server check failed with error: $e");
+    return false;
   }
+}
+
 
   // Request location permission
   Future<void> _requestLocationPermission() async {
@@ -284,9 +297,106 @@ Future<void> _initChecks() async {
       );
     }
 
-    if (serverOk == false) {
-      return const SizedBox.shrink();
-    }
+if (serverOk == false) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    body: Center(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(horizontal: 20.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 0.4.sh,
+              child: Lottie.asset(
+                LottieUrls.serverError,
+                fit: BoxFit.contain,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: "Oops! ",
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Colors.black,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  TextSpan(
+                    text: "Server Error",
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: AppColors.redAccent,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              "Server temporarily unavailable.\nPlease try again later.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14.sp,
+                color: Colors.black87,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 20.h),
+            SizedBox(
+              width: 0.5.sw,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.redPrimary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  elevation: 4,
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                ),
+                onPressed: () {
+                  setState(() => serverOk = null); // reset before retry
+                  _initChecks();
+                },
+                icon: Icon(Icons.refresh, size: 20.sp),
+                label: Text(
+                  "Try Again",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              "If the problem persists, please check your internet connection or try again later.",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12.sp,
+                color: Colors.black45,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+
 
     if (maintenanceBloc == null) {
       return Scaffold(

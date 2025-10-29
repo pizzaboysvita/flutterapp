@@ -194,18 +194,43 @@ class _LoginState extends State<Login> {
                             ),
 
                             SizedBox(height: 14.h),
+                            
+                            BlocListener<LoginBloc, LoginState>(
+                              listener: (context, state) {
+                                if (state is LoginSuccess &&
+                                    state.isGuest == true) {
+                                  SnackbarHelper.green(
+                                    context,
+                                    "You're continuing as a Guest.",
+                                  );
 
-                            LoadingOutlineButton(
-                              text: "Continue as Guest",
-                              icon: FontAwesomeIcons.solidUser,
-                              onPressedAsync: () async {
-                                SnackbarHelper.red(
-                                  context,
-                                  "Functionality under processing...",
-                                );
-                                //                                print("👤 Guest login button clicked");
-                                // context.read<LoginBloc>().add(GuestLoginEvent());
+                                  // ✅ Use Navigator instead of Get
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    Navigator.pushNamedAndRemoveUntil(
+                                      context,
+                                      AppRoutes.home,
+                                      (route) =>
+                                          false, // clears previous routes
+                                    );
+                                  });
+                                } else if (state is LoginFailure) {
+                                  SnackbarHelper.red(
+                                    context,
+                                    state.error,
+                                  ); // ✅ corrected field
+                                }
                               },
+                              child: LoadingOutlineButton(
+                                text: "Continue as Guest",
+                                icon: FontAwesomeIcons.solidUser,
+                                onPressedAsync: () async {
+                                  context.read<LoginBloc>().add(
+                                    GuestLoginEvent(),
+                                  );
+                                },
+                              ),
                             ),
 
                             SizedBox(height: 12.h),

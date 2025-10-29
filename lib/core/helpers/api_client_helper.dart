@@ -1,47 +1,15 @@
-// ignore_for_file: empty_catches
-
+// api_client.dart
 import 'dart:io';
-import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:pizza_boys/core/helpers/internet_helper/error_notifier.dart';
-import 'package:pizza_boys/core/helpers/internet_helper/error_screen_tracker.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/navigation_error.dart';
-import 'package:pizza_boys/core/helpers/internet_helper/global_error_handler.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
-import 'package:pizza_boys/core/storage/api_res_storage.dart';
-
-bool isTokenExpired(String token) {
-  try {
-    final parts = token.split('.');
-    if (parts.length != 3) {
-      GlobalErrorHandler.handleError("Invalid token format");
-      return true;
-    }
-
-    final payload = json.decode(
-      utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
-    );
-    final exp = payload['exp'];
-    if (exp == null) {
-      GlobalErrorHandler.handleError("No 'exp' claim in token");
-      return true;
-    }
-
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final isExpired = exp < now;
-
-    print("🕒 [TokenCheck] Exp: $exp | Now: $now | Expired: $isExpired");
-    return isExpired;
-  } catch (e, s) {
-    GlobalErrorHandler.handleError("Error decoding token: $e", stackTrace: s);
-    return true;
-  }
-}
+import 'package:pizza_boys/core/session/token_manager.dart';
 
 class ApiClient {
-  static bool isShowingServerError = false; // Prevent multiple screens
+  static bool isShowingServerError = false;
 
-  /// Checks internet connectivity without relying on any Bloc or context
+  /// Checks device connectivity
   static Future<bool> hasInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');
@@ -51,151 +19,78 @@ class ApiClient {
     }
   }
 
+  /// ✅ Helper: check if token will expire soon (within X seconds)
+  static bool isTokenExpiringSoon(String token, {int thresholdSeconds = 60}) {
+    try {
+      final expiry = JwtDecoder.getExpirationDate(token);
+      final secondsLeft = expiry.difference(DateTime.now()).inSeconds;
+      print("⏳ [ApiClient] Token expires in $secondsLeft seconds");
+      return secondsLeft < thresholdSeconds;
+    } catch (e) {
+      print("⚠️ [ApiClient] Failed to decode JWT for expiry check: $e");
+      return false;
+    }
+  }
+
+  /// ✅ Helper: check if token is already expired
+  static bool isTokenExpired(String token) {
+    try {
+      return JwtDecoder.isExpired(token);
+    } catch (e) {
+      print("⚠️ [ApiClient] Failed to decode JWT for expiration check: $e");
+      return true;
+    }
+  }
+
+    static int getTokenExpiryInSeconds(String token) {
+    try {
+      final expiryDate = JwtDecoder.getExpirationDate(token);
+      final now = DateTime.now();
+      final diff = expiryDate.difference(now).inSeconds;
+      return diff > 0 ? diff : 0;
+    } catch (e) {
+      print("⚠️ [ApiClient] Failed to decode JWT for expiry seconds: $e");
+      return 0;
+    }
+  }
+
   static final Dio dio = Dio(
     BaseOptions(
-      baseUrl: "http://78.142.47.247:3003/api/",
+      baseUrl: "http://78.142.47.247:3004/api/",
       connectTimeout: const Duration(minutes: 2),
       receiveTimeout: const Duration(minutes: 2),
       validateStatus: (status) => true,
     ),
   )..interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          try {
-            final token = await TokenStorage.getAccessToken();
-            if (token != null) {
-              options.headers["Authorization"] = "Bearer $token";
-            }
-          } catch (e, s) {
-            GlobalErrorHandler.handleError(e, stackTrace: s);
-          }
-          return handler.next(options);
-        },
+  InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      final token = await TokenManager.getValidAccessToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers["Authorization"] = "Bearer $token";
+      }
+      return handler.next(options);
+    },
 
-        onResponse: (response, handler) async {
-          try {
-            if (response.statusCode == 500) {
-              GlobalErrorHandler.handleError(
-                "500 Internal Server Error detected!",
-              );
-if (ApiClient.isShowingServerError) return;
-ApiClient.isShowingServerError = true;
+    onError: (DioError err, handler) async {
+      if (err.response?.statusCode == 401) {
+        print("🔐 [ApiClient] 401 — attempting refresh once");
 
-              await ErrorNotifier.showErrorScreen(
-                response.requestOptions,
-                "Internal Server Error. Please try again later.",
-                ErrorScreenType.server,
-                true,
-              );
-            }
-          } catch (e, s) {
-            GlobalErrorHandler.handleError(e, stackTrace: s);
-          }
-          return handler.next(response);
-        },
-
-       onError: (DioError err, ErrorInterceptorHandler handler) async {
-  try {
-    final requestOptions = err.requestOptions;
-
-    // Only retry for 500 server errors
-    if (err.response?.statusCode == 500) {
-      if (ApiClient.isShowingServerError) return;
-      ApiClient.isShowingServerError = true;
-
-      // Show error screen
-      await ErrorNotifier.showErrorScreen(
-        requestOptions, // pass the original request options
-        "Server temporarily unavailable. Please try again.",
-        ErrorScreenType.server,
-        true,
-      );
-
-      // Stop further handling
-      return;
-    }
-
-    // Handle token expired if needed
-    if (err.response?.statusCode == 401 && isTokenExpired(await TokenStorage.getAccessToken() ?? "")) {
-      await TokenRefreshLock.run(() async {
-        final retryResponse = await ApiClient.dio.fetch(requestOptions);
-        handler.resolve(retryResponse); // resolves retry automatically
-      });
-      return;
-    }
-  } catch (e, s) {
-    GlobalErrorHandler.handleError(e, stackTrace: s);
-  }
-
-  return handler.next(err);
-}
-      
-      ),
-    );
-
-  /// Refresh access token safely, with global error logging
-  static Future<bool> _refreshAccessToken({int maxRetries = 1}) async {
-    int attempt = 0;
-    while (attempt <= maxRetries) {
-      attempt++;
-      try {
-        final refreshToken = await TokenStorage.getRefreshToken();
-        if (refreshToken == null) return false;
-
-        final response = await dio.post(
-          "refreshToken",
-          data: {"refresh_token": refreshToken},
-        );
-
-        if (response.statusCode == 200 && response.data["code"] == 1) {
-          await TokenStorage.saveSession({
-            "access_token": response.data["access_token"],
-            "refresh_token": response.data["refresh_token"],
-            "user": null,
-          });
-          return true;
+        final newToken = await TokenManager.getValidAccessToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          err.requestOptions.headers["Authorization"] = "Bearer $newToken";
+          final retry = await dio.fetch(err.requestOptions);
+          return handler.resolve(retry);
         } else {
-          GlobalErrorHandler.handleError(
-            "Refresh failed: ${response.data["message"]}",
-          );
+          print("⛔ [ApiClient] Refresh failed, logging out user");
+          if (NavigatorService.context != null) {
+            await SessionManager.clearSession(NavigatorService.context!);
+          }
+          return handler.next(err);
         }
-      } catch (e, s) {
-        GlobalErrorHandler.handleError(
-          "Refresh attempt $attempt failed: $e",
-          stackTrace: s,
-        );
       }
 
-      if (attempt <= maxRetries) {
-        await Future.delayed(const Duration(seconds: 1));
-      }
-    }
-    return false;
-  }
-}
-
-class TokenRefreshLock {
-  static bool _isRefreshing = false;
-  static final List<Future<void> Function()> _queue = [];
-
-  static Future<void> run(Future<void> Function() retry) async {
-    if (_isRefreshing) {
-      _queue.add(retry);
-      return;
-    }
-
-    _isRefreshing = true;
-
-    bool success = await ApiClient._refreshAccessToken();
-    _isRefreshing = false;
-
-    for (var queuedRetry in _queue) {
-      await queuedRetry();
-    }
-    _queue.clear();
-
-    if (!success && NavigatorService.context != null) {
-      SessionManager.clearSession(NavigatorService.context!);
-    }
-  }
+      return handler.next(err);
+    },
+  ),
+);
 }
