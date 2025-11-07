@@ -219,101 +219,122 @@ class PizzaCategoriesRow extends StatelessWidget {
             ),
           );
         } else if (state is CategoryLoaded) {
-          return SizedBox(
-            height: 100.h,
-            child: Builder(
-              builder: (context) {
-                // copy categories list
-                final categories = List.of(state.categories);
+          if (state.categories.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: Text(
+                  'Pizza Categories',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ),
 
-                // find the special category
-                final specialIndex = categories.indexWhere(
-                  (c) => c.id == 108 || c.name.toLowerCase() == "specials",
-                );
+              SizedBox(height: 16.h),
+              SizedBox(
+                height: 100.h,
+                child: Builder(
+                  builder: (context) {
+                    // copy categories list
+                    final categories = List.of(state.categories);
 
-                // if found, move it to the front
-                if (specialIndex != -1) {
-                  final special = categories.removeAt(specialIndex);
-                  categories.insert(0, special);
-                }
+                    // find the special category
+                    final specialIndex = categories.indexWhere(
+                      (c) => c.id == 108 || c.name.toLowerCase() == "specials",
+                    );
 
-                return ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  itemCount: categories.length,
-                  separatorBuilder: (_, __) => SizedBox(width: 12.w),
-                  itemBuilder: (context, index) {
-                    final item = categories[index];
-                    // final bgColor = categoryColors[index % categoryColors.length];
+                    // if found, move it to the front
+                    if (specialIndex != -1) {
+                      final special = categories.removeAt(specialIndex);
+                      categories.insert(0, special);
+                    }
 
-                    final isActive = item.id == selectedCategoryId;
+                    return ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      itemCount: categories.length,
+                      separatorBuilder: (_, __) => SizedBox(width: 12.w),
+                      itemBuilder: (context, index) {
+                        final item = categories[index];
+                        // final bgColor = categoryColors[index % categoryColors.length];
 
-                    return GestureDetector(
-                      onTap: () async {
-                        final storeIdStr =
-                            await TokenStorage.getChosenStoreId();
-                        final storeNameStr =
-                            await TokenStorage.getChosenStoreId();
+                        final isActive = item.id == selectedCategoryId;
 
-                        final storeId = storeIdStr ?? "-1";
-                        final storeName = storeNameStr ?? "";
+                        return GestureDetector(
+                          onTap: () async {
+                            final storeIdStr =
+                                await TokenStorage.getChosenStoreId();
+                            final storeNameStr =
+                                await TokenStorage.getChosenStoreId();
 
-                        // ignore: use_build_context_synchronously
-                        context.read<StoreWatcherCubit>().updateStore(
-                          storeId,
-                          storeName,
-                        );
-                        
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.categoryPizzaDetails,
-                          arguments: {'categoryId': item.id},
-                        );
-                      },
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            width: 50.w,
-                            height: 50.w,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(25.r),
-                              child: RobustImage(
-                                imageUrl: item.categoryImage.isNotEmpty
-                                    ? item.categoryImage
-                                    : "https://via.placeholder.com/150",
+                            final storeId = storeIdStr ?? "-1";
+                            final storeName = storeNameStr ?? "";
+
+                            // ignore: use_build_context_synchronously
+                            context.read<StoreWatcherCubit>().updateStore(
+                              storeId,
+                              storeName,
+                            );
+
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.categoryPizzaDetails,
+                              arguments: {'categoryId': item.id},
+                            );
+                          },
+                          child: Column(
+                            children: [
+                              SizedBox(
                                 width: 50.w,
                                 height: 50.w,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(25.r),
+                                  child: RobustImage(
+                                    imageUrl: item.categoryImage.isNotEmpty
+                                        ? item.categoryImage
+                                        : "https://via.placeholder.com/150",
+                                    width: 50.w,
+                                    height: 50.w,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
 
-                          SizedBox(height: 4.h),
-                          SizedBox(
-                            width: 80.w,
-                            child: Text(
-                              item.name,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 10.sp,
-                                fontWeight: isActive
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                color: isActive
-                                    ? Colors.deepOrange
-                                    : Colors.black87,
+                              SizedBox(height: 4.h),
+                              SizedBox(
+                                width: 80.w,
+                                child: Text(
+                                  item.name,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 10.sp,
+                                    fontWeight: isActive
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
+                                    color: isActive
+                                        ? Colors.deepOrange
+                                        : Colors.black87,
+                                  ),
+                                  // maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              // maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           );
         } else if (state is CategoryError) {
           return Center(child: Text(state.message));

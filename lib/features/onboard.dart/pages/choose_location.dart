@@ -10,6 +10,11 @@ import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/helpers/map/address_to_latlang.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/core/storage/guset_local_storage.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_bloc.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_event.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_state.dart';
@@ -258,120 +263,116 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.whiteColor,
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(16.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // .................. Google-MAP ..........
-              BlocListener<StoreSelectionBloc, StoreSelectionState>(
-                listener: (context, state) async {
-                  if (state is StoreSelectionLoaded) {
-                    await _updateMarkers(
-                      state.stores,
-                      state.selectedStoreId?.toString(),
-                    );
-                    // 🔥 Fit all markers initially if no store selected
-                    if (state.selectedStoreId == null) {
-                      _fitMarkersToBounds(state.stores);
-                    }
-                    if (mounted) {
-                      setState(() {});
-                    }
+      appBar: AppBar(toolbarHeight: 0),
+      body: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // .................. Google-MAP ..........
+            BlocListener<StoreSelectionBloc, StoreSelectionState>(
+              listener: (context, state) async {
+                if (state is StoreSelectionLoaded) {
+                  await _updateMarkers(
+                    state.stores,
+                    state.selectedStoreId?.toString(),
+                  );
+                  // 🔥 Fit all markers initially if no store selected
+                  if (state.selectedStoreId == null) {
+                    _fitMarkersToBounds(state.stores);
                   }
-                },
-                child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
-                  builder: (context, state) {
-                    if (state is StoreSelectionLoaded) {
-                      return Column(
-                        children: [
-                          Container(
-                            height: 200.h,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12.r),
-                              boxShadow: [
-                                BoxShadow(color: Colors.black26, blurRadius: 4),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12.r),
-                              child: GoogleMap(
-                                onMapCreated: (controller) {
-                                  _mapController = controller;
+                  if (mounted) {
+                    setState(() {});
+                  }
+                }
+              },
+              child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+                builder: (context, state) {
+                  if (state is StoreSelectionLoaded) {
+                    return Column(
+                      children: [
+                        Container(
+                          height: 200.h,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12.r),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black26, blurRadius: 4),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12.r),
+                            child: GoogleMap(
+                              onMapCreated: (controller) {
+                                _mapController = controller;
 
-                                  Future.delayed(
-                                    const Duration(milliseconds: 300),
-                                    () {
-                                      _safeAnimateCamera(
-                                        CameraUpdate.newLatLngZoom(
-                                          LatLng(-36.8485, 174.7633),
-                                          14,
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                                initialCameraPosition: CameraPosition(
-                                  target: LatLng(-36.8485, 174.7633),
-                                  zoom: 2, // world view
-                                ),
-                                markers: _markers,
-                                myLocationEnabled: true,
-                                myLocationButtonEnabled: false,
-                                zoomControlsEnabled: false,
+                                Future.delayed(
+                                  const Duration(milliseconds: 300),
+                                  () {
+                                    _safeAnimateCamera(
+                                      CameraUpdate.newLatLngZoom(
+                                        LatLng(-36.8485, 174.7633),
+                                        14,
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              initialCameraPosition: CameraPosition(
+                                target: LatLng(-36.8485, 174.7633),
+                                zoom: 2, // world view
                               ),
+                              markers: _markers,
+                              myLocationEnabled: true,
+                              myLocationButtonEnabled: false,
+                              zoomControlsEnabled: false,
                             ),
                           ),
-                        ],
-                      );
-                    }
-                    return Container(
-                      height: 200.h,
-                      color: Colors.grey.shade200,
+                        ),
+                      ],
                     );
-                  },
-                ),
+                  }
+                  return Container(height: 200.h, color: Colors.grey.shade200);
+                },
               ),
+            ),
 
-              SizedBox(height: 10.h),
-              Text(
-                "Choose Your Nearby Store",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.redPrimary,
-                ),
+            SizedBox(height: 10.h),
+            Text(
+              "Choose Your Nearby Store",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w500,
+                color: AppColors.redPrimary,
               ),
-              SizedBox(height: 4.h),
-              Text(
-                "Select the store nearest to you for pickup or delivery.",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14.sp,
-                  color: Colors.grey[600],
-                ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              "Select the store nearest to you for pickup or delivery.",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14.sp,
+                color: Colors.grey[600],
               ),
-              SizedBox(height: 20.h),
+            ),
+            SizedBox(height: 20.h),
 
-              // 🔥 Store List
-              Expanded(
-                child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
-                  builder: (context, state) {
-                    if (state is StoreSelectionLoading) {
-                      return _buildShimmerList();
-                    } else if (state is StoreSelectionLoaded) {
-                      return _buildStoreList(state);
-                    } else if (state is StoreSelectionError) {
-                      print(state.message);
-                    }
-                    return const SizedBox();
-                  },
-                ),
+            // 🔥 Store List
+            Expanded(
+              child: BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+                builder: (context, state) {
+                  if (state is StoreSelectionLoading) {
+                    return _buildShimmerList();
+                  } else if (state is StoreSelectionLoaded) {
+                    return _buildStoreList(state);
+                  } else if (state is StoreSelectionError) {
+                    print(state.message);
+                  }
+                  return const SizedBox();
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
 
@@ -536,6 +537,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                           : () async {
                               _isLoading.value = true;
 
+                              // 1️⃣ Save location & store
                               await TokenStorage.saveChosenLocation(
                                 storeId: selectedStore.id.toString(),
                                 locationName: selectedStore.name,
@@ -546,14 +548,21 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                               );
                               await TokenStorage.setLocationChosen(true);
 
-                              // ✅ Update StoreWatcherCubit → triggers CategoryBloc & DishBloc automatically
+                              // 2️⃣ Update current store in cubit
+                              final storeId = selectedStore.id.toString();
                               context.read<StoreWatcherCubit>().updateStore(
-                                selectedStore.id.toString(),
+                                storeId,
                                 selectedStore.name,
+                              );
+
+                              // 3️⃣ Trigger favorites fetch for the current store
+                              context.read<FavoriteBloc>().add(
+                                FetchWishlistEvent(storeId: storeId),
                               );
 
                               _isLoading.value = false;
 
+                              // 4️⃣ Navigate
                               if (widget.isChangeLocation) {
                                 Navigator.pushNamedAndRemoveUntil(
                                   context,

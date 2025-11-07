@@ -14,15 +14,16 @@ class TokenManager {
   static List<Function(String)> _queue = [];
 
   /// ✅ Get a valid access token
+/// ✅ Get a valid access token
 static Future<String?> getValidAccessToken() async {
-  // ✅ 1. Check if guest session
+  // ✅ 1. Check if guest session FIRST — return guest token and SKIP JWT checks
   final isGuest = await TokenStorage.isGuest();
   if (isGuest) {
-    print("🧭 Guest session active — returning pseudo token.");
-    return "guest"; // or any placeholder token
+    print("🧭 Guest session active — returning guest token (no refresh logic).");
+    return "guest_session_token"; // your actual guest token placeholder
   }
 
-  // ✅ 2. Regular user token flow
+  // ✅ 2. Normal user token flow
   final token = await TokenStorage.getAccessToken();
   final refreshToken = await TokenStorage.getRefreshToken();
 
@@ -33,6 +34,7 @@ static Future<String?> getValidAccessToken() async {
 
   print("🔑 Access token found: $token");
 
+  // ✅ Decode only JWT token — skip if not valid JWT
   final isExpired = ApiClient.isTokenExpired(token);
   final isExpiringSoon = ApiClient.isTokenExpiringSoon(token, thresholdSeconds: 60);
 
@@ -40,22 +42,22 @@ static Future<String?> getValidAccessToken() async {
   if (refreshToken != null) {
     final isRefreshExpired = ApiClient.isTokenExpired(refreshToken);
     final refreshExpIn = ApiClient.getTokenExpiryInSeconds(refreshToken);
-    print("🔑 Refresh token: $refreshToken");
+    print("🔄 Refresh token: $refreshToken");
     print("⏳ Refresh token expires in $refreshExpIn seconds | Expired: $isRefreshExpired");
   } else {
     print("⛔ No refresh token found.");
   }
 
-  // ✅ 3. Decide refresh logic
+  // ✅ 3. Decide Refresh Logic
   if (isExpired) {
     print("⏳ Access token expired! Refreshing now...");
     return await _refreshToken(token);
   } else if (isExpiringSoon) {
-    print("⚠️ Token expiring soon — scheduling background refresh.");
-    _refreshToken(token); // non-blocking
+    print("⚠️ Access token expiring soon — refreshing silently.");
+    _refreshToken(token); // 🔹 Non-blocking background refresh
     return token;
   } else {
-    print("✅ Access token valid. Proceeding with request.");
+    print("✅ Access token valid — continue API request.");
     return token;
   }
 }

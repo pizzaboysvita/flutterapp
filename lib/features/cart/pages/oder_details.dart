@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/lottie_urls.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/order/order_post_model.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
@@ -17,6 +18,7 @@ class OrderDetails extends StatefulWidget {
 
 class _OrderDetailsState extends State<OrderDetails> {
   late final OrderModel order;
+   final storeName = TokenStorage.getChosenLocation();
 
   @override
   void initState() {
@@ -26,6 +28,9 @@ class _OrderDetailsState extends State<OrderDetails> {
 
   @override
   Widget build(BuildContext context) {
+   
+
+    
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushNamedAndRemoveUntil(

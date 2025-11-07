@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:pizza_boys/core/constant/api_urls.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/navigation_error.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/session/token_manager.dart';
@@ -63,13 +64,25 @@ class ApiClient {
     ),
   )..interceptors.add(
   InterceptorsWrapper(
-    onRequest: (options, handler) async {
-      final token = await TokenManager.getValidAccessToken();
-      if (token != null && token.isNotEmpty) {
-        options.headers["Authorization"] = "Bearer $token";
-      }
-      return handler.next(options);
-    },
+ onRequest: (options, handler) async {
+  // 🔥 Don't add Authorization on login or guest calls
+  final excludedEndpoints = [
+    ApiUrls.loginPost,
+  ];
+
+  if (excludedEndpoints.any((url) => options.path.contains(url))) {
+    return handler.next(options); // 🚫 Skip Authorization header
+  }
+
+  final token = await TokenManager.getValidAccessToken();
+
+  if (token != null && token.isNotEmpty) {
+    options.headers["Authorization"] = "Bearer $token";
+  }
+
+  return handler.next(options);
+},
+
 
     onError: (DioError err, handler) async {
       if (err.response?.statusCode == 401) {

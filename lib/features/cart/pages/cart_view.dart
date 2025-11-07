@@ -7,6 +7,7 @@ import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/core/storage/guset_local_storage.dart';
 import 'package:pizza_boys/data/models/order/order_post_model.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_event.dart';
@@ -20,16 +21,9 @@ import 'package:pizza_boys/routes/app_routes.dart';
 import 'package:shimmer/shimmer.dart';
 
 class CartView extends StatefulWidget {
-  final ScrollController scrollController;
   final bool showBackButton;
-  final int userId;
 
-  const CartView({
-    super.key,
-    required this.scrollController,
-    required this.userId,
-    this.showBackButton = true,
-  });
+  const CartView({super.key, this.showBackButton = true});
 
   @override
   State<CartView> createState() => _CartViewState();
@@ -41,9 +35,19 @@ class _CartViewState extends State<CartView> {
   @override
   void initState() {
     super.initState();
-    // Delay event until after build is complete
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CartGetBloc>().add(FetchCart(widget.userId));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final isGuest = await TokenStorage.isGuest();
+
+      if (isGuest) {
+        debugPrint("🟨 Fetching cart for GUEST user");
+        context.read<CartGetBloc>().add(FetchCart(0)); // guest
+      } else {
+        final userIdStr = await TokenStorage.getUserId();
+        final userId = int.tryParse(userIdStr ?? '0') ?? 0;
+        debugPrint("🟩 Fetching cart for LOGGED-IN user: $userId");
+        context.read<CartGetBloc>().add(FetchCart(userId));
+      }
     });
   }
 
@@ -93,7 +97,7 @@ class _CartViewState extends State<CartView> {
         } else if (state is OrderFailure) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text("❌ ${state.message}")));
+          ).showSnackBar(SnackBar(content: Text(" ${state.message}")));
         }
       },
       child: Scaffold(
@@ -131,16 +135,34 @@ class _CartViewState extends State<CartView> {
           padding: EdgeInsets.symmetric(horizontal: 16.w),
           child: BlocBuilder<CartGetBloc, CartGetState>(
             builder: (context, state) {
+              debugPrint(
+                "🧩 [CartGetBloc] Builder triggered — current state: ${state.runtimeType}",
+              );
+
               if (state is CartLoading) {
+                debugPrint("⏳ [CartGetBloc] Loading cart items...");
                 return const Center(child: LottieLoader());
-              } else if (state is CartLoaded) {
+              }
+
+              if (state is CartLoaded) {
                 final cartItems = state.cartItems;
+                debugPrint(
+                  "✅ [CartGetBloc] Cart loaded. Items count: ${cartItems.length}",
+                );
+
                 if (cartItems.isEmpty) {
+                  debugPrint("🛒 [CartGetBloc] Cart is EMPTY!");
                   return const Center(child: Text("Your cart is empty"));
                 }
 
+                // Log one sample item if available
+                if (cartItems.isNotEmpty) {
+                  debugPrint(
+                    "📦 First cart item: ${cartItems.first.toString()}",
+                  );
+                }
+
                 return ListView.builder(
-                  controller: widget.scrollController,
                   itemCount: cartItems.length,
                   itemBuilder: (context, index) {
                     final item = cartItems[index];
@@ -191,12 +213,49 @@ class _CartViewState extends State<CartView> {
                                     ),
                                     GestureDetector(
                                       onTap: () async {
+                                        final storeId = await TokenStorage.getChosenStoreId();
+                                        final isGuest =
+                                            await TokenStorage.isGuest();
+                                        final scaffold = ScaffoldMessenger.of(
+                                          context,
+                                        );
+
+                                        if (isGuest) {
+                                          // 🟨 Guest user — handle everything locally
+                                          scaffold.showSnackBar(
+                                            const SnackBar(
+                                              content: Text("Removing item…"),
+                                            ),
+                                          );
+
+                                          // Optimistic local remove
+                                          context.read<CartGetBloc>().add(
+                                            RemoveCartItemLocally(item.cartId),
+                                          );
+
+                                          // Update local storage (optional if you maintain guest cart locally)
+                                         
+await LocalCartStorage.removeFromCart(
+  storeId!,
+  item.dishId,
+);
+
+                                          scaffold.hideCurrentSnackBar();
+                                          scaffold.showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                "Item removed successfully",
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        // 🟩 Logged-in user flow
                                         final userId =
                                             await TokenStorage.getUserId();
                                         if (userId == null) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          scaffold.showSnackBar(
                                             const SnackBar(
                                               content: Text(
                                                 "⚠️ User not found, please login",
@@ -206,16 +265,13 @@ class _CartViewState extends State<CartView> {
                                           return;
                                         }
 
-                                        final scaffold = ScaffoldMessenger.of(
-                                          context,
-                                        );
                                         scaffold.showSnackBar(
                                           const SnackBar(
                                             content: Text("Removing item…"),
                                           ),
                                         );
 
-                                        // Optimistic removal
+                                        // Optimistic local remove
                                         context.read<CartGetBloc>().add(
                                           RemoveCartItemLocally(item.cartId),
                                         );
@@ -230,7 +286,7 @@ class _CartViewState extends State<CartView> {
 
                                           scaffold.hideCurrentSnackBar();
                                           scaffold.showSnackBar(
-                                            SnackBar(
+                                            const SnackBar(
                                               content: Text(
                                                 "Item removed successfully",
                                               ),
@@ -359,116 +415,129 @@ class _CartViewState extends State<CartView> {
                     ],
                   ),
                   SizedBox(height: 14.h),
-                 SizedBox(
-  width: double.infinity,
-  child: ElevatedButton(
-    onPressed: () async {
-      final isGuest = await TokenStorage.isGuest(); // 👈 check guest session
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final isGuest =
+                            await TokenStorage.isGuest(); // 👈 check guest session
 
-      if (isGuest) {
-        // 👇 redirect guest user to guest login page
-        Navigator.pushNamed(context, AppRoutes.guestLogin);
-        return;
-      }
+                        if (isGuest) {
+                          // 👇 redirect guest user to guest login page
+                          Navigator.pushNamed(context, AppRoutes.guestLogin);
+                          return;
+                        }
 
-      // ✅ Continue existing logic for logged-in users
-      final cartState = context.read<CartGetBloc>().state;
-      if (cartState is CartLoaded) {
-        final cartItems = cartState.cartItems;
+                        // ✅ Continue existing logic for logged-in users
+                        final cartState = context.read<CartGetBloc>().state;
+                        if (cartState is CartLoaded) {
+                          final cartItems = cartState.cartItems;
 
-        // Prepare order details
-        final orderDetails = cartItems.map((item) {
-          return OrderDetail(
-            dishId: item.dishId,
-            dishName: item.dishName ?? "Unknown Dish",
-            dishNote: item.dishNote ?? "",
-            quantity: item.quantity,
-            price: item.price,
-            base: item.options["base"] ?? "small",
-            basePrice: item.options["basePrice"]?.toDouble() ?? 0.0,
-          );
-        }).toList();
+                          // Prepare order details
+                          final orderDetails = cartItems.map((item) {
+                            return OrderDetail(
+                              dishId: item.dishId,
+                              dishName: item.dishName ?? "Unknown Dish",
+                              dishNote: item.dishNote ?? "",
+                              quantity: item.quantity,
+                              price: item.price,
+                              base: item.options["base"] ?? "small",
+                              basePrice:
+                                  item.options["basePrice"]?.toDouble() ?? 0.0,
+                            );
+                          }).toList();
 
-        final toppingDetails = cartItems.map((item) {
-          return ToppingDetail(
-            dishId: item.dishId,
-            name: item.options["toppingName"] ?? "Extra Cheese",
-            price: item.options["toppingPrice"]?.toDouble() ?? 10.0,
-            quantity: 1,
-          );
-        }).toList();
+                          final toppingDetails = cartItems.map((item) {
+                            return ToppingDetail(
+                              dishId: item.dishId,
+                              name:
+                                  item.options["toppingName"] ?? "Extra Cheese",
+                              price:
+                                  item.options["toppingPrice"]?.toDouble() ??
+                                  10.0,
+                              quantity: 1,
+                            );
+                          }).toList();
 
-        final ingredientDetails = cartItems.map((item) {
-          return IngredientDetail(
-            dishId: item.dishId,
-            name: item.options["ingredientName"] ?? "Tomato",
-            price: item.options["ingredientPrice"]?.toDouble() ?? 2.0,
-            quantity: 1,
-          );
-        }).toList();
+                          final ingredientDetails = cartItems.map((item) {
+                            return IngredientDetail(
+                              dishId: item.dishId,
+                              name: item.options["ingredientName"] ?? "Tomato",
+                              price:
+                                  item.options["ingredientPrice"]?.toDouble() ??
+                                  2.0,
+                              quantity: 1,
+                            );
+                          }).toList();
 
-        final userId = await TokenStorage.getUserId();
-        final storeId = await TokenStorage.getChosenStoreId();
-        final formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+                          final userId = await TokenStorage.getUserId();
+                          final storeId = await TokenStorage.getChosenStoreId();
+                          final formattedDate = DateFormat(
+                            'yyyy-MM-dd HH:mm:ss',
+                          ).format(DateTime.now());
 
-        final order = OrderModel(
-          totalPrice: calculateTotal(cartItems),
-          totalQuantity: cartItems.length,
-          storeId: int.parse(storeId!),
-          orderType: "test",
-          pickupDatetime: formattedDate,
-          deliveryDatetime: formattedDate,
-          deliveryAddress: "",
-          orderNotes: deliveryNote.isNotEmpty ? deliveryNote : "Customer will pick up",
-          orderStatus: "Order_placed",
-          orderCreatedBy: int.parse(userId!),
-          toppingDetails: toppingDetails,
-          ingredientDetails: ingredientDetails,
-          orderDetails: orderDetails,
-          paymentMethod: "Cash",
-          paymentStatus: "Completed",
-          paymentAmount: calculateTotal(cartItems),
-          unitNumber: "POS-001",
-          isPosOrder: 0,
-          gstPrice: 0.1,
-          orderDue: null,
-          orderDueDatetime: null,
-          deliveryNotes: null,
-        );
+                          final order = OrderModel(
+                            totalPrice: calculateTotal(cartItems),
+                            totalQuantity: cartItems.length,
+                            storeId: int.parse(storeId!),
+                            orderType: "test",
+                            pickupDatetime: formattedDate,
+                            deliveryDatetime: formattedDate,
+                            deliveryAddress: null,
+                            deliveryFees: 0,
 
-        print(" ==== ORDER DEBUG START ====");
-        print("userId: $userId | storeId: $storeId");
-        print("Total items: ${cartItems.length}");
-        print("Total price: ${calculateTotal(cartItems)}");
-        print("Order JSON: ${order.toJson()}");
-        print("==== ORDER DEBUG END ====");
+                            orderNotes: deliveryNote.isNotEmpty
+                                ? deliveryNote
+                                : "Customer will pick up",
+                            orderStatus: "Order_placed",
+                            orderCreatedBy: int.parse(userId!),
+                            toppingDetails: toppingDetails,
+                            ingredientDetails: ingredientDetails,
+                            orderDetails: orderDetails,
+                            paymentMethod: "Cash",
+                            paymentStatus: "Completed",
+                            paymentAmount: calculateTotal(cartItems),
+                            unitNumber: "POS-001",
+                            isPosOrder: 0,
+                            gstPrice: 0.1,
+                            orderDue: null,
+                            orderDueDatetime: null,
+                            deliveryNotes: null,
+                          );
 
-        // Dispatch the order event
-        context.read<OrderBloc>().add(PlaceOrderEvent(order));
-      }
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.redPrimary,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      padding: EdgeInsets.symmetric(
-        vertical: 14.h,
-        horizontal: 16.w,
-      ),
-    ),
-    child: Text(
-      'Proceed to Checkout',
-      style: TextStyle(
-        fontSize: 14.sp,
-        fontFamily: 'Poppins',
-        color: Colors.white,
-      ),
-      textAlign: TextAlign.center,
-    ),
-  ),
-),
-               ],
+                          print(" ==== ORDER DEBUG START ====");
+                          print("userId: $userId | storeId: $storeId");
+                          print("Total items: ${cartItems.length}");
+                          print("Total price: ${calculateTotal(cartItems)}");
+                          print("Order JSON: ${order.toJson()}");
+                          print("==== ORDER DEBUG END ====");
+
+                          // Dispatch the order event
+                          context.read<OrderBloc>().add(PlaceOrderEvent(order));
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.redPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          vertical: 14.h,
+                          horizontal: 16.w,
+                        ),
+                      ),
+                      child: Text(
+                        'Proceed to Checkout',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontFamily: 'Poppins',
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           },

@@ -1,100 +1,112 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pizza_boys/data/models/dish/guest_cart_item_model.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 
-/// A unified local storage helper for both Cart & Favorites.
-/// Clean, optimized, and easy to extend (guest mode, offline, etc.)
 class LocalCartStorage {
-  static const _cartKey = 'guest_cart';
-  static const _favKey = 'guest_favorites';
+  // Key builders
+  static String _cartKey(String storeId) => 'guest_cart_$storeId';
+  static String _favKey(String storeId) => 'guest_fav_$storeId';
 
   // ==================== 🛒 CART METHODS ====================
 
-  /// Add a dish to the local cart (avoid duplicates)
-  static Future<void> addToCart(DishModel dish) async {
+  /// Add item to store-specific cart
+  static Future<void> addGuestCartItem(
+    String storeId,
+    GuestCartItemModel item,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
-    final cart = await getCartItems();
+    final cart = await getGuestCartItems(storeId);
 
-    if (!cart.any((d) => d.id == dish.id)) {
-      cart.add(dish);
-      await prefs.setString(
-        _cartKey,
-        jsonEncode(cart.map((d) => d.toJson()).toList()),
+    final index = cart.indexWhere((i) => i.dish.id == item.dish.id);
+    if (index != -1) {
+      final existing = cart[index];
+      final updated = existing.copyWith(
+        quantity: existing.quantity + item.quantity,
       );
+      cart[index] = updated;
+    } else {
+      cart.add(item);
     }
-  }
-
-  /// Get all items in the local cart
-  static Future<List<DishModel>> getCartItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_cartKey);
-    if (jsonString == null) return [];
-
-    final List list = jsonDecode(jsonString);
-    return list.map((e) => DishModel.fromJson(e)).toList();
-  }
-
-  /// Remove a dish from the local cart
-  static Future<void> removeFromCart(int dishId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final cart = await getCartItems();
-
-    cart.removeWhere((d) => d.id == dishId);
 
     await prefs.setString(
-      _cartKey,
-      jsonEncode(cart.map((d) => d.toJson()).toList()),
+      _cartKey(storeId),
+      jsonEncode(cart.map((e) => e.toJson()).toList()),
     );
   }
 
-  /// Clear all items in the local cart
-  static Future<void> clearCart() async {
+  /// Get all cart items for specific store
+  static Future<List<GuestCartItemModel>> getGuestCartItems(String storeId) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_cartKey);
+    final jsonString = prefs.getString(_cartKey(storeId));
+    if (jsonString == null) return [];
+
+    final List list = jsonDecode(jsonString);
+    return list.map((e) => GuestCartItemModel.fromJson(e)).toList();
+  }
+
+  /// Remove a cart item by dishId
+  static Future<void> removeFromCart(String storeId, int dishId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cart = await getGuestCartItems(storeId);
+
+    cart.removeWhere((i) => i.dish.id == dishId);
+
+    await prefs.setString(
+      _cartKey(storeId),
+      jsonEncode(cart.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  /// Clear cart for specific store
+  static Future<void> clearCart(String storeId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_cartKey(storeId));
   }
 
   // ==================== ❤️ FAVORITES METHODS ====================
 
-  /// Add a dish to local favorites (avoid duplicates)
-  static Future<void> addToFavorites(DishModel dish) async {
+  /// Add favorite dish for specific store
+  static Future<void> addToFavorites(String storeId, DishModel dish) async {
     final prefs = await SharedPreferences.getInstance();
-    final fav = await getFavorites();
+    final fav = await getFavorites(storeId);
 
     if (!fav.any((d) => d.id == dish.id)) {
       fav.add(dish);
+
       await prefs.setString(
-        _favKey,
+        _favKey(storeId),
         jsonEncode(fav.map((d) => d.toJson()).toList()),
       );
     }
   }
 
-  /// Get all locally saved favorite dishes
-  static Future<List<DishModel>> getFavorites() async {
+  /// Get all favorite dishes for specific store
+  static Future<List<DishModel>> getFavorites(String storeId) async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_favKey);
+    final jsonString = prefs.getString(_favKey(storeId));
     if (jsonString == null) return [];
 
     final List list = jsonDecode(jsonString);
     return list.map((e) => DishModel.fromJson(e)).toList();
   }
 
-  /// Remove a dish from favorites
-  static Future<void> removeFromFavorites(int dishId) async {
+  /// Remove dish from favorites
+  static Future<void> removeFromFavorites(String storeId, int dishId) async {
     final prefs = await SharedPreferences.getInstance();
-    final fav = await getFavorites();
+    final fav = await getFavorites(storeId);
 
     fav.removeWhere((d) => d.id == dishId);
 
     await prefs.setString(
-      _favKey,
+      _favKey(storeId),
       jsonEncode(fav.map((d) => d.toJson()).toList()),
     );
   }
 
-  /// Clear all local favorites
-  static Future<void> clearFavorites() async {
+  /// Clear favorites for specific store
+  static Future<void> clearFavorites(String storeId) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_favKey);
+    await prefs.remove(_favKey(storeId));
   }
 }

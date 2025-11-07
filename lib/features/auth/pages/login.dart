@@ -7,10 +7,13 @@ import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_event.dart';
 import 'package:pizza_boys/core/bloc/checkbox/login/login_checkbox_state.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
 import 'package:pizza_boys/core/helpers/buttons/outline_button.dart';
 import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
+import 'package:pizza_boys/core/session/session_manager.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/repositories/auth/login_repo.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/login/login_bloc.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/login/login_event.dart';
@@ -18,6 +21,8 @@ import 'package:pizza_boys/features/auth/bloc/integration/login/login_state.dart
 import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_bloc.dart';
 import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_event.dart';
 import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_state.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class Login extends StatefulWidget {
@@ -56,22 +61,37 @@ class _LoginState extends State<Login> {
             backgroundColor: AppColors.blackColor,
           ),
           body: BlocConsumer<LoginBloc, LoginState>(
-            listener: (context, state) {
-              if (state is LoginSuccess) {
-                SnackbarHelper.green(
-                  context,
-                  state.data?["message"] ?? "Login Successful",
+            listener: (context, state) async {
+              if (state is LoginSuccess && state.isGuest == false) {
+                // ✅ Clear guest favorites (if any)
+                await context.read<FavoriteBloc>().clearFavorites();
+
+                // ✅ Get store info
+                final storeId = await TokenStorage.getChosenStoreId();
+                final storeName = await TokenStorage.getChosenLocation();
+
+                // ✅ Update store in StoreWatcherCubit
+                context.read<StoreWatcherCubit>().updateStore(
+                  storeId!,
+                  storeName!,
                 );
 
-                // Delay navigation until after the current frame
+                // ✅ NOW fetch favorites for that store (IMPORTANT)
+                context.read<FavoriteBloc>().add(
+                  FetchWishlistEvent(storeId: storeId),
+                );
+
+                // ✅ Navigate after frame
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.pushReplacementNamed(
+                  Navigator.pushReplacementNamed(context, AppRoutes.home);
+                });
+              } else if (state is LoginSuccess && state.isGuest == true) {
+                SnackbarHelper.green(context, "You're continuing as a Guest.");
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.pushNamedAndRemoveUntil(
                     context,
                     AppRoutes.home,
-                    // arguments: {
-                    //   "token": state.data["access_token"],
-                    //   "user": state.data["user"],
-                    // },
+                    (route) => false,
                   );
                 });
               } else if (state is LoginFailure) {
@@ -194,43 +214,15 @@ class _LoginState extends State<Login> {
                             ),
 
                             SizedBox(height: 14.h),
-                            
-                            BlocListener<LoginBloc, LoginState>(
-                              listener: (context, state) {
-                                if (state is LoginSuccess &&
-                                    state.isGuest == true) {
-                                  SnackbarHelper.green(
-                                    context,
-                                    "You're continuing as a Guest.",
-                                  );
 
-                                  // ✅ Use Navigator instead of Get
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    Navigator.pushNamedAndRemoveUntil(
-                                      context,
-                                      AppRoutes.home,
-                                      (route) =>
-                                          false, // clears previous routes
-                                    );
-                                  });
-                                } else if (state is LoginFailure) {
-                                  SnackbarHelper.red(
-                                    context,
-                                    state.error,
-                                  ); // ✅ corrected field
-                                }
+                            LoadingOutlineButton(
+                              text: "Continue as Guest",
+                              icon: FontAwesomeIcons.solidUser,
+                              onPressedAsync: () async {
+                                context.read<LoginBloc>().add(
+                                  GuestLoginEvent(),
+                                );
                               },
-                              child: LoadingOutlineButton(
-                                text: "Continue as Guest",
-                                icon: FontAwesomeIcons.solidUser,
-                                onPressedAsync: () async {
-                                  context.read<LoginBloc>().add(
-                                    GuestLoginEvent(),
-                                  );
-                                },
-                              ),
                             ),
 
                             SizedBox(height: 12.h),

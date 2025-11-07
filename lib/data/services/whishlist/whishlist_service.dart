@@ -34,6 +34,7 @@ class FavoriteService {
     required int dishId,
     int? wishlistId, // optional wishlist id
   }) async {
+      print("Removing dishId: $dishId, wishlistId: $wishlistId");
     final userIdStr = await TokenStorage.getUserId();
     final storeIdStr = await TokenStorage.getChosenStoreId();
 
@@ -51,6 +52,7 @@ class FavoriteService {
 
     try {
       final response = await ApiClient.dio.post(ApiUrls.wishlist, data: body);
+       print("Backend Response: ${response.data}");
 
       return response.data['success'] == true;
     } catch (e) {

@@ -3,9 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
-import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
-import 'package:pizza_boys/routes/app_routes.dart';
 
 class GuestCheckout extends StatefulWidget {
   const GuestCheckout({super.key});
@@ -16,6 +14,7 @@ class GuestCheckout extends StatefulWidget {
 
 class _GuestCheckoutState extends State<GuestCheckout> {
   final formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
 
@@ -40,9 +39,11 @@ class _GuestCheckoutState extends State<GuestCheckout> {
                   key: formKey,
                   child: Column(
                     children: [
-                      SizedBox(height: 12.h),
+                            SizedBox(height: 14.h),
+                      _inputField("Full Name", nameController, isEmail: false),
+                      SizedBox(height: 14.h),
                       _inputField("Email", emailController, isEmail: true),
-                      SizedBox(height: 16.h),
+                      SizedBox(height: 14.h),
                       _inputField(
                         "Phone Number",
                         phoneController,
@@ -108,7 +109,7 @@ class _GuestCheckoutState extends State<GuestCheckout> {
                 Image.asset(ImageUrls.logoWhite, height: 30.h),
                 SizedBox(height: 12.h),
                 Text(
-                  "Guest Checkout",
+                  "Almost There!",
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w600,
@@ -118,7 +119,7 @@ class _GuestCheckoutState extends State<GuestCheckout> {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  "Enter your email and phone to continue\nas guest.",
+                  "Confirm your Pizzaboyz order now.",
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     color: Colors.white70,

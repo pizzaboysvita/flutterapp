@@ -76,10 +76,10 @@ class _PaymentPageState extends State<PaymentPage> {
               _buildSectionTitle('Payment Options'),
               SizedBox(height: 15.h),
               const PaymentMethodTile(title: 'Card Online', value: 'card'),
-              // const PaymentMethodTile(title: 'Bank Transfer', value: 'bank'),
-              SizedBox(height: 20.h),
-              CouponInput(controller: couponController, onApply: () {}),
 
+              // const PaymentMethodTile(title: 'Bank Transfer', value: 'bank'),
+              // SizedBox(height: 20.h),
+              // CouponInput(controller: couponController, onApply: () {}),
               SizedBox(height: 20.h),
 
               // 🔹 Order Items

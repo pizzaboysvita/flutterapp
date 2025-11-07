@@ -18,5 +18,9 @@ class OrderGetBloc extends Bloc<OrderGetEvent, OrderGetState> {
         emit(OrderError(e.toString()));
       }
     });
+
+    on<ClearOrderGet>((event, emit) {
+      emit(OrderLoaded([]));
+    });
   }
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class Profile extends StatelessWidget {
@@ -116,28 +118,26 @@ class Profile extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        await SessionManager.clearSession(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.redPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: Text(
-                        "Logout",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ),
-                  ),
+                Expanded(
+  child: ElevatedButton(
+    onPressed: () async {
+      Navigator.pop(ctx);
+      await SessionManager.clearSession(context);
+
+      // Clear logged-in user's favorites in Bloc
+      context.read<FavoriteBloc>().clearFavorites();
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: AppColors.redPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      padding: EdgeInsets.symmetric(vertical: 12),
+    ),
+    child: Text(
+      "Logout",
+      style: TextStyle(color: Colors.white, fontFamily: 'Poppins'),
+    ),
+  ),
+)
                 ],
               ),
             ],
@@ -179,8 +179,8 @@ class Profile extends StatelessWidget {
             child: FutureBuilder<Map<String, String?>>(
               future: _loadUserNameEmail(),
               builder: (context, snapshot) {
-                final name = snapshot.data?['name'] ?? "User Name";
-                final email = snapshot.data?['email'] ?? "user@example.com";
+                final name = snapshot.data?['name'] ?? "Guest";
+                final email = snapshot.data?['email'] ?? "guest@gmail.com";
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

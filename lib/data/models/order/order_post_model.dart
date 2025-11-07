@@ -205,7 +205,7 @@ class OrderModel {
       "is_pos_order": isPosOrder,
       "unitnumber": unitNumber,
       "gst_price": gstPrice,
-      "order_due": orderDue ?? 0,
+       "order_due": orderDue,
       "order_due_datetime": orderDueDatetime,
       "delivery_notes": deliveryNotes,
     };

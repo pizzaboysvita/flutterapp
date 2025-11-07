@@ -349,18 +349,50 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
                   color: Colors.redAccent,
                   size: 24.sp,
                 ),
-                onPressed: () {
+                onPressed: () async {
+                  final isGuest = await TokenStorage.isGuest();
+
                   if (isFavorite) {
-                    if (dish.wishlistId != null) {
+                    if (isGuest) {
+                      // 🟢 Guest remove — local only
                       context.read<FavoriteBloc>().add(
-                        RemoveFromFavoriteEvent(
-                           dish: dish,
-                          wishlistId: dish.wishlistId!,
+                        RemoveFromFavoriteEvent(dish: dish),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Removed from Favorites!"),
                         ),
                       );
+                    } else {
+                      // 🔵 Logged-in remove — needs wishlistId
+                      if (dish.wishlistId != null) {
+                        context.read<FavoriteBloc>().add(
+                          RemoveFromFavoriteEvent(
+                            dish: dish,
+                            wishlistId: dish.wishlistId!,
+                          ),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Removed from Favorites!"),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Cannot remove: wishlistId is missing!",
+                            ),
+                          ),
+                        );
+                      }
                     }
                   } else {
+                    // ➕ Add to favorites
                     context.read<FavoriteBloc>().add(AddToFavoriteEvent(dish));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("❤️ Added to Favorites!")),
+                    );
                   }
                 },
               );

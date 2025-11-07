@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/core/storage/guset_local_storage.dart';
+import 'package:pizza_boys/data/models/dish/guest_cart_item_model.dart';
 import 'package:pizza_boys/data/repositories/cart/cart_repo.dart';
 import 'cart_event.dart';
 import 'cart_state.dart';
@@ -19,16 +22,33 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   ) async {
     emit(CartLoading());
     final isGuest = await TokenStorage.isGuest();
+    final storeId = await TokenStorage.getChosenStoreId();
+
 
     try {
-      if (isGuest) {
-        // ✅ Guest: Local add (no API)
-        if (event.dish == null) {
-          throw Exception("Dish data missing for guest cart add");
-        }
-        await LocalCartStorage.addToCart(event.dish!);
-        emit(const CartSuccess({"message": "Added to cart (guest)"}));
-      } else {
+     if (isGuest) {
+  if (event.dish == null) {
+    throw Exception("Dish data missing for guest cart add");
+  }
+
+  final optionsMap = jsonDecode(event.optionsJson);
+
+  await LocalCartStorage.addGuestCartItem(
+  storeId!, // 👈 First param
+  GuestCartItemModel(
+    dish: event.dish!,
+    quantity: event.quantity,
+    unitPrice: event.price,
+    totalPrice: event.quantity * event.price,
+    options: optionsMap,
+  ),
+);
+
+
+  emit(const CartSuccess({"message": "Added to cart (guest)"}));
+  return;
+}
+ else {
         // ✅ Logged-in: API add
         final response = await cartRepository.addDishToCart(
           userId: event.userId,
@@ -55,8 +75,12 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     try {
       if (isGuest) {
         // ✅ Guest: Local remove
-        await LocalCartStorage.removeFromCart(event.cartId);
-        emit(const CartSuccess({"message": "Removed from cart (guest)"}));
+        final storeId = await TokenStorage.getChosenStoreId();
+
+  await LocalCartStorage.removeFromCart(
+    storeId!,       // ✅ String storeId
+    event.cartId,   // ✅ int dishId
+  );
       } else {
         // ✅ Logged-in: API remove
         final response = await cartRepository.removeFromCart(

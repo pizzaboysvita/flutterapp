@@ -157,8 +157,35 @@ class TokenStorage {
   // 🧹 Clear all sessions (user + guest)
   static Future<void> clearSession() async {
     try {
-      await _storage.deleteAll();
-      print("🧽 [TokenStorage] All tokens cleared");
+      // Step 1: Preserve important store-related keys
+      final storeId = await _storage.read(key: _chosenStoreIdKey);
+      final storeName = await _storage.read(key: _storeNameKey);
+      final locationName = await _storage.read(key: _chosenLocationKey);
+
+      // Step 2: Clear only session-related keys
+      await _storage.delete(key: _accessTokenKey);
+      await _storage.delete(key: _refreshTokenKey);
+      await _storage.delete(key: _guestAccessTokenKey);
+      await _storage.delete(key: _isGuestKey);
+      await _storage.delete(key: _userIdKey);
+      await _storage.delete(key: _roleIdKey);
+      await _storage.delete(key: _emailKey);
+      await _storage.delete(key: _nameKey);
+      await _storage.delete(key: _profileKey);
+      await _storage.delete(key: _permissionsKey);
+
+      // Step 3: Restore the saved store info
+      if (storeId != null) {
+        await _storage.write(key: _chosenStoreIdKey, value: storeId);
+      }
+      if (storeName != null) {
+        await _storage.write(key: _storeNameKey, value: storeName);
+      }
+      if (locationName != null) {
+        await _storage.write(key: _chosenLocationKey, value: locationName);
+      }
+
+      print("🧽 [TokenStorage] Session cleared but store info preserved");
     } catch (e) {
       print("❌ [TokenStorage] clearSession failed: $e");
     }
