@@ -1,4 +1,3 @@
-// lib/features/fav/bloc/fav_event.dart
 import 'package:equatable/equatable.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 
@@ -18,10 +17,10 @@ class AddToFavoriteEvent extends FavoriteEvent {
 }
 
 class RemoveFromFavoriteEvent extends FavoriteEvent {
-  final DishModel ? dish;
-  final int? wishlistId; // optional, used by server removal
+  final DishModel? dish;
+  final int? wishlistId;
 
-  const RemoveFromFavoriteEvent({ this.dish, this.wishlistId});
+  const RemoveFromFavoriteEvent({this.dish, this.wishlistId});
 
   @override
   List<Object?> get props => [dish, wishlistId];
@@ -32,5 +31,11 @@ class LoadFavoritesEvent extends FavoriteEvent {
 }
 
 class FetchWishlistEvent extends FavoriteEvent {
-  const FetchWishlistEvent();
+  final String? storeId;
+  const FetchWishlistEvent({this.storeId});
+}
+
+/// ❌ Clear favorites (guest or user)
+class ClearFavoritesEvent extends FavoriteEvent {
+  const ClearFavoritesEvent();
 }

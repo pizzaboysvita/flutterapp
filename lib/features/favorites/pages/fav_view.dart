@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
@@ -22,13 +23,25 @@ class FavoritesView extends StatefulWidget {
 }
 
 class _FavoritesViewState extends State<FavoritesView> {
+  String? localStoreName;
   @override
   void initState() {
     super.initState();
-    // // ✅ Trigger fetch event when the view is loaded
-    // Future.microtask(() {
-    //   context.read<FavoriteBloc>().add(FetchWishlistEvent());
-    // });
+
+    TokenStorage.loadSelectedStoreName().then((value) {
+      setState(() {
+        localStoreName = value ?? "Unknown Store";
+      });
+    });
+
+    // ✅ Fetch favorites after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final isGuest = await TokenStorage.isGuest();
+      debugPrint("➡️ Opening Favorites page. Guest? $isGuest");
+
+      // Always fetch fresh data
+      context.read<FavoriteBloc>().add(FetchWishlistEvent());
+    });
   }
 
   @override
@@ -130,17 +143,30 @@ class _FavoritesViewState extends State<FavoritesView> {
                                   ),
                                   SizedBox(height: 4.h),
                                   // Store Name
-                                  Text(
-                                    'From ${dish.storeName}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 10.sp,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w400,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
+                                  dish.storeName != null &&
+                                          dish.storeName!.isNotEmpty
+                                      ? Text(
+                                          'From ${dish.storeName}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 10.sp,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w400,
+                                            fontFamily: 'Poppins',
+                                          ),
+                                        )
+                                      : Text(
+                                          'From ${localStoreName ?? "Unknown Store"}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 10.sp,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w400,
+                                            fontFamily: 'Poppins',
+                                          ),
+                                        ),
 
                                   SizedBox(height: 6.h),
 
@@ -222,7 +248,7 @@ class _FavoritesViewState extends State<FavoritesView> {
                           onTap: () {
                             context.read<FavoriteBloc>().add(
                               RemoveFromFavoriteEvent(
-                               dish: dish,// keep dish id
+                                dish: dish, // keep dish id
                                 wishlistId:
                                     dish.wishlistId, // pass the wishlist_id
                               ),

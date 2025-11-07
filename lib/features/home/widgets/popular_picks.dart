@@ -42,165 +42,133 @@ class _PopularPicksState extends State<PopularPicks> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> fallbackData = [
-      {
-        'name': 'Pepperoni Classic',
-        'price': 12.99,
-        'image': ImageUrls.catergoryPizza,
-        'rating': 4.5,
-      },
-      {
-        'name': 'BBQ Chicken',
-        'price': 14.99,
-        'image': ImageUrls.catergoryPizza,
-        'rating': 4.2,
-      },
-      {
-        'name': 'Veggie Delight',
-        'price': 10.49,
-        'image': ImageUrls.catergoryPizza,
-        'rating': 4.0,
-      },
-      {
-        'name': 'Cheese Burst',
-        'price': 11.99,
-        'image': ImageUrls.catergoryPizza,
-        'rating': 4.8,
-      },
-    ];
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// Header Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Popular Picks',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16.h),
-
-          /// BlocBuilder for API data
-          BlocBuilder<DishBloc, DishState>(
-            builder: (context, state) {
-              if (state is DishLoading) {
-                /// ✅ Show shimmer grid placeholder (4 items → 2x2)
-                return GridView.builder(
-                  itemCount: 4, // 2x2 grid
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12.w,
-                    mainAxisSpacing: 12.h,
-                    childAspectRatio: 0.75,
+    return BlocBuilder<DishBloc, DishState>(
+      builder: (context, state) {
+        if (state is DishLoading) {
+          /// ✅ Show shimmer grid placeholder (4 items → 2x2)
+          return GridView.builder(
+            itemCount: 4, // 2x2 grid
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12.w,
+              mainAxisSpacing: 12.h,
+              childAspectRatio: 0.75,
+            ),
+            itemBuilder: (context, index) {
+              return Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  itemBuilder: (context, index) {
-                    return Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      /// Image placeholder
+                      Container(
+                        height: 105.h,
+                        width: double.infinity,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12.r),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(12.r),
+                          ),
                         ),
+                      ),
+                      SizedBox(height: 8.h),
+
+                      /// Name placeholder
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            /// Image placeholder
                             Container(
-                              height: 105.h,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(12.r),
+                              height: 12.h,
+                              width: 60.w,
+                              color: Colors.white,
+                            ),
+                            SizedBox(height: 6.h),
+
+                            /// Rating + price placeholder
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  height: 10.h,
+                                  width: 30.w,
+                                  color: Colors.white,
                                 ),
-                              ),
+                                SizedBox(width: 10.w),
+                                Container(
+                                  height: 10.h,
+                                  width: 40.w,
+                                  color: Colors.white,
+                                ),
+                              ],
                             ),
                             SizedBox(height: 8.h),
 
-                            /// Name placeholder
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.w),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    height: 12.h,
-                                    width: 60.w,
-                                    color: Colors.white,
-                                  ),
-                                  SizedBox(height: 6.h),
-
-                                  /// Rating + price placeholder
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        height: 10.h,
-                                        width: 30.w,
-                                        color: Colors.white,
-                                      ),
-                                      SizedBox(width: 10.w),
-                                      Container(
-                                        height: 10.h,
-                                        width: 40.w,
-                                        color: Colors.white,
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 8.h),
-
-                                  /// Button placeholder
-                                  Container(
-                                    height: 32.h,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(10.r),
-                                    ),
-                                  ),
-                                ],
+                            /// Button placeholder
+                            Container(
+                              height: 32.h,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10.r),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                );
-              } else if (state is DishLoaded) {
-                final List<DishModel> dishes = state.dishes;
-                if (dishes.isEmpty) {
-                  // ✅ Show fallback when no dishes available
-                  return Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        "No Popular Picks Available 🍕",
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black54,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                }
-                return GridView.builder(
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        } else if (state is DishLoaded) {
+          final List<DishModel> dishes = state.dishes;
+
+          if (dishes.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  vertical: 24.h,
+                  horizontal: 6.0.w,
+                ),
+                child: Text(
+                  "This store currently does not\n deliver to your area.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+            );
+          }
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Popular Picks',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                GridView.builder(
                   itemCount: dishes.length < 4 ? dishes.length : 4,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -212,15 +180,10 @@ class _PopularPicksState extends State<PopularPicks> {
                   ),
                   itemBuilder: (context, index) {
                     final dish = dishes[index];
-                    final fallback = fallbackData[index % fallbackData.length];
 
-                    final name = (dish.name.isNotEmpty)
-                        ? dish.name
-                        : fallback['name'];
-                    final price = (dish.price != 0.0)
-                        ? dish.price
-                        : fallback['price'];
-                    
+                    final name = dish.name;
+
+                    final price = dish.price;
 
                     /// ✅ Safe Image with fallback placeholder
                     final safeImage = (dish.imageUrl.isNotEmpty)
@@ -228,7 +191,21 @@ class _PopularPicksState extends State<PopularPicks> {
                         : "https://wallpapers.com/images/hd/error-placeholder-image-2e1q6z01rfep95v0.jpg";
 
                     return GestureDetector(
-                      onTap: () {},
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        context.read<PizzaDetailsBloc>().add(
+                          ResetPizzaDetailsEvent(),
+                        );
+
+                        // ✅ Then navigate to PizzaDetailsView with dishId
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.pizzaDetails,
+                          arguments: dish.id, // pass correct id
+                        );
+
+                        print('👉 Passing Selected Dish ID: ${dish.id}');
+                      },
                       child: Stack(
                         children: [
                           Container(
@@ -350,39 +327,14 @@ class _PopularPicksState extends State<PopularPicks> {
                                               borderRadius:
                                                   BorderRadius.circular(10.r),
                                             ),
-                                            child: InkWell(
-                                              borderRadius:
-                                                  BorderRadius.circular(10.r),
-                                              onTap: () {
-                                                // ✅ Step 4: Dispatch Reset before navigation
-                                                context
-                                                    .read<PizzaDetailsBloc>()
-                                                    .add(
-                                                      ResetPizzaDetailsEvent(),
-                                                    );
-
-                                                // ✅ Then navigate to PizzaDetailsView with dishId
-                                                Navigator.pushNamed(
-                                                  context,
-                                                  AppRoutes.pizzaDetails,
-                                                  arguments: dish
-                                                      .id, // pass correct id
-                                                );
-
-                                                print(
-                                                  '👉 Passing Selected Dish ID: ${dish.id}',
-                                                );
-                                              },
-
-                                              child: Center(
-                                                child: Text(
-                                                  'Add to Cart',
-                                                  style: TextStyle(
-                                                    fontSize: 12.sp,
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Poppins',
-                                                  ),
+                                            child: Center(
+                                              child: Text(
+                                                'Order Now',
+                                                style: TextStyle(
+                                                  fontSize: 12.sp,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontFamily: 'Poppins',
                                                 ),
                                               ),
                                             ),
@@ -428,86 +380,121 @@ class _PopularPicksState extends State<PopularPicks> {
 
                           /// Favorite Icon
                           Positioned(
-                            top: 0.h,
-                            right: 0.w,
-                            child: BlocBuilder<FavoriteBloc, FavoriteState>(
-                              builder: (context, state) {
+                            top: 7.h,
+                            right: 7.w,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.translucent,
+                              onTap: () async {
+                                final isGuest = await TokenStorage.isGuest();
+                                print(
+                                  "🔹 Tapped Favorite Icon → dish.id: ${dish.id}, wishlistId: ${dish.wishlistId}, isGuest: $isGuest",
+                                );
+
+                                final favoriteBloc = context
+                                    .read<FavoriteBloc>();
                                 bool isFavorite = false;
 
-                                if (state is FavoriteLoaded) {
-                                  isFavorite = state.favorites.any(
+                                final currentState = favoriteBloc.state;
+                                if (currentState is FavoriteLoaded) {
+                                  isFavorite = currentState.favorites.any(
                                     (d) => d.id == dish.id,
                                   );
                                 }
+                                print("🔹 isFavorite in Bloc: $isFavorite");
 
-                                return IconButton(
-                                  icon: Icon(
-                                    isFavorite
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: AppColors.redPrimary,
-                                  ),
-                                  onPressed: () {
-                                    if (isFavorite) {
-                                      if (dish.wishlistId != null) {
-                                        context.read<FavoriteBloc>().add(
-                                          RemoveFromFavoriteEvent(
-                                            dish: dish,
-                                            wishlistId: dish.wishlistId,
-                                          ),
-                                        );
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              "Removed from Favorites!",
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              "Cannot remove: wishlistId is missing!",
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    } else {
-                                      context.read<FavoriteBloc>().add(
-                                        AddToFavoriteEvent(dish),
+                                if (isFavorite) {
+                                  if (isGuest) {
+                                    print(
+                                      "🔹 Removing from local favorites for guest",
+                                    );
+                                    favoriteBloc.add(
+                                      RemoveFromFavoriteEvent(dish: dish),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Removed from Favorites!",
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    if (dish.wishlistId != null) {
+                                      print(
+                                        "🔹 Removing from server favorites → wishlistId: ${dish.wishlistId}",
+                                      );
+                                      favoriteBloc.add(
+                                        RemoveFromFavoriteEvent(
+                                          dish: dish,
+                                          wishlistId: dish.wishlistId,
+                                        ),
                                       );
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
                                         const SnackBar(
                                           content: Text(
-                                            "❤️ Added to Favorites!",
+                                            "Removed from Favorites!",
                                           ),
                                         ),
                                       );
+                                    } else {
+                                      print(
+                                        "⚠️ Cannot remove: wishlistId missing for dish.id: ${dish.id}",
+                                      );
+                                      // ScaffoldMessenger.of(
+                                      //   context,
+                                      // ).showSnackBar(
+                                      //   const SnackBar(
+                                      //     content: Text(
+                                      //       "Cannot remove: wishlistId missing!",
+                                      //     ),
+                                      //   ),
+                                      // );
                                     }
-                                  },
-                                );
+                                  }
+                                } else {
+                                  print(
+                                    "🔹 Adding to favorites → dish.id: ${dish.id}",
+                                  );
+                                  favoriteBloc.add(AddToFavoriteEvent(dish));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("❤️ Added to Favorites!"),
+                                    ),
+                                  );
+                                }
                               },
+                              child: BlocBuilder<FavoriteBloc, FavoriteState>(
+                                builder: (context, state) {
+                                  bool isFavorite = false;
+                                  if (state is FavoriteLoaded) {
+                                    isFavorite = state.favorites.any(
+                                      (favorite) => favorite.id == dish.id,
+                                    );
+                                  }
+                                  return Icon(
+                                    isFavorite
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: AppColors.redPrimary,
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         ],
                       ),
                     );
                   },
-                );
-              } else if (state is DishError) {
-                return Center(child: Text("Error: ${state.message}"));
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
-      ),
+                ),
+              ],
+            ),
+          );
+        } else if (state is DishError) {
+          return Center(child: Text("Error: ${state.message}"));
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 }

@@ -2,9 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:lottie/lottie.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/constant/lottie_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/cart/bloc/order/get/order_get_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/order/get/order_get_event.dart';
 import 'package:pizza_boys/features/cart/bloc/order/get/order_get_state.dart';
@@ -22,29 +25,21 @@ class OrderHistoryView extends StatefulWidget {
 class _OrderHistoryViewState extends State<OrderHistoryView> {
   late bool fromMyOrderButton;
   bool isInit = false;
+  bool isGuest = false;
   @override
   void initState() {
     super.initState();
     fromMyOrderButton = widget.fromMyOrderButton;
 
+    Future.microtask(() async {
+      isGuest = await TokenStorage.isGuest();
+      setState(() {}); // refresh UI once
+    });
+
     // ✅ Trigger fetch event when the view is loaded
     Future.microtask(() {
       context.read<OrderGetBloc>().add(LoadOrdersEvent());
     });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!isInit) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is bool) {
-        fromMyOrderButton = args;
-      }
-      // ✅ Trigger fetch event when the view is loaded
-      context.read<OrderGetBloc>().add(LoadOrdersEvent());
-      isInit = true;
-    }
   }
 
   Future<bool> _onWillPop() async {
@@ -109,315 +104,262 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
             },
           ),
         ),
-        body: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          child: BlocBuilder<OrderGetBloc, OrderGetState>(
-            builder: (context, state) {
-              if (state is OrderLoading) {
-                return const Center(child: LottieLoader());
-              } else if (state is OrderLoaded) {
-                // First, sort orders by date (latest first)
-
-                if (state.orders.isEmpty) {
-                  return const Center(child: Text("No orders yet 🕒"));
-                }
-                DateTime _safeParseDate(String? dateStr) {
-                  if (dateStr == null || dateStr.trim().isEmpty) {
-                    return DateTime(1970);
-                  }
-                  try {
-                    // Try standard ISO format first
-                    return DateTime.parse(dateStr);
-                  } catch (_) {
-                    // Try common alternative (like dd/MM/yyyy HH:mm)
-                    try {
-                      final parts = dateStr.split(RegExp(r'[/\s:-]'));
-                      if (parts.length >= 5) {
-                        final day = int.tryParse(parts[0]) ?? 1;
-                        final month = int.tryParse(parts[1]) ?? 1;
-                        final year = int.tryParse(parts[2]) ?? 1970;
-                        final hour = int.tryParse(parts[3]) ?? 0;
-                        final minute = int.tryParse(parts[4]) ?? 0;
-                        return DateTime(year, month, day, hour, minute);
-                      }
-                    } catch (_) {}
-                    // Fallback
-                    return DateTime(1970);
-                  }
-                }
-
-                final sortedOrders = List.from(state.orders)
-                  ..sort(
-                    (a, b) => _safeParseDate(
-                      b.pickupDatetime,
-                    ).compareTo(_safeParseDate(a.pickupDatetime)),
-                  );
-
-                return ListView.builder(
-                  itemCount: sortedOrders.length,
-                  reverse: false,
-                  itemBuilder: (context, index) {
-                    final order = sortedOrders[index];
-
-                    // total price from order_items total frontend total calc
-                    // Suppose this is your orderItems list from the API
-                    final List<Map<String, dynamic>> orderItems =
-                        order.orderItems;
-
-                    // Step 1: Merge duplicates by dish_id
-                    final Map<int, Map<String, dynamic>> mergedItems = {};
-
-                    for (var item in orderItems) {
-                      final dishId =
-                          int.tryParse(item['dish_id'].toString()) ?? -1;
-                      final price =
-                          double.tryParse(item['price'].toString()) ?? 0.0;
-                      final qty =
-                          int.tryParse(item['quantity'].toString()) ?? 0;
-
-                      if (mergedItems.containsKey(dishId)) {
-                        mergedItems[dishId]!['quantity'] += qty;
-                        mergedItems[dishId]!['totalPrice'] += (price * qty);
-                      } else {
-                        mergedItems[dishId] = {
-                          'dish_id': dishId,
-                          'dish_name': item['dish_name'] ?? 'Unknown',
-                          'quantity': qty,
-                          'totalPrice': price * qty,
-                        };
-                      }
-                    }
-
-                    // Step 2: Convert merged items to list if needed
-                    // final List<Map<String, dynamic>> uniqueItems = mergedItems
-                    //     .values
-                    //     .toList();
-
-                    // // Step 3: Calculate the final total price
-                    // final double finalTotalPrice = uniqueItems.fold<double>(
-                    //   0,
-                    //   (sum, item) => sum + (item['totalPrice'] as double),
-                    // );
-                    return Container(
-                      padding: EdgeInsets.all(12.w),
-                      margin: EdgeInsets.only(bottom: 12.h),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12.r),
-                        color: Colors.white,
+        body: isGuest
+            ? Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20.w),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons
+                            .receipt_long_outlined, // 🛒 or use Icons.shopping_basket_outlined
+                        size: 60.sp,
+                        color: Colors.grey.shade500,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8.r),
-                                child: SizedBox(
-                                  height: 50.h,
-                                  width: 50.w,
-                                  child: buildOrderImage(order.deliveryAddress),
-                                ),
-                              ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                      SizedBox(height: 16.h),
+                      Text(
+                        "You haven't placed any orders yet.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      SizedBox(height: 20.h),
+                      // SizedBox(
+                      //   width: 150.w,
+                      //   child: ElevatedButton(
+                      //     style: ElevatedButton.styleFrom(
+                      //       backgroundColor: AppColors.redPrimary,
+                      //       shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(12.r),
+                      //       ),
+                      //       padding: EdgeInsets.symmetric(vertical: 12.h),
+                      //     ),
+                      //     onPressed: () {
+                      //       Navigator.pushNamed(context, AppRoutes.login);
+                      //     },
+                      //     child: Text(
+                      //       "Login",
+                      //       style: TextStyle(
+                      //         color: Colors.white,
+                      //         fontSize: 14.sp,
+                      //         fontFamily: 'Poppins',
+                      //         fontWeight: FontWeight.w600,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+              )
+            : Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: BlocBuilder<OrderGetBloc, OrderGetState>(
+                  builder: (context, state) {
+                    print(
+                      "🔍 OrderGetBloc hash: ${context.read<OrderGetBloc>().hashCode}",
+                    );
+                    if (state is OrderLoading) {
+                      return const Center(child: LottieLoader());
+                    } else if (state is OrderLoaded) {
+                      if (state.orders.isEmpty) {
+                        return const Center(child: Text("No orders yet 🕒"));
+                      }
+
+                      DateTime _safeParseDate(String? dateStr) {
+                        if (dateStr == null || dateStr.trim().isEmpty) {
+                          return DateTime(1970);
+                        }
+                        try {
+                          return DateTime.parse(dateStr);
+                        } catch (_) {
+                          try {
+                            final parts = dateStr.split(RegExp(r'[/\s:-]'));
+                            if (parts.length >= 5) {
+                              final day = int.tryParse(parts[0]) ?? 1;
+                              final month = int.tryParse(parts[1]) ?? 1;
+                              final year = int.tryParse(parts[2]) ?? 1970;
+                              final hour = int.tryParse(parts[3]) ?? 0;
+                              final minute = int.tryParse(parts[4]) ?? 0;
+                              return DateTime(year, month, day, hour, minute);
+                            }
+                          } catch (_) {}
+                          return DateTime(1970);
+                        }
+                      }
+
+                      final sortedOrders = List.from(state.orders)
+                        ..sort(
+                          (a, b) => _safeParseDate(
+                            b.pickupDatetime,
+                          ).compareTo(_safeParseDate(a.pickupDatetime)),
+                        );
+
+                      return ListView.builder(
+                        itemCount: sortedOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = sortedOrders[index];
+
+                          final List<Map<String, dynamic>> orderItems =
+                              order.orderItems;
+                          final Map<int, Map<String, dynamic>> mergedItems = {};
+
+                          for (var item in orderItems) {
+                            final dishId =
+                                int.tryParse(item['dish_id'].toString()) ?? -1;
+                            final price =
+                                double.tryParse(item['price'].toString()) ??
+                                0.0;
+                            final qty =
+                                int.tryParse(item['quantity'].toString()) ?? 0;
+
+                            if (mergedItems.containsKey(dishId)) {
+                              mergedItems[dishId]!['quantity'] += qty;
+                              mergedItems[dishId]!['totalPrice'] +=
+                                  (price * qty);
+                            } else {
+                              mergedItems[dishId] = {
+                                'dish_id': dishId,
+                                'dish_name': item['dish_name'] ?? 'Unknown',
+                                'quantity': qty,
+                                'totalPrice': price * qty,
+                              };
+                            }
+                          }
+
+                          return Container(
+                            padding: EdgeInsets.all(12.w),
+                            margin: EdgeInsets.only(bottom: 12.h),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12.r),
+                              color: Colors.white,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          "Order ID: ",
-                                          style: TextStyle(
-                                            fontSize: 13.sp,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.grey.shade700,
-                                            fontFamily: 'Poppins',
-                                          ),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8.r),
+                                      child: SizedBox(
+                                        height: 50.h,
+                                        width: 50.w,
+                                        child: buildOrderImage(
+                                          order.deliveryAddress,
                                         ),
-                                        RichText(
-                                          maxLines: 1,
-                                          overflow: TextOverflow
-                                              .ellipsis, // ✅ prevent overflow
-                                          text: TextSpan(
+                                      ),
+                                    ),
+                                    SizedBox(width: 12.w),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
                                             children: [
-                                              TextSpan(
-                                                text: "PB", // black
+                                              Text(
+                                                "Order ID: ",
                                                 style: TextStyle(
                                                   fontSize: 13.sp,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.grey.shade700,
                                                   fontFamily: 'Poppins',
                                                 ),
                                               ),
-                                              TextSpan(
-                                                text:
-                                                    "${order.orderMasterId}", // red
-                                                style: TextStyle(
-                                                  fontSize: 13.sp,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.redAccent,
-                                                  fontFamily: 'Poppins',
+                                              RichText(
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                text: TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                      text: "PB",
+                                                      style: TextStyle(
+                                                        fontSize: 13.sp,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.black,
+                                                        fontFamily: 'Poppins',
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text:
+                                                          "${order.orderMasterId}",
+                                                      style: TextStyle(
+                                                        fontSize: 13.sp,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color:
+                                                            AppColors.redAccent,
+                                                        fontFamily: 'Poppins',
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ],
                                           ),
-                                        ),
-                                      ],
-                                    ),
-
-                                    SizedBox(height: 4.h),
-                                    Text(
-                                      order.unitNumber,
-                                      style: TextStyle(
-                                        fontSize: 13.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade700,
-                                        fontFamily: 'Poppins',
-                                      ),
-                                    ),
-                                    SizedBox(height: 4.h),
-                                    _buildOrderStatus(
-                                      order.orderStatus,
-                                      order.pickupDatetime.substring(0, 10),
-                                    ),
-
-                                    SizedBox(height: 4.h),
-
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        // 💰 Total Price (never overflows)
-                                        Expanded(
-                                          child: Text(
-                                            "Total: \$${order.totalPrice.toStringAsFixed(2)}",
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                          SizedBox(height: 4.h),
+                                          Text(
+                                            order.unitNumber,
                                             style: TextStyle(
-                                              fontSize: 12.sp,
-                                              color: AppColors.greenColor,
-                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13.sp,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey.shade700,
                                               fontFamily: 'Poppins',
                                             ),
                                           ),
-                                        ),
-
-                                        SizedBox(width: 8.w),
-
-                                        // 📦 Total Items (tappable)
-                                        // InkWell(
-                                        //   borderRadius: BorderRadius.circular(
-                                        //     6.r,
-                                        //   ),
-                                        //   onTap: () {
-                                        //     print(
-                                        //       "📦 Order Items for Order ID ${order.orderMasterId}: ${order.orderItems}",
-                                        //     );
-                                        //     _showOrderItemsBottomSheet(
-                                        //       context,
-                                        //       order.orderItems,
-                                        //     );
-                                        //   },
-                                        //   child: Row(
-                                        //     mainAxisSize: MainAxisSize.min,
-                                        //     children: [
-                                        //       Text(
-                                        //         "Details",
-                                        //         maxLines: 1,
-                                        //         overflow: TextOverflow.ellipsis,
-                                        //         style: TextStyle(
-                                        //           fontSize: 12.sp,
-                                        //           color: Colors.black,
-                                        //           fontWeight: FontWeight.w500,
-                                        //           fontFamily: 'Poppins',
-                                        //         ),
-                                        //       ),
-                                        //       Icon(
-                                        //         Icons.chevron_right,
-                                        //         size: 18.sp,
-                                        //         color: Colors.black,
-                                        //       ),
-                                        //     ],
-                                        //   ),
-                                        // ),
-                                      ],
+                                          SizedBox(height: 4.h),
+                                          _buildOrderStatus(
+                                            order.orderStatus,
+                                            order.pickupDatetime.substring(
+                                              0,
+                                              10,
+                                            ),
+                                          ),
+                                          SizedBox(height: 4.h),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  "Total: \$${order.totalPrice.toStringAsFixed(2)}",
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 12.sp,
+                                                    color: AppColors.greenColor,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontFamily: 'Poppins',
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8.h),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    } else if (state is OrderError) {
+                      return Center(child: Text("Failed to Fetch!"));
+                    }
 
-                          // Additional details below
-                          // Text(
-                          //   'Payment Method: ${order.paymentMethod}',
-                          //   style: TextStyle(
-                          //     fontSize: 12.sp,
-                          //     color: Colors.black87,
-                          //     fontFamily: 'Poppins',
-                          //   ),
-                          // ),
-                          // SizedBox(height: 4.h),
-                          // Text(
-                          //   'Order Notes: ${order.orderNotes.isNotEmpty ? order.orderNotes : "None"}',
-                          //   style: TextStyle(
-                          //     fontSize: 12.sp,
-                          //     color: Colors.black87,
-                          //     fontFamily: 'Poppins',
-                          //   ),
-                          // ),
-                          // SizedBox(height: 4.h),
-                          // SizedBox(height: 4.h),
-                          // Text(
-                          //   'Delivery Address: ${order.deliveryAddress ?? "N/A"}',
-                          //   style: TextStyle(
-                          //     fontSize: 12.sp,
-                          //     color: Colors.black54,
-                          //     fontFamily: 'Poppins',
-                          //   ),
-                          // ),
-                          // SizedBox(height: 4.h),
-                          // Text(
-                          //   'Delivery Fees: \$${order.deliveryFees.toStringAsFixed(2)}',
-                          //   style: TextStyle(
-                          //     fontSize: 12.sp,
-                          //     color: Colors.black54,
-                          //     fontFamily: 'Poppins',
-                          //   ),
-                          // ),
-                          // SizedBox(height: 4.h),
-                          // Text(
-                          //   'GST: \$${order.gstPrice.toStringAsFixed(2)}',
-                          //   style: TextStyle(
-                          //     fontSize: 12.sp,
-                          //     color: Colors.black54,
-                          //     fontFamily: 'Poppins',
-                          //   ),
-                          // ),
-                          // SizedBox(height: 4.h),
-                          // Text(
-                          //   'Unit Number: ${order.unitNumber.isNotEmpty ? order.unitNumber : "N/A"}',
-                          //   style: TextStyle(
-                          //     fontSize: 12.sp,
-                          //     color: Colors.black54,
-                          //     fontFamily: 'Poppins',
-                          //   ),
-                          // ),
-                        ],
-                      ),
-                    );
+                    return const SizedBox.shrink();
                   },
-                );
-              } else if (state is OrderError) {
-                return Center(child: Text("❌ ${state.message}"));
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
+                ),
+              ),
       ),
     );
   }

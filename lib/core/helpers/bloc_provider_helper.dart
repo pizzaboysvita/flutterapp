@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
 import 'package:pizza_boys/core/bloc/promocodes/promocode_bloc.dart';
+import 'package:pizza_boys/core/bloc/refresh_cubit_helper.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/repositories/cart/cart_repo.dart';
 import 'package:pizza_boys/data/repositories/category/category_repo.dart';
@@ -22,7 +23,6 @@ import 'package:pizza_boys/features/cart/bloc/checkout/checkout_cubit.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/order/get/order_get_bloc.dart';
-import 'package:pizza_boys/features/cart/bloc/order/get/order_get_event.dart';
 import 'package:pizza_boys/features/cart/bloc/order/post/order_post_bloc.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
@@ -42,6 +42,7 @@ class BlocProviderHelper {
   static Widget getAllProviders({required Widget child}) {
     return MultiBlocProvider(
       providers: [
+
         BlocProvider(create: (_) => ConnectivityBloc()),
         BlocProvider(create: (_) => PizzaDetailsBloc()),
         BlocProvider(create: (_) => PromoBloc(PromoRepository())),
@@ -57,9 +58,7 @@ class BlocProviderHelper {
           create: (_) => OrderBloc(repository: OrderRepository(OrderService())),
         ),
         BlocProvider(
-          create: (context) =>
-              OrderGetBloc(OrderRepository(OrderService()))
-                ..add(LoadOrdersEvent()),
+          create: (context) => OrderGetBloc(OrderRepository(OrderService())),
         ),
         BlocProvider(create: (_) => SearchBloc(SearchRepo())),
         BlocProvider(create: (_) => NavCubit()),
@@ -69,6 +68,8 @@ class BlocProviderHelper {
           create: (_) => StoreSelectionBloc()..add(LoadStoresEvent()),
         ),
         BlocProvider(create: (_) => BikeAnimationBloc()),
+        BlocProvider(create: (_) => RefreshCubit()),
+
 
         BlocProvider(create: (_) => StoreWatcherCubit()..loadInitialStore()),
 
@@ -110,6 +111,7 @@ class StoreWatcherCubit extends Cubit<String?> {
 
   /// Updates store ID when user selects a new location
   void updateStore(String newStoreId, String locationName) async {
+    print("🔥 StoreWatcherCubit emitted → causing rebuild");
     if (newStoreId != state) {
       print("🏪 [StoreWatcher] Store change detected!");
       print("   ├─ Previous store ID: ${state ?? 'none'}");

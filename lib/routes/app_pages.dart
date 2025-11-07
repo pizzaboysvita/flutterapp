@@ -48,27 +48,9 @@ class AppPages {
         );
 
       case AppRoutes.cartView:
-  return MaterialPageRoute(
-    builder: (context) => FutureBuilder<String?>(
-      future: TokenStorage.getUserId(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final userId = snapshot.data != null
-            ? int.tryParse(snapshot.data!) ?? 0
-            : 0;
-
-        return CartView(
-          scrollController: ScrollController(),
-          userId: userId,
-        );
-      },
-    ),
-  );
+        return MaterialPageRoute(
+  builder: (context) => const CartView(),
+);
 
 
       case AppRoutes.checkOut:
@@ -89,7 +71,7 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => Register());
       case AppRoutes.login:
         return MaterialPageRoute(builder: (context) => Login());
-        case AppRoutes.guestLogin:
+      case AppRoutes.guestLogin:
         return MaterialPageRoute(builder: (context) => GuestCheckout());
       case AppRoutes.landing:
         return MaterialPageRoute(builder: (context) => LandingPage());
@@ -113,20 +95,21 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => OrderTracking());
       case AppRoutes.favorites:
         return MaterialPageRoute(builder: (context) => FavoritesView());
-     case AppRoutes.ServerTimeoutScreen:
-  return MaterialPageRoute(
-    builder: (context) => ServerTimeoutScreen(
-      bloc: ServerTimeoutBloc(
-        dio: ApiClient.dio,
-        requestOptions: RequestOptions(path: 'unknown'),
-      ),
-      errorMessage: "Internal Server Error (500). Please try again later.",
-      onClose: () {
-        ApiClient.isShowingServerError = false;
-        ErrorScreenTracker.reset();
-      },
-    ),
-  );
+      case AppRoutes.ServerTimeoutScreen:
+        return MaterialPageRoute(
+          builder: (context) => ServerTimeoutScreen(
+            bloc: ServerTimeoutBloc(
+              dio: ApiClient.dio,
+              requestOptions: RequestOptions(path: 'unknown'),
+            ),
+            errorMessage:
+                "Internal Server Error (500). Please try again later.",
+            onClose: () {
+              ApiClient.isShowingServerError = false;
+              ErrorScreenTracker.reset();
+            },
+          ),
+        );
 
       // Profile Sub Pages
       case AppRoutes.orderHistory:

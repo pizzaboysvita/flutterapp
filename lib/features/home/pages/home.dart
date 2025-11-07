@@ -9,6 +9,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pizza_boys/core/bloc/promocodes/promocode_bloc.dart';
 import 'package:pizza_boys/core/bloc/promocodes/promocode_event.dart';
 import 'package:pizza_boys/core/bloc/promocodes/promocode_state.dart';
+import 'package:pizza_boys/core/bloc/refresh_cubit_helper.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/dialogs/offers_popup.dart';
@@ -40,72 +41,68 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
-@override
-void initState() {
-  super.initState();
-  print("🔹 Home initState called");
+  @override
+  void initState() {
+    super.initState();
+    print("🔹 Home initState called");
 
-  // Scroll listener
-  _scrollListener = () {
-    final direction = widget.scrollController.position.userScrollDirection;
-    if (direction == ScrollDirection.reverse && _isFabVisible) {
-      setState(() => _isFabVisible = false);
-    } else if (direction == ScrollDirection.forward && !_isFabVisible) {
-      setState(() => _isFabVisible = true);
-    }
-  };
-  widget.scrollController.addListener(_scrollListener);
+    // Scroll listener
+    _scrollListener = () {
+      final direction = widget.scrollController.position.userScrollDirection;
+      if (direction == ScrollDirection.reverse && _isFabVisible) {
+        setState(() => _isFabVisible = false);
+      } else if (direction == ScrollDirection.forward && !_isFabVisible) {
+        setState(() => _isFabVisible = true);
+      }
+    };
+    widget.scrollController.addListener(_scrollListener);
 
-  // ✅ Safe post-frame callback
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    if (!mounted) return; // prevent using context after dispose
-    print("🔹 Post-frame callback triggered");
+    // ✅ Safe post-frame callback
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return; // prevent using context after dispose
+      print("🔹 Post-frame callback triggered");
 
-    final storeIdStr = await TokenStorage.getChosenStoreId();
-    final storeId = int.tryParse(storeIdStr ?? "-1") ?? -1;
-    print("🔹 Current chosen storeId: $storeId");
+      final storeIdStr = await TokenStorage.getChosenStoreId();
+      final storeId = int.tryParse(storeIdStr ?? "-1") ?? -1;
+      print("🔹 Current chosen storeId: $storeId");
 
-    if (!mounted) return; // safety check before accessing context
-    if (storeId != -1) {
-      print("🔹 Dispatching FetchPromos for storeId: $storeId");
-      context.read<PromoBloc>().add(FetchPromos(storeId));
-    } else {
-      print("⚠️ No valid storeId found, cannot fetch promos");
-    }
-  });
-}
+      if (!mounted) return; // safety check before accessing context
+      if (storeId != -1) {
+        print("🔹 Dispatching FetchPromos for storeId: $storeId");
+        context.read<PromoBloc>().add(FetchPromos(storeId));
+      } else {
+        print("⚠️ No valid storeId found, cannot fetch promos");
+      }
+    });
+  }
 
+  StreamSubscription? _promoSubscription;
 
-StreamSubscription? _promoSubscription;
-
-
-@override
-void dispose() {
-  print("🔹 Home dispose called");
-  widget.scrollController.removeListener(_scrollListener);
-  _promoSubscription?.cancel();
-  super.dispose();
-}
-
+  @override
+  void dispose() {
+    print("🔹 Home dispose called");
+    widget.scrollController.removeListener(_scrollListener);
+    _promoSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
     return BlocListener<PromoBloc, PromoState>(
-    listener: (context, state) async {
-    print("🔹 PromoBloc emitted state: $state");
+      listener: (context, state) async {
+        print("🔹 PromoBloc emitted state: $state");
 
-    if (!_hasShownPopup && mounted) {
-  if (state is PromoLoaded && state.promos.isNotEmpty) {
-    _hasShownPopup = true;
-    print("🔹 Triggering showDynamicPopups now");
-    showDynamicPopups(context, state.promos);
-  }
-}
-else {
-      print("🔹 Popup already shown, skipping...");
-    }
-  },
+        if (!_hasShownPopup && mounted) {
+          if (state is PromoLoaded && state.promos.isNotEmpty) {
+            _hasShownPopup = true;
+            print("🔹 Triggering showDynamicPopups now");
+            showDynamicPopups(context, state.promos);
+          }
+        } else {
+          print("🔹 Popup already shown, skipping...");
+        }
+      },
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.black,
@@ -124,11 +121,11 @@ else {
                   fit: BoxFit.contain,
                 ),
               ),
-      
+
               BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
                 builder: (context, state) {
                   String selectedStore = "Select Store";
-      
+
                   if (state is StoreSelectionLoaded) {
                     final current = state.stores.firstWhere(
                       (store) => store.id == state.selectedStoreId,
@@ -140,14 +137,14 @@ else {
                         image: "",
                       ),
                     );
-      
+
                     if (current.id != 0 && current.name.isNotEmpty) {
                       selectedStore = current.name;
                       // 💾 Persist selection
                       TokenStorage.saveSelectedStore(current);
                     }
                   }
-      
+
                   return FutureBuilder<String?>(
                     future: TokenStorage.loadSelectedStoreName(),
                     builder: (context, snapshot) {
@@ -158,7 +155,7 @@ else {
                           storedName.isNotEmpty) {
                         selectedStore = storedName;
                       }
-      
+
                       return InkWell(
                         onTap: () async {
                           final changed = await Navigator.pushNamed(
@@ -166,11 +163,11 @@ else {
                             AppRoutes.chooseStoreLocation,
                             arguments: {"isChangeLocation": true},
                           );
-      
+
                           debugPrint(
                             "⬅️ Returned from Location page → changed = $changed",
                           );
-      
+
                           if (changed == true) {
                             context.read<StoreSelectionBloc>().add(
                               LoadStoresEvent(),
@@ -218,42 +215,33 @@ else {
         ),
         body: Stack(
           children: [
-            ListView(
-              controller: widget.scrollController,
-              children: [
-                Column(
-                  children: [
-                    const DashboardHeroSection(),
-      
-                    SizedBox(height: 20.h),
-                    const PromotionalBanner(),
-                    SizedBox(height: 16.h),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0.w),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            BlocBuilder<RefreshCubit, bool>(
+              builder: (context, isRefresh) {
+                return RefreshIndicator(
+                  onRefresh: () =>
+                      context.read<RefreshCubit>().refreshAll(context),
+                  child: ListView(
+                    controller: widget.scrollController,
+                    children: [
+                      Column(
                         children: [
-                          Text(
-                            'Pizza Categories',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
+                          const DashboardHeroSection(),
+
+                          SizedBox(height: 20.h),
+                          const PromotionalBanner(),
+                          SizedBox(height: 16.h),
+
+                          const PizzaCategoriesRow(),
+                          const PopularPicks(),
+                          SizedBox(height: 20.h),
                         ],
                       ),
-                    ),
-                    SizedBox(height: 16.h),
-                    const PizzaCategoriesRow(),
-                    SizedBox(height: 8.h),
-                    const PopularPicks(),
-                    SizedBox(height: 20.h),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                );
+              },
             ),
-      
+
             // Floating Search Button
             Positioned(
               bottom: 20.h,

@@ -9,8 +9,10 @@ import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/core/storage/guset_local_storage.dart';
 import 'package:pizza_boys/data/models/dish/addon_model.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
+import 'package:pizza_boys/data/models/dish/guest_cart_item_model.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_event.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_state.dart';
@@ -79,7 +81,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               // print(
               //   "📦 PizzaDetailsView → Total dishes loaded: ${state.dishes.length}",
               // );
-            
 
               // ✅ Find the dish matching that id
               final dish = state.dishes.firstWhere(
@@ -644,6 +645,8 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
             return BlocBuilder<PizzaDetailsBloc, PizzaDetailsState>(
               builder: (context, detailsState) {
                 final total = _getTotal(detailsState, dish);
+                final unitPrice =
+                    _getTotal(detailsState, dish) / detailsState.quantity;
 
                 return BlocConsumer<CartBloc, CartState>(
                   listener: (context, state) {
@@ -748,74 +751,100 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                           SizedBox(width: 16.w),
 
                           // 🛒 Order Button with Total
-                        Expanded(
-  child: SizedBox(
-    child: ElevatedButton(
-      onPressed: state is CartLoading
-          ? null
-          : () async {
-              final isGuest = await TokenStorage.isGuest();
-              final userId = await TokenStorage.getUserId();
-              final storeId = await TokenStorage.getChosenStoreId();
+                          Expanded(
+                            child: SizedBox(
+                              child: ElevatedButton(
+                                onPressed: state is CartLoading
+                                    ? null
+                                    : () async {
+                                        final isGuest =
+                                            await TokenStorage.isGuest();
+                                        final userId =
+                                            await TokenStorage.getUserId();
+                                        final storeId =
+                                            await TokenStorage.getChosenStoreId();
 
-              // ✅ If guest, skip session check
-              if (!isGuest && (userId == null || storeId == null)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("⚠️ User or Store not found in session"),
-                  ),
-                );
-                return;
-              }
+                                        final total = _getTotal(
+                                          detailsState,
+                                          dish,
+                                        );
+                                        final unitPrice =
+                                            total / detailsState.quantity;
 
-              final optionsJson = {
-                "size": detailsState.selectedSize,
-                "largeOption": detailsState.selectedLargeOption,
-                "addons": detailsState.selectedAddons,
-                "choices": detailsState.selectedChoices,
-              };
+                                        final optionsJson = {
+                                          "size": detailsState.selectedSize,
+                                          "largeOption":
+                                              detailsState.selectedLargeOption,
+                                          "addons": detailsState.selectedAddons,
+                                          "choices":
+                                              detailsState.selectedChoices,
+                                        };
 
-              // ✅ Dispatch event
-              context.read<CartBloc>().add(
-                AddToCartEvent(
-                  type: "insert",
-                  userId: isGuest ? 0 : int.parse(userId!), // placeholder for guest
-                  dishId: dish.id,
-                  storeId: isGuest ? 0 : int.parse(storeId!), // placeholder for guest
-                  quantity: detailsState.quantity,
-                  price: total,
-                  optionsJson: jsonEncode(optionsJson),
-                  dish: dish, // ✅ required for guest add
-                ),
-              );
-            },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.redPrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.r),
-        ),
-      ),
-      child: state is CartLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2.0,
-              ),
-            )
-          : Text(
-              'Total \$${total.toStringAsFixed(2)} (NZD)',
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-    ),
-  ),
-),
+                                        // ✅ Guest flow — Local Add
+                                        if (isGuest) {
+                                           final storeId = await TokenStorage.getChosenStoreId();
+                                          await LocalCartStorage.addGuestCartItem(
+                                            storeId!,
+                                            GuestCartItemModel(
+                                              dish: dish,
+                                              quantity: detailsState.quantity,
+                                              unitPrice: unitPrice,
+                                              totalPrice: total,
+                                              options: optionsJson,
+                                            ),
+                                          );
+
+                                          Navigator.pushReplacementNamed(
+                                            context,
+                                            AppRoutes.cartView,
+                                          );
+                                          return;
+                                        }
+
+                                        // ✅ Logged-in flow — API Add
+                                        context.read<CartBloc>().add(
+                                          AddToCartEvent(
+                                            type: "insert",
+                                            userId: int.parse(userId!),
+                                            dishId: dish.id,
+                                            storeId: int.parse(storeId!),
+                                            quantity: detailsState.quantity,
+                                            price: unitPrice,
+                                            optionsJson: jsonEncode(
+                                              optionsJson,
+                                            ),
+                                            dish: dish,
+                                          ),
+                                        );
+                                      },
+
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.redPrimary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10.r),
+                                  ),
+                                ),
+                                child: state is CartLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.0,
+                                        ),
+                                      )
+                                    : Text(
+                                        'Total \$${total.toStringAsFixed(2)} (NZD)',
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -850,7 +879,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
     }
   }
 
-  Widget _buildBaseOptionSet(for
+  Widget _buildBaseOptionSet(
     OptionSet optionSet,
     PizzaDetailsState state,
     PizzaDetailsBloc bloc,
@@ -1474,7 +1503,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
     return finalTotal;
   }
-
 
   IconData? getAddonIcon(String title) {
     switch (title) {

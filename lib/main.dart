@@ -39,7 +39,7 @@ import 'package:pizza_boys/routes/app_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Bloc.observer = AppBlocObserver();
+  // Bloc.observer = AppBlocObserver();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -116,7 +116,6 @@ Future<void> _initChecks() async {
     receiveTimeout: ApiClient.dio.options.receiveTimeout,
   );
 
-  // ✅ Use post-frame callback to ensure UI ready before showing error
   WidgetsBinding.instance.addPostFrameCallback((_) {
     ErrorNotifier.showErrorScreen(
       retryOptions,

@@ -16,3 +16,6 @@ class RestoreCartItem extends CartGetEvent {
   final CartItem item;
   RestoreCartItem(this.item);
 }
+
+class ClearCartEvent extends CartGetEvent {}
+

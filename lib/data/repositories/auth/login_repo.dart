@@ -1,4 +1,3 @@
-
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/core/storage/guset_local_storage.dart';
 import 'package:pizza_boys/data/services/auth/login_service.dart';
@@ -12,17 +11,16 @@ class LoginRepo {
     return data;
   }
 
-// ✅ Guest Login – no API
-  // ✅ Guest Login – local only
+  // ✅ Guest Login – no API
   Future<void> guestLogin() async {
     print("👤 [LoginRepo] Starting guest session setup (no API)...");
 
-    // Save guest flag + guest token using your existing method
     await TokenStorage.saveGuestSession("guest_session_token");
 
-    // Clear local data to start fresh
-    await LocalCartStorage.clearCart();
-    await LocalCartStorage.clearFavorites();
+   final storeId = await TokenStorage.getChosenStoreId(); // or your store watcher state
+
+await LocalCartStorage.clearCart(storeId!);
+await LocalCartStorage.clearFavorites(storeId!);
 
     print("✅ [LoginRepo] Guest session initialized locally.");
   }
