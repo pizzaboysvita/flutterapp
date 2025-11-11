@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:dio/dio.dart';
 import 'package:overlay_support/overlay_support.dart';
@@ -82,6 +83,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     String currency,
   ) async {
     final int amountInCents = amount.toInt();
+    final secretKey = dotenv.env['STRIPE_SECRET_KEY'];
+    _log("Secrete Key: $secretKey");
     _log(
       "Creating PaymentIntent: ${(amountInCents / 100).toStringAsFixed(2)} $currency",
     );
@@ -95,8 +98,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       },
       options: Options(
         headers: {
-          'Authorization':
-              'Bearer ',
+          'Authorization': 'Bearer $secretKey',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       ),

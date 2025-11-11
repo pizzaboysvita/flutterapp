@@ -65,13 +65,12 @@ class ApiClient {
   )..interceptors.add(
   InterceptorsWrapper(
  onRequest: (options, handler) async {
-  // 🔥 Don't add Authorization on login or guest calls
   final excludedEndpoints = [
     ApiUrls.loginPost,
   ];
 
   if (excludedEndpoints.any((url) => options.path.contains(url))) {
-    return handler.next(options); // 🚫 Skip Authorization header
+    return handler.next(options); 
   }
 
   final token = await TokenManager.getValidAccessToken();
