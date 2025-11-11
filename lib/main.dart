@@ -5,13 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lottie/lottie.dart';
 import 'package:overlay_support/overlay_support.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 import 'package:pizza_boys/core/bloc/firebase/maintenance_bloc.dart';
 import 'package:pizza_boys/core/bloc/firebase/maintenance_event.dart';
 import 'package:pizza_boys/core/bloc/firebase/maintenance_state.dart';
@@ -20,7 +20,6 @@ import 'package:pizza_boys/core/bloc/internet_check/internet_check_state.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/lottie_urls.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
-import 'package:pizza_boys/core/helpers/bloc_observer_helper.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/helpers/firebase/cloud_messaging.dart';
 import 'package:pizza_boys/core/helpers/firebase/remote_config.dart';
@@ -39,6 +38,7 @@ import 'package:pizza_boys/routes/app_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+   await dotenv.load(fileName: "assets/.env");
   // Bloc.observer = AppBlocObserver();
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -168,8 +168,10 @@ Future<void> _initChecks() async {
       await RemoteConfigService().init();
       await _requestLocationPermission();
 
+      final stripePublishKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'];
+
       Stripe.publishableKey =
-          'pk_test_51SA6gy0hEBdd6GjAqeJGKPUG5dUz7tFjFT0mpLhoOqBO9aVB98RSuSqAZaplk9HP4mTj2gkxEC6CL9zrKgAchdLK00TI9cgEEd';
+          stripePublishKey.toString();
 
       setState(() {}); 
     } catch (e) {
