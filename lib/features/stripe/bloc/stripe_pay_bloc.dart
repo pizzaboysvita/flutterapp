@@ -83,8 +83,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     String currency,
   ) async {
     final int amountInCents = amount.toInt();
-    final secretKey = dotenv.env['STRIPE_SECRET_KEY'];
-    _log("Secrete Key: $secretKey");
     _log(
       "Creating PaymentIntent: ${(amountInCents / 100).toStringAsFixed(2)} $currency",
     );
@@ -98,7 +96,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       },
       options: Options(
         headers: {
-          'Authorization': 'Bearer $secretKey',
+          'Authorization': 'Bearer ',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       ),
