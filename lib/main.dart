@@ -1,22 +1,21 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lottie/lottie.dart';
 import 'package:overlay_support/overlay_support.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 import 'package:pizza_boys/core/bloc/firebase/maintenance_bloc.dart';
 import 'package:pizza_boys/core/bloc/firebase/maintenance_event.dart';
 import 'package:pizza_boys/core/bloc/firebase/maintenance_state.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_state.dart';
+
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/lottie_urls.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
@@ -30,16 +29,20 @@ import 'package:pizza_boys/core/helpers/internet_helper/error_screen_tracker.dar
 import 'package:pizza_boys/core/helpers/internet_helper/maintenance_helper.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/navigation_error.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/network_issue_helper.dart';
+
 import 'package:pizza_boys/core/helpers/notification_server.dart';
 import 'package:pizza_boys/core/theme/default_theme.dart';
+
+import 'package:pizza_boys/firebase_options.dart';
+
 import 'package:pizza_boys/routes/app_pages.dart';
 import 'package:pizza_boys/routes/app_route_obs.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-   await dotenv.load(fileName: "assets/.env");
-  // Bloc.observer = AppBlocObserver();
+
+  Stripe.publishableKey = "";
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -63,13 +66,20 @@ Future<void> main() async {
           return BlocProviderHelper.getAllProviders(
             child: MaterialApp(
               debugShowCheckedModeBanner: false,
-              home: StartupWrapper(),
+              home: StartupWrapperBody(),
             ),
           );
         },
       ),
     ),
   );
+}
+
+class StartupWrapperBody extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StartupWrapper();
+  }
 }
 
 class StartupWrapper extends StatefulWidget {
@@ -85,82 +95,69 @@ class _StartupWrapperState extends State<StartupWrapper> {
   @override
   void initState() {
     super.initState();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initChecks();
-  });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initChecks();
+    });
   }
 
-Future<void> _initChecks() async {
-  try {
-    // 1️⃣ Check Internet
-    final internet = await _checkInternet();
-    setState(() => hasInternet = internet);
-    if (!internet) return;
+  Future<void> _initChecks() async {
+    try {
+      final internet = await _checkInternet();
+      setState(() => hasInternet = internet);
+      if (!internet) return;
 
-    // 2️⃣ Check Server Health
-    final server = await _checkServer();
-    setState(() => serverOk = server);
+      final server = await _checkServer();
+      setState(() => serverOk = server);
 
-   if (!server) {
-  print("❌ Server not healthy — showing error screen.");
+      if (!server) {
+        ApiClient.isShowingServerError = false;
+        ErrorScreenTracker.reset();
 
-  ApiClient.isShowingServerError = false;
-  ErrorScreenTracker.reset();
+        final retryOptions = RequestOptions(
+          baseUrl: ApiClient.dio.options.baseUrl,
+          path: "healthCheck",
+          method: "GET",
+          headers: ApiClient.dio.options.headers,
+        );
 
-  final retryOptions = RequestOptions(
-    baseUrl: ApiClient.dio.options.baseUrl,
-    path: "healthCheck",
-    method: "GET",
-    headers: ApiClient.dio.options.headers,
-    connectTimeout: ApiClient.dio.options.connectTimeout,
-    receiveTimeout: ApiClient.dio.options.receiveTimeout,
-  );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ErrorNotifier.showErrorScreen(
+            retryOptions,
+            "Server temporarily unavailable. Please try again later.",
+            ErrorScreenType.server,
+            true,
+          );
+        });
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    ErrorNotifier.showErrorScreen(
-      retryOptions,
-      "Server temporarily unavailable. Please try again later.",
-      ErrorScreenType.server,
-      true,
-    );
-  });
+        return;
+      }
 
-  // Stop further initialization
-  return;
-}
+      await _initializeServices();
+    } catch (e) {
+      final retryOptions = RequestOptions(
+        baseUrl: ApiClient.dio.options.baseUrl,
+        path: "healthCheck",
+        method: "GET",
+        headers: ApiClient.dio.options.headers,
+      );
 
-
-    // 3️⃣ Initialize Firebase and other services
-    await _initializeServices();
-  } catch (e, stackTrace) {
-    print("❌ _initChecks error: $e");
-    print(stackTrace);
-
-    // Optional: show a generic error screen in case of unexpected crash
-    final retryOptions = RequestOptions(
-      baseUrl: ApiClient.dio.options.baseUrl,
-      path: "healthCheck",
-      method: "GET",
-      headers: ApiClient.dio.options.headers,
-      connectTimeout: ApiClient.dio.options.connectTimeout,
-      receiveTimeout: ApiClient.dio.options.receiveTimeout,
-    );
-
-    Future.delayed(const Duration(milliseconds: 400), () {
-  ErrorNotifier.showErrorScreen(
-    retryOptions,
-    "Server temporarily unavailable. Please try again later.",
-    ErrorScreenType.server,
-    true,
-  );
-});
-
+      Future.delayed(const Duration(milliseconds: 400), () {
+        ErrorNotifier.showErrorScreen(
+          retryOptions,
+          "Server temporarily unavailable. Please try again later.",
+          ErrorScreenType.server,
+          true,
+        );
+      });
+    }
   }
-}
 
   Future<void> _initializeServices() async {
     try {
-      await Firebase.initializeApp(); // ✅ Firebase first
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+
       maintenanceBloc = MaintenanceBloc(RemoteConfigService());
 
       await NotificationService.initialize();
@@ -168,18 +165,12 @@ Future<void> _initChecks() async {
       await RemoteConfigService().init();
       await _requestLocationPermission();
 
-      final stripePublishKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'];
-
-      Stripe.publishableKey =
-          stripePublishKey.toString();
-
-      setState(() {}); 
+      setState(() {});
     } catch (e) {
-      print("❌ Initialization error: $e");
+      print("Init error: $e");
     }
   }
 
-  //  Check internet connectivity
   Future<bool> _checkInternet() async {
     try {
       final result = await InternetAddress.lookup('example.com');
@@ -189,20 +180,15 @@ Future<void> _initChecks() async {
     }
   }
 
-  // Check server health
-Future<bool> _checkServer() async {
-  try {
-    final result = await ApiHealthChecker.checkServerHealth();
-    print("🧩 Server health check result: $result");
-    return result;
-  } catch (e) {
-    print("❌ Server check failed with error: $e");
-    return false;
+  Future<bool> _checkServer() async {
+    try {
+      final result = await ApiHealthChecker.checkServerHealth();
+      return result;
+    } catch (_) {
+      return false;
+    }
   }
-}
 
-
-  // Request location permission
   Future<void> _requestLocationPermission() async {
     var status = await Permission.location.status;
     if (!status.isGranted) {
@@ -211,19 +197,17 @@ Future<bool> _checkServer() async {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<ConnectivityBloc, ConnectivityState>(
       listener: (context, state) async {
         if (state.hasInternet && hasInternet == false) {
-          print("🌐 Internet restored! Rechecking server...");
           setState(() {
             hasInternet = null;
             serverOk = null;
             maintenanceBloc = null;
           });
-          await _initChecks(); 
+          await _initChecks();
         }
       },
       child: _buildBody(),
@@ -231,31 +215,8 @@ Future<bool> _checkServer() async {
   }
 
   Widget _buildBody() {
-    if (hasInternet == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Lottie.asset(
-                'assets/lotties/Pizza loading.json',
-                width: 150.w,
-                height: 150.h,
-                fit: BoxFit.contain,
-              ),
-              SizedBox(height: 20.h),
-              Text(
-                "Loading, please wait...",
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+    if (hasInternet == null || serverOk == null || maintenanceBloc == null) {
+      return _loadingScreen();
     }
 
     if (hasInternet == false) {
@@ -271,162 +232,36 @@ Future<bool> _checkServer() async {
       );
     }
 
-    if (serverOk == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Lottie.asset(
-                'assets/lotties/Pizza loading.json',
-                width: 150.w,
-                height: 150.h,
-                fit: BoxFit.contain,
-              ),
-              SizedBox(height: 20.h),
-              Text(
-                "Loading, please wait...",
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-if (serverOk == false) {
-  return Scaffold(
-    backgroundColor: Colors.white,
-    body: Center(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              height: 0.4.sh,
-              child: Lottie.asset(
-                LottieUrls.serverError,
-                fit: BoxFit.contain,
-              ),
-            ),
-            SizedBox(height: 10.h),
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: "Oops! ",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: Colors.black,
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  TextSpan(
-                    text: "Server Error",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: AppColors.redAccent,
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 10.h),
-            Text(
-              "Server temporarily unavailable.\nPlease try again later.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14.sp,
-                color: Colors.black87,
-                height: 1.4,
-              ),
-            ),
-            SizedBox(height: 20.h),
-            SizedBox(
-              width: 0.5.sw,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.redPrimary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  elevation: 4,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                ),
-                onPressed: () {
-                  setState(() => serverOk = null); // reset before retry
-                  _initChecks();
-                },
-                icon: Icon(Icons.refresh, size: 20.sp),
-                label: Text(
-                  "Try Again",
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 10.h),
-            Text(
-              "If the problem persists, please check your internet connection or try again later.",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12.sp,
-                color: Colors.black45,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-
-
-    if (maintenanceBloc == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Lottie.asset(
-                'assets/lotties/Pizza loading.json',
-                width: 150.w,
-                height: 150.h,
-                fit: BoxFit.contain,
-              ),
-              SizedBox(height: 20.h),
-              Text(
-                "Loading, please wait...",
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+    if (serverOk == false) {
+      return _serverErrorScreen();
     }
 
     return PizzaBoysApp(maintenanceBloc: maintenanceBloc!);
+  }
+
+  Widget _loadingScreen() {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Lottie.asset(
+              'assets/lotties/Pizza loading.json',
+              width: 150,
+              height: 150,
+            ),
+            const SizedBox(height: 20),
+            const Text("Loading, please wait..."),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _serverErrorScreen() {
+    return Scaffold(
+      body: Center(child: Text("Server unavailable. Try again later.")),
+    );
   }
 }
 
@@ -454,35 +289,19 @@ class PizzaBoysApp extends StatelessWidget {
         return ScreenUtilInit(
           designSize: const Size(375, 812),
           minTextAdapt: true,
-          splitScreenMode: true,
           builder: (context, child) {
-            return PlatformProvider(
-              builder: (context) => PlatformApp(
-                navigatorKey: NavigatorService.navigatorKey,
-                debugShowCheckedModeBanner: false,
-                title: 'Pizza Boys',
-
-                material: (_, __) => MaterialAppData(
-                  navigatorObservers: [routeLogger],
-                  theme: DefaultTheme.lightTheme,
-                  darkTheme: DefaultTheme.darkTheme,
-                  themeMode: ThemeMode.light,
-                  builder: (context, child) =>
-                      ConnectivityWrapper(child: child ?? const SizedBox()),
-                ),
-
-                cupertino: (_, __) => CupertinoAppData(
-                  theme: const CupertinoThemeData(
-                    brightness: Brightness.light,
-                    scaffoldBackgroundColor: AppColors.scaffoldColorLight,
-                  ),
-                  builder: (context, child) =>
-                      ConnectivityWrapper(child: child ?? const SizedBox()),
-                ),
-
-                initialRoute: AppRoutes.splashScreen,
-                onGenerateRoute: AppPages.generateRoutes,
-              ),
+            return MaterialApp(
+              navigatorKey: NavigatorService.navigatorKey,
+              debugShowCheckedModeBanner: false,
+              title: 'Pizza Boys',
+              theme: DefaultTheme.lightTheme,
+              darkTheme: DefaultTheme.darkTheme,
+              themeMode: ThemeMode.light,
+              navigatorObservers: [routeLogger],
+              builder: (context, child) =>
+                  ConnectivityWrapper(child: child ?? const SizedBox()),
+              initialRoute: AppRoutes.splashScreen,
+              onGenerateRoute: AppPages.generateRoutes,
             );
           },
         );
