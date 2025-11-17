@@ -14,7 +14,7 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
   final List<DishModel> _favorites = [];
 
   FavoriteBloc({required this.repository, required this.storeWatcherCubit})
-      : super(FavoriteInitial()) {
+    : super(FavoriteInitial()) {
     on<AddToFavoriteEvent>(_onAdd);
     on<RemoveFromFavoriteEvent>(_onRemove);
     on<LoadFavoritesEvent>(_onLoad);
@@ -28,45 +28,66 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
   }
 
   /// ➕ Add to favorites with optimistic update
-  Future<void> _onAdd(AddToFavoriteEvent event, Emitter<FavoriteState> emit) async {
+  Future<void> _onAdd(
+    AddToFavoriteEvent event,
+    Emitter<FavoriteState> emit,
+  ) async {
     final dish = event.dish;
+
+    // ⭐ optimistic UI update
     if (!_favorites.any((d) => d.id == dish.id)) {
-      _favorites.add(dish); // optimistic update
+      _favorites.add(dish);
       emit(FavoriteLoaded(List.from(_favorites)));
     }
 
     try {
-      final success = await repository.addFavorite(dish);
-      if (!success) {
-        _favorites.removeWhere((d) => d.id == dish.id); // rollback
-        emit(FavoriteError("Failed to add to favorites"));
-      }
+      await repository.addFavorite(dish);
     } catch (e) {
-      _favorites.removeWhere((d) => d.id == dish.id); // rollback
-      emit(FavoriteError(e.toString()));
+      // rollback if failed
+      _favorites.removeWhere((d) => d.id == dish.id);
+      emit(FavoriteError("Failed to add favorite"));
     }
   }
 
   /// ➖ Remove from favorites with optimistic update
-  Future<void> _onRemove(RemoveFromFavoriteEvent event, Emitter<FavoriteState> emit) async {
-    final dish = event.dish!;
-    _favorites.removeWhere((d) => d.id == dish.id); // optimistic
+Future<void> _onRemove(
+  RemoveFromFavoriteEvent event,
+  Emitter<FavoriteState> emit,
+) async {
+  final dish = event.dish!;
+  final wishlistId = event.wishlistId;
+
+  // ⭐ optimistic update
+  _favorites.removeWhere((d) => d.id == dish.id);
+  emit(FavoriteLoaded(List.from(_favorites)));
+
+  try {
+    final success = await repository.removeFavorite(dish, wishlistId);
+
+    if (!success) {
+      _favorites.add(dish); // rollback
+      emit(FavoriteError("Failed to remove from favorites"));
+      return;
+    }
+
+    // ⭐⭐⭐ KEY FIX — FETCH FRESH FAVORITES HERE ⭐⭐⭐
+    final favs = await repository.getFavorites();
+    _favorites
+      ..clear()
+      ..addAll(favs);
     emit(FavoriteLoaded(List.from(_favorites)));
 
-    try {
-      final success = await repository.removeFavorite(dish);
-      if (!success) {
-        _favorites.add(dish); // rollback
-        emit(FavoriteError("Failed to remove from favorites"));
-      }
-    } catch (e) {
-      _favorites.add(dish); // rollback
-      emit(FavoriteError(e.toString()));
-    }
+  } catch (e) {
+    _favorites.add(dish); // rollback
+    emit(FavoriteError(e.toString()));
   }
+}
 
   /// 📦 Load favorites from guest/local or API
-  Future<void> _onLoad(LoadFavoritesEvent event, Emitter<FavoriteState> emit) async {
+  Future<void> _onLoad(
+    LoadFavoritesEvent event,
+    Emitter<FavoriteState> emit,
+  ) async {
     emit(FavoriteLoading());
     try {
       _favorites.clear();
@@ -79,31 +100,28 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
   }
 
   /// 🌐 Refresh wishlist (fetch from API or local)
-Future<void> _onFetchWishlist(FetchWishlistEvent event, Emitter<FavoriteState> emit) async {
-  emit(FavoriteLoading());
-  try {
-    _favorites.clear();
+  Future<void> _onFetchWishlist(
+    FetchWishlistEvent event,
+    Emitter<FavoriteState> emit,
+  ) async {
+    try {
+      final favs = await repository.getFavorites();
 
-    final favs = await repository.getFavorites();
+      _favorites
+        ..clear()
+        ..addAll(favs);
 
-    // 🔹 Use storeId from event, fallback to cubit state
-    final currentStoreId = event.storeId ?? storeWatcherCubit.state;
-    final filteredFavs = favs.where((dish) => dish.storeId.toString() == currentStoreId).toList();
-
-    _favorites.addAll(filteredFavs);
-    emit(FavoriteLoaded(List.from(_favorites)));
-    print("✅ Fetched favorites for store: $currentStoreId → ${_favorites.length}");
-  } catch (e) {
-    emit(FavoriteError(e.toString()));
-    print("❌ Failed to fetch favorites: $e");
+      emit(FavoriteLoaded(List.from(_favorites)));
+    } catch (e) {
+      emit(FavoriteError(e.toString()));
+    }
   }
-}
-
-
-
 
   /// ❌ Clear all favorites (guest or user)
-  Future<void> _onClear(ClearFavoritesEvent event, Emitter<FavoriteState> emit) async {
+  Future<void> _onClear(
+    ClearFavoritesEvent event,
+    Emitter<FavoriteState> emit,
+  ) async {
     _favorites.clear();
     emit(FavoriteLoaded([]));
 
@@ -116,6 +134,43 @@ Future<void> _onFetchWishlist(FetchWishlistEvent event, Emitter<FavoriteState> e
     add(const ClearFavoritesEvent());
   }
 
+  // to get whishlist ids for dishes
+  DishModel? getFavoriteDishById(int dishId) {
+    print(
+      "🔍 Searching favorite for dishId: $dishId in ${_favorites.length} favorites...",
+    );
+
+    for (var d in _favorites) {
+      print(
+        "   👉 Checking favorite: dishId=${d.id}, wishlistId=${d.wishlistId}",
+      );
+    }
+
+    try {
+      final match = _favorites.firstWhere((d) => d.id == dishId);
+      print(
+        "🎯 MATCHED favorite dish: ${match.id} wishlistId=${match.wishlistId}",
+      );
+      return match;
+    } catch (_) {
+      print("❌ No match found for dishId: $dishId");
+      return null;
+    }
+  }
+
+  Future<void> fetchAndRemove(DishModel dish) async {
+    final storeId = storeWatcherCubit.state;
+    add(FetchWishlistEvent(storeId: storeId));
+
+    await Future.delayed(Duration(milliseconds: 200));
+
+    await repository.getFavorites(); // fresh data
+    final match = getFavoriteDishById(dish.id);
+
+    if (match?.wishlistId != null) {
+      add(RemoveFromFavoriteEvent(dish: dish, wishlistId: match!.wishlistId));
+    }
+  }
 
   @override
   Future<void> close() {

@@ -17,6 +17,8 @@ import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_event
 import 'package:pizza_boys/features/cart/bloc/order/post/order_post_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/order/post/order_post_event.dart';
 import 'package:pizza_boys/features/cart/bloc/order/post/order_post_state.dart';
+import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
+import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -167,61 +169,124 @@ class _CartViewState extends State<CartView> {
                   itemBuilder: (context, index) {
                     final item = cartItems[index];
 
-                    return Container(
-                      margin: EdgeInsets.only(bottom: 12.h),
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16.r),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 🔹 Dish Image
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10.r),
-                            child: SizedBox(
-                              height: 60.h,
-                              width: 60.w,
-                              child: buildCartImage(item.dishImage),
+                    return GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () {
+                        context.read<PizzaDetailsBloc>().add(
+                          ResetPizzaDetailsEvent(),
+                        );
+
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.pizzaDetails,
+                          arguments: item.dishId, // 🔥 Use item.dishId for cart
+                        );
+
+                        print('👉 Cart item tapped → Dish ID: ${item.dishId}');
+                      },
+                      child: Container(
+                        margin: EdgeInsets.only(bottom: 12.h),
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 🔹 Dish Image
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10.r),
+                              child: SizedBox(
+                                height: 60.h,
+                                width: 60.w,
+                                child: buildCartImage(item.dishImage),
+                              ),
                             ),
-                          ),
 
-                          SizedBox(width: 12.w),
+                            SizedBox(width: 12.w),
 
-                          // 🔹 Dish Info
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Dish Name + Remove
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Flexible to avoid overflow
-                                    Expanded(
-                                      child: Text(
-                                        item.dishName ?? "Pizza",
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: 'Poppins',
+                            // 🔹 Dish Info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Dish Name + Remove
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Flexible to avoid overflow
+                                      Expanded(
+                                        child: Text(
+                                          item.dishName ?? "Pizza",
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Poppins',
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () async {
-                                        final storeId = await TokenStorage.getChosenStoreId();
-                                        final isGuest =
-                                            await TokenStorage.isGuest();
-                                        final scaffold = ScaffoldMessenger.of(
-                                          context,
-                                        );
+                                      GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () async {
+                                          final storeId =
+                                              await TokenStorage.getChosenStoreId();
+                                          final isGuest =
+                                              await TokenStorage.isGuest();
+                                          final scaffold = ScaffoldMessenger.of(
+                                            context,
+                                          );
 
-                                        if (isGuest) {
-                                          // 🟨 Guest user — handle everything locally
+                                          if (isGuest) {
+                                            // 🟨 Guest user — handle everything locally
+                                            scaffold.showSnackBar(
+                                              const SnackBar(
+                                                content: Text("Removing item…"),
+                                              ),
+                                            );
+
+                                            // Optimistic local remove
+                                            context.read<CartGetBloc>().add(
+                                              RemoveCartItemLocally(
+                                                item.cartId,
+                                              ),
+                                            );
+
+                                            // Update local storage (optional if you maintain guest cart locally)
+
+                                            await LocalCartStorage.removeFromCart(
+                                              storeId!,
+                                              item.dishId,
+                                            );
+
+                                            scaffold.hideCurrentSnackBar();
+                                            scaffold.showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  "Item removed successfully",
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+
+                                          // 🟩 Logged-in user flow
+                                          final userId =
+                                              await TokenStorage.getUserId();
+                                          if (userId == null) {
+                                            scaffold.showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  "⚠️ User not found, please login",
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+
                                           scaffold.showSnackBar(
                                             const SnackBar(
                                               content: Text("Removing item…"),
@@ -233,132 +298,92 @@ class _CartViewState extends State<CartView> {
                                             RemoveCartItemLocally(item.cartId),
                                           );
 
-                                          // Update local storage (optional if you maintain guest cart locally)
-                                         
-await LocalCartStorage.removeFromCart(
-  storeId!,
-  item.dishId,
-);
-
-                                          scaffold.hideCurrentSnackBar();
-                                          scaffold.showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "Item removed successfully",
+                                          try {
+                                            context.read<CartBloc>().add(
+                                              RemoveFromCartEvent(
+                                                cartId: item.cartId,
+                                                userId: int.parse(userId),
                                               ),
-                                            ),
-                                          );
-                                          return;
-                                        }
+                                            );
 
-                                        // 🟩 Logged-in user flow
-                                        final userId =
-                                            await TokenStorage.getUserId();
-                                        if (userId == null) {
-                                          scaffold.showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "⚠️ User not found, please login",
+                                            scaffold.hideCurrentSnackBar();
+                                            scaffold.showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  "Item removed successfully",
+                                                ),
                                               ),
-                                            ),
-                                          );
-                                          return;
-                                        }
+                                            );
+                                          } catch (e) {
+                                            // Rollback if failed
+                                            context.read<CartGetBloc>().add(
+                                              RestoreCartItem(item),
+                                            );
 
-                                        scaffold.showSnackBar(
-                                          const SnackBar(
-                                            content: Text("Removing item…"),
+                                            scaffold.hideCurrentSnackBar();
+                                            scaffold.showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  "Failed to remove item",
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.all(0.w),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(
+                                              0.8,
+                                            ),
+                                            shape: BoxShape.circle,
                                           ),
-                                        );
-
-                                        // Optimistic local remove
-                                        context.read<CartGetBloc>().add(
-                                          RemoveCartItemLocally(item.cartId),
-                                        );
-
-                                        try {
-                                          context.read<CartBloc>().add(
-                                            RemoveFromCartEvent(
-                                              cartId: item.cartId,
-                                              userId: int.parse(userId),
-                                            ),
-                                          );
-
-                                          scaffold.hideCurrentSnackBar();
-                                          scaffold.showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "Item removed successfully",
-                                              ),
-                                            ),
-                                          );
-                                        } catch (e) {
-                                          // Rollback if failed
-                                          context.read<CartGetBloc>().add(
-                                            RestoreCartItem(item),
-                                          );
-
-                                          scaffold.hideCurrentSnackBar();
-                                          scaffold.showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "Failed to remove item",
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      child: Container(
-                                        padding: EdgeInsets.all(0.w),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.8),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.cancel_rounded,
-                                          color: Colors.grey,
-                                          size: 20.sp,
+                                          child: Icon(
+                                            Icons.cancel_rounded,
+                                            color: Colors.grey,
+                                            size: 20.sp,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
 
-                                SizedBox(height: 6.h),
+                                  SizedBox(height: 6.h),
 
-                                // Qty + Price Row
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        "Qty: ${item.quantity}",
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
-                                          color: Colors.grey.shade600,
-                                          fontFamily: 'Poppins',
+                                  // Qty + Price Row
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          "Qty: ${item.quantity}",
+                                          style: TextStyle(
+                                            fontSize: 12.sp,
+                                            color: Colors.grey.shade600,
+                                            fontFamily: 'Poppins',
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(width: 10.w),
-                                    Flexible(
-                                      child: Text(
-                                        "\$${(item.price * item.quantity).toStringAsFixed(2)}",
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: 'Poppins',
-                                          color: AppColors.greenColor,
+                                      SizedBox(width: 10.w),
+                                      Flexible(
+                                        child: Text(
+                                          "\$${(item.price * item.quantity).toStringAsFixed(2)}",
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.bold,
+                                            fontFamily: 'Poppins',
+                                            color: AppColors.greenColor,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },

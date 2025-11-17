@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pizza_boys/core/bloc/refresh_cubit_helper.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
@@ -40,7 +41,8 @@ class _FavoritesViewState extends State<FavoritesView> {
       debugPrint("➡️ Opening Favorites page. Guest? $isGuest");
 
       // Always fetch fresh data
-      context.read<FavoriteBloc>().add(FetchWishlistEvent());
+      final storeId = await TokenStorage.getChosenStoreId();
+      context.read<FavoriteBloc>().add(FetchWishlistEvent(storeId: storeId));
     });
   }
 
@@ -104,141 +106,144 @@ class _FavoritesViewState extends State<FavoritesView> {
 
                   return Stack(
                     children: [
-                      Container(
-                        padding: EdgeInsets.all(12.w),
-                        margin: EdgeInsets.only(bottom: 12.h),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12.r),
-                          color: Colors.white,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 🍕 Dish Image with rounded corners
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10.r),
-                              child: SizedBox(
-                                height: 70.h,
-                                width: 70.w,
-                                child: buildCartImage(dish.imageUrl),
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () {
+                          context.read<PizzaDetailsBloc>().add(
+                            ResetPizzaDetailsEvent(),
+                          );
+
+                          // ✅ Then navigate to PizzaDetailsView with dishId
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.pizzaDetails,
+                            arguments: dish.id, // pass correct id
+                          );
+
+                          print('👉 Passing Selected Dish ID: ${dish.id}');
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(12.w),
+                          margin: EdgeInsets.only(bottom: 12.h),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12.r),
+                            color: Colors.white,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 🍕 Dish Image with rounded corners
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10.r),
+                                child: SizedBox(
+                                  height: 70.h,
+                                  width: 70.w,
+                                  child: buildCartImage(dish.imageUrl),
+                                ),
                               ),
-                            ),
-                            SizedBox(width: 12.w),
+                              SizedBox(width: 12.w),
 
-                            // 📄 Dish Details
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Name
-                                  Text(
-                                    dish.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                  SizedBox(height: 4.h),
-                                  // Store Name
-                                  dish.storeName != null &&
-                                          dish.storeName!.isNotEmpty
-                                      ? Text(
-                                          'From ${dish.storeName}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 10.sp,
-                                            color: Colors.grey[600],
-                                            fontWeight: FontWeight.w400,
-                                            fontFamily: 'Poppins',
-                                          ),
-                                        )
-                                      : Text(
-                                          'From ${localStoreName ?? "Unknown Store"}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 10.sp,
-                                            color: Colors.grey[600],
-                                            fontWeight: FontWeight.w400,
-                                            fontFamily: 'Poppins',
-                                          ),
-                                        ),
-
-                                  SizedBox(height: 6.h),
-
-                                  // Price + Button Row
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Price
-                                      Text(
-                                        "\$${dish.price.toStringAsFixed(2)}",
-                                        style: TextStyle(
-                                          fontSize: 13.sp,
-                                          color: AppColors.greenColor,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: 'Poppins',
-                                        ),
+                              // 📄 Dish Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Name
+                                    Text(
+                                      dish.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Poppins',
                                       ),
+                                    ),
+                                    SizedBox(height: 4.h),
+                                    // Store Name
+                                    dish.storeName != null &&
+                                            dish.storeName!.isNotEmpty
+                                        ? Text(
+                                            'From ${dish.storeName}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 10.sp,
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w400,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          )
+                                        : Text(
+                                            'From ${localStoreName ?? "Unknown Store"}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 10.sp,
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w400,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          ),
 
-                                      // 🛒 Add to Cart Button
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 10.w,
-                                        ), // small padding inside
-                                        height: 28.h, // smaller height
-                                        decoration: BoxDecoration(
-                                          gradient: AppColors.buttonGradient,
-                                          borderRadius: BorderRadius.circular(
-                                            8.r,
+                                    SizedBox(height: 6.h),
+
+                                    // Price + Button Row
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Price
+                                        Text(
+                                          "\$${dish.price.toStringAsFixed(2)}",
+                                          style: TextStyle(
+                                            fontSize: 13.sp,
+                                            color: AppColors.greenColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Poppins',
                                           ),
                                         ),
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            8.r,
+
+                                        // 🛒 Add to Cart Button
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 10.w,
+                                          ), // small padding inside
+                                          height: 28.h, // smaller height
+                                          decoration: BoxDecoration(
+                                            gradient: AppColors.buttonGradient,
+                                            borderRadius: BorderRadius.circular(
+                                              8.r,
+                                            ),
                                           ),
-                                          onTap: () {
-                                            // Navigate to the dish details page
-                                            context
-                                                .read<PizzaDetailsBloc>()
-                                                .add(ResetPizzaDetailsEvent());
-
-                                            // ✅ Then navigate to PizzaDetailsView with dishId
-                                            Navigator.pushNamed(
-                                              context,
-                                              AppRoutes.pizzaDetails,
-                                              arguments:
-                                                  dish.id, // pass correct id
-                                            );
-
-                                            print(
-                                              '👉 Passing Selected Dish ID: ${dish.id}',
-                                            );
-                                          },
-                                          child: Center(
-                                            child: Text(
-                                              'Order Now',
-                                              style: TextStyle(
-                                                fontSize: 10.sp, // smaller font
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Poppins',
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              8.r,
+                                            ),
+                                            onTap: () {
+                                              // Navigate to the dish details page
+                                            },
+                                            child: Center(
+                                              child: Text(
+                                                'Order Now',
+                                                style: TextStyle(
+                                                  fontSize:
+                                                      10.sp, // smaller font
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontFamily: 'Poppins',
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       Positioned(

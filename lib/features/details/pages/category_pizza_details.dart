@@ -2,8 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pizza_boys/core/bloc/refresh_cubit_helper.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
+import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
@@ -30,6 +32,7 @@ class CategoryPizzaDetails extends StatefulWidget {
 class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
   late int categoryId;
   bool _isInitialized = false;
+  bool isCDRemoving = false;
 
   @override
   void didChangeDependencies() {
@@ -333,70 +336,111 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
         ),
 
         Positioned(
-          top: 0.0.h,
-          right: 6.0.w,
-          child: BlocBuilder<FavoriteBloc, FavoriteState>(
-            builder: (context, state) {
-              bool isFavorite = false;
-              if (state is FavoriteLoaded) {
-                isFavorite = state.favorites.any((d) => d.id == dish.id);
-              }
-              return IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: Colors.redAccent,
-                  size: 24.sp,
-                ),
-                onPressed: () async {
-                  final isGuest = await TokenStorage.isGuest();
+          top: 7.h,
+          right: 7.w,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
 
-                  if (isFavorite) {
-                    if (isGuest) {
-                      // 🟢 Guest remove — local only
-                      context.read<FavoriteBloc>().add(
-                        RemoveFromFavoriteEvent(dish: dish),
+           onTap: () async {
+  if (isCDRemoving) {
+    print("⏳ Remove already in progress… ignoring tap");
+    return;
+  }
+
+  print("==============================");
+  print("⭐ FAVORITE BUTTON PRESSED ⭐");
+  print("dishId: ${dish.id}, wishlistId: ${dish.wishlistId}");
+  print("==============================");
+
+  final favBloc = context.read<FavoriteBloc>();
+  final isGuest = await TokenStorage.isGuest();
+
+  // 🔍 FIND EXISTING FAVORITE
+  final favDish = favBloc.getFavoriteDishById(dish.id);
+  final isFavorite = favDish != null;
+
+  print("🔥 isFavorite: $isFavorite");
+
+  // ⭐ ADD FLOW
+  if (!isFavorite) {
+    print("➕ Adding dish ${dish.id} to favorites");
+    favBloc.add(AddToFavoriteEvent(dish));
+    SnackbarHelper.green(context, "❤️ Added to Favorites!");
+    return;
+  }
+
+  // ⭐ REMOVE FLOW — guest
+  if (isGuest) {
+    print("🧑‍🤝‍🧑 Guest removing favorite locally");
+    setState(() => isCDRemoving = true);
+
+    favBloc.add(RemoveFromFavoriteEvent(dish: dish));
+    // SnackbarHelper.red(context, "Removed from Favorites!");
+
+    // 🔄 ONLY FETCH FAVORITES AGAIN
+    favBloc.add(FetchWishlistEvent());
+
+    setState(() => isCDRemoving = false);
+    return;
+  }
+
+  // ⭐ REMOVE FLOW — logged in (wishlistId available)
+  if (favDish?.wishlistId != null) {
+    print("🗑 Removing using wishlistId: ${favDish!.wishlistId}");
+
+    setState(() => isCDRemoving = true);
+
+    favBloc.add(
+      RemoveFromFavoriteEvent(
+        dish: dish,
+        wishlistId: favDish.wishlistId,
+      ),
+    );
+
+    // 🔄 ONLY FETCH FAVORITES AGAIN
+    favBloc.add(FetchWishlistEvent());
+
+    setState(() => isCDRemoving = false);
+    return;
+  }
+
+  // ⭐ wishlistId missing → fetch first
+  print("⚠ wishlistId missing! Fetching first…");
+
+  setState(() => isCDRemoving = true);
+
+  // internal fetch+remove logic
+  await favBloc.fetchAndRemove(dish);
+
+  print("🗑 Removed after fetch flow");
+
+  // 🔄 ONLY FETCH FAVORITES AGAIN
+  favBloc.add(FetchWishlistEvent());
+
+  setState(() => isCDRemoving = false);
+},
+            child: BlocBuilder<FavoriteBloc, FavoriteState>(
+              builder: (context, state) {
+                bool isFavorite = false;
+
+                if (state is FavoriteLoaded) {
+                  isFavorite = state.favorites.any(
+                    (favorite) => favorite.id == dish.id,
+                  );
+                }
+
+                return isCDRemoving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: AppColors.redPrimary,
                       );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Removed from Favorites!"),
-                        ),
-                      );
-                    } else {
-                      // 🔵 Logged-in remove — needs wishlistId
-                      if (dish.wishlistId != null) {
-                        context.read<FavoriteBloc>().add(
-                          RemoveFromFavoriteEvent(
-                            dish: dish,
-                            wishlistId: dish.wishlistId!,
-                          ),
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Removed from Favorites!"),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Cannot remove: wishlistId is missing!",
-                            ),
-                          ),
-                        );
-                      }
-                    }
-                  } else {
-                    // ➕ Add to favorites
-                    context.read<FavoriteBloc>().add(AddToFavoriteEvent(dish));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("❤️ Added to Favorites!")),
-                    );
-                  }
-                },
-              );
-            },
+              },
+            ),
           ),
         ),
       ],

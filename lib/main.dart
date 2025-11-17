@@ -18,6 +18,7 @@ import 'package:pizza_boys/core/bloc/internet_check/internet_check_state.dart';
 
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/lottie_urls.dart';
+import 'package:pizza_boys/core/constant/stripe_keys.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/helpers/firebase/cloud_messaging.dart';
@@ -42,8 +43,7 @@ import 'package:pizza_boys/routes/app_routes.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Stripe.publishableKey = "";
-
+  Stripe.publishableKey = StripeKeysUrl.publishableKey;
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.black,

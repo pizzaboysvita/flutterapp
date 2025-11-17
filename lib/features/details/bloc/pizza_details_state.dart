@@ -47,6 +47,11 @@ class PizzaDetailsState {
   /// 🥡 Selected Combo Dish
   final DishModel selectedComboDish;
 
+  // Radio btn
+  /// Stores selected radio per option set
+final Map<String, String> selectedRadioOptions;
+
+
   PizzaDetailsState({
     required this.isLoading,
     required this.isBaseExpanded,
@@ -70,6 +75,7 @@ class PizzaDetailsState {
     this.quantity = 1,
     this.error,
     required this.selectedComboDish,
+      this.selectedRadioOptions = const {},
   });
 
   factory PizzaDetailsState.initial() => PizzaDetailsState(
@@ -78,6 +84,7 @@ class PizzaDetailsState {
     selectedCombo: {},
     comboExtraPrice: 0,
     selectedComboDish: DishModelExtensionsEmpty.empty(),
+    selectedRadioOptions: {}, 
   );
 
   PizzaDetailsState copyWith({
@@ -103,6 +110,8 @@ class PizzaDetailsState {
     int? quantity,
     String? error,
     DishModel? selectedComboDish, // 👈 NEW
+    Map<String, String>? selectedRadioOptions,
+
   }) {
     return PizzaDetailsState(
       isLoading: isLoading ?? this.isLoading,
@@ -128,6 +137,8 @@ class PizzaDetailsState {
       quantity: quantity ?? this.quantity,
       error: error ?? this.error,
       selectedComboDish: selectedComboDish ?? this.selectedComboDish, // 👈 NEW
+      selectedRadioOptions: selectedRadioOptions ?? this.selectedRadioOptions,
+
     );
   }
 }

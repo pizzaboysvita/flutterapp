@@ -9,25 +9,25 @@ class FavoriteRepository {
   FavoriteRepository(this.service);
 
   // ✅ Fetch favorites
-Future<List<DishModel>> getFavorites() async {
-  final isGuest = await TokenStorage.isGuest();
-  if (isGuest) {
-    final storeId = await TokenStorage.getChosenStoreId(); // or your store watcher state
+  Future<List<DishModel>> getFavorites() async {
+    final isGuest = await TokenStorage.isGuest();
+    if (isGuest) {
+      final storeId =
+          await TokenStorage.getChosenStoreId(); // or your store watcher state
 
-    print("🟨 Fetching favorites from local storage for guest");
-    return LocalCartStorage.getFavorites(storeId!);
+      print("🟨 Fetching favorites from local storage for guest");
+      return LocalCartStorage.getFavorites(storeId!);
+    }
+    print("🟩 Fetching favorites from API for logged-in user");
+    return service.getWishlist(); // always call API for logged-in
   }
-  print("🟩 Fetching favorites from API for logged-in user");
-  return service.getWishlist(); // always call API for logged-in
-}
-
 
   // ✅ Add to favorites
   Future<bool> addFavorite(DishModel dish) async {
     final isGuest = await TokenStorage.isGuest();
     if (isGuest) {
       final storeId = await TokenStorage.getChosenStoreId();
-await LocalCartStorage.addToFavorites(storeId!, dish);
+      await LocalCartStorage.addToFavorites(storeId!, dish);
       return true; // convert void to bool
     }
 
@@ -37,7 +37,7 @@ await LocalCartStorage.addToFavorites(storeId!, dish);
   }
 
   // ✅ Remove from favorites
-  Future<bool> removeFavorite(DishModel dish) async {
+  Future<bool> removeFavorite(DishModel dish, int? wishlistId) async {
     final isGuest = await TokenStorage.isGuest();
     if (isGuest) {
       final storeId = await TokenStorage.getChosenStoreId();
@@ -47,11 +47,11 @@ await LocalCartStorage.addToFavorites(storeId!, dish);
 
     final token = await TokenStorage.getAccessToken();
     if (token == null) throw Exception("Token not available");
-    return service.removeFavorite(dishId: dish.id, wishlistId: dish.wishlistId);
+    return service.removeFavorite(dishId: dish.id, wishlistId: wishlistId);
   }
 
   // ✅ Clear favorites
- Future<void> clearFavorites() async {
+  Future<void> clearFavorites() async {
     final isGuest = await TokenStorage.isGuest();
     if (isGuest) {
       final storeId = await TokenStorage.getChosenStoreId();
@@ -59,4 +59,3 @@ await LocalCartStorage.addToFavorites(storeId!, dish);
     }
   }
 }
-

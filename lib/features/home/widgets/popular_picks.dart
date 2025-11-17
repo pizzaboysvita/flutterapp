@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pizza_boys/core/bloc/refresh_cubit_helper.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
@@ -25,6 +29,7 @@ class PopularPicks extends StatefulWidget {
 }
 
 class _PopularPicksState extends State<PopularPicks> {
+  bool isRemoving = false;
   @override
   void initState() {
     super.initState();
@@ -384,100 +389,129 @@ class _PopularPicksState extends State<PopularPicks> {
                             right: 7.w,
                             child: GestureDetector(
                               behavior: HitTestBehavior.translucent,
+
                               onTap: () async {
-                                final isGuest = await TokenStorage.isGuest();
-                                print(
-                                  "🔹 Tapped Favorite Icon → dish.id: ${dish.id}, wishlistId: ${dish.wishlistId}, isGuest: $isGuest",
-                                );
-
-                                final favoriteBloc = context
-                                    .read<FavoriteBloc>();
-                                bool isFavorite = false;
-
-                                final currentState = favoriteBloc.state;
-                                if (currentState is FavoriteLoaded) {
-                                  isFavorite = currentState.favorites.any(
-                                    (d) => d.id == dish.id,
-                                  );
-                                }
-                                print("🔹 isFavorite in Bloc: $isFavorite");
-
-                                if (isFavorite) {
-                                  if (isGuest) {
-                                    print(
-                                      "🔹 Removing from local favorites for guest",
-                                    );
-                                    favoriteBloc.add(
-                                      RemoveFromFavoriteEvent(dish: dish),
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          "Removed from Favorites!",
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    if (dish.wishlistId != null) {
-                                      print(
-                                        "🔹 Removing from server favorites → wishlistId: ${dish.wishlistId}",
-                                      );
-                                      favoriteBloc.add(
-                                        RemoveFromFavoriteEvent(
-                                          dish: dish,
-                                          wishlistId: dish.wishlistId,
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "Removed from Favorites!",
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      print(
-                                        "⚠️ Cannot remove: wishlistId missing for dish.id: ${dish.id}",
-                                      );
-                                      // ScaffoldMessenger.of(
-                                      //   context,
-                                      // ).showSnackBar(
-                                      //   const SnackBar(
-                                      //     content: Text(
-                                      //       "Cannot remove: wishlistId missing!",
-                                      //     ),
-                                      //   ),
-                                      // );
-                                    }
-                                  }
-                                } else {
+                                if (isRemoving) {
                                   print(
-                                    "🔹 Adding to favorites → dish.id: ${dish.id}",
+                                    "⏳ Remove already in progress… ignoring tap",
                                   );
-                                  favoriteBloc.add(AddToFavoriteEvent(dish));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("❤️ Added to Favorites!"),
+                                  return;
+                                }
+
+                                print("==============================");
+                                print("⭐ FAVORITE BUTTON PRESSED ⭐");
+                                print(
+                                  "dishId: ${dish.id}, wishlistId: ${dish.wishlistId}",
+                                );
+                                print("==============================");
+
+                                final favBloc = context.read<FavoriteBloc>();
+                                final isGuest = await TokenStorage.isGuest();
+
+                                // 🔍 FIND EXISTING FAVORITE
+                                final favDish = favBloc.getFavoriteDishById(
+                                  dish.id,
+                                );
+                                final isFavorite = favDish != null;
+
+                                print("🔥 isFavorite: $isFavorite");
+
+                                // ⭐ ADD FLOW
+                                if (!isFavorite) {
+                                  print(
+                                    "➕ Adding dish ${dish.id} to favorites",
+                                  );
+                                  favBloc.add(AddToFavoriteEvent(dish));
+                                  SnackbarHelper.green(
+                                    context,
+                                    "❤️ Added to Favorites!",
+                                  );
+                                  return;
+                                }
+
+                                // ⭐ REMOVE FLOW — guest
+                                if (isGuest) {
+                                  print(
+                                    "🧑‍🤝‍🧑 Guest removing favorite locally",
+                                  );
+                                  setState(() => isRemoving = true);
+
+                                  favBloc.add(
+                                    RemoveFromFavoriteEvent(dish: dish),
+                                  );
+                                  // SnackbarHelper.red(
+                                  //   context,
+                                  //   "Removed from Favorites!",
+                                  // );
+
+                                  // 🔄 ONLY FETCH FAVORITES AGAIN
+                                  favBloc.add(FetchWishlistEvent());
+
+                                  setState(() => isRemoving = false);
+                                  return;
+                                }
+
+                                // ⭐ REMOVE FLOW — logged in (wishlistId available)
+                                if (favDish?.wishlistId != null) {
+                                  print(
+                                    "🗑 Removing using wishlistId: ${favDish!.wishlistId}",
+                                  );
+
+                                  setState(() => isRemoving = true);
+
+                                  favBloc.add(
+                                    RemoveFromFavoriteEvent(
+                                      dish: dish,
+                                      wishlistId: favDish.wishlistId,
                                     ),
                                   );
+
+                                  // 🔄 ONLY FETCH FAVORITES AGAIN
+                                  favBloc.add(FetchWishlistEvent());
+
+                                  setState(() => isRemoving = false);
+                                  return;
                                 }
+
+                                // ⭐ wishlistId missing → fetch first
+                                print("⚠ wishlistId missing! Fetching first…");
+
+                                setState(() => isRemoving = true);
+
+                                // internal fetch+remove logic
+                                await favBloc.fetchAndRemove(dish);
+
+                                print("🗑 Removed after fetch flow");
+
+                                // 🔄 ONLY FETCH FAVORITES AGAIN
+                                favBloc.add(FetchWishlistEvent());
+
+                                setState(() => isRemoving = false);
                               },
                               child: BlocBuilder<FavoriteBloc, FavoriteState>(
                                 builder: (context, state) {
                                   bool isFavorite = false;
+
                                   if (state is FavoriteLoaded) {
                                     isFavorite = state.favorites.any(
                                       (favorite) => favorite.id == dish.id,
                                     );
                                   }
-                                  return Icon(
-                                    isFavorite
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: AppColors.redPrimary,
-                                  );
+
+                                  return isRemoving
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : Icon(
+                                          isFavorite
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color: AppColors.redPrimary,
+                                        );
                                 },
                               ),
                             ),
