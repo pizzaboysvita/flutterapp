@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:dio/dio.dart';
 import 'package:overlay_support/overlay_support.dart';
+import 'package:pizza_boys/core/constant/stripe_keys.dart';
 import 'package:pizza_boys/core/helpers/notification_server.dart';
 import 'stripe_pay_event.dart';
 import 'stripe_pay_state.dart';
@@ -96,7 +97,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       },
       options: Options(
         headers: {
-          'Authorization': 'Bearer ',
+          'Authorization': 'Bearer ${StripeKeysUrl.secretKey}',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       ),

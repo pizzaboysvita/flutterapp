@@ -15,6 +15,20 @@ class LoadPizzaDetailsEvent extends PizzaDetailsEvent {
 
 class ToggleBaseExpandEvent extends PizzaDetailsEvent {}
 
+// radio option
+class SelectOptionSetRadioEvent extends PizzaDetailsEvent {
+  final String optionSetName;
+  final String selectedOptionName;
+  final double extraPrice;
+
+  SelectOptionSetRadioEvent({
+    required this.optionSetName,
+    required this.selectedOptionName,
+    required this.extraPrice,
+  });
+}
+
+
 /// 🍕 Select a Base (radio option)
 class SelectBaseEvent extends PizzaDetailsEvent {
   final String baseName;

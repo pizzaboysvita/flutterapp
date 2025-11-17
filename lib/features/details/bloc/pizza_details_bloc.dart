@@ -33,6 +33,18 @@ class PizzaDetailsBloc extends Bloc<PizzaDetailsEvent, PizzaDetailsState> {
       );
     });
 
+    on<SelectOptionSetRadioEvent>((event, emit) {
+  final updatedMap = Map<String, String>.from(state.selectedRadioOptions);
+  updatedMap[event.optionSetName] = event.selectedOptionName;
+
+  emit(
+    state.copyWith(
+      selectedRadioOptions: updatedMap,
+    ),
+  );
+});
+
+
     on<ToggleToppingEvent>((event, emit) {
       final updated = Map<String, bool>.from(state.selectedToppings);
       updated[event.toppingName] = !(updated[event.toppingName] ?? false);

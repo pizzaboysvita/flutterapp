@@ -11,4 +11,5 @@
 # Combo dishes dynamic, search implementation, promocodes showcase, Internet / server error screens, centralized error handling and updated new logo into the app. (13-10-2025 to 16-10-2025)
 # Guest Users Flow handling in Local Storage(Frontend) (29-10-2025)
 # Included refresh, fixed guest flow, fav and cart itemn bugs few more bugs fixed.   
+# Fixed the popular picks remove fav logic and cart to item navigation implemented.
 # Given IOS Permissions for Stripe, Gmap, Firebase and other.

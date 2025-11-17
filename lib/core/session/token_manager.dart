@@ -8,7 +8,7 @@ import 'package:pizza_boys/core/storage/api_res_storage.dart';
 
 class TokenManager {
   static final Dio _dio = Dio(
-    BaseOptions(baseUrl: "http://78.142.47.247:3004/api/"),
+    BaseOptions(baseUrl: "http://78.142.47.247:3003/api/"),
   );
   static bool _isRefreshing = false;
   static List<Function(String)> _queue = [];

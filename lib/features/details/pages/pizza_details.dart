@@ -218,7 +218,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                         // Normal Section Divider
 
                         // Loop through dynamic option sets
-                        ...dish.optionSets.map((optionSet) {
+                        ...?dish.optionSets.map((optionSet) {
                           return _buildDynamicOptionSet(
                             optionSet,
                             dishSelection,
@@ -782,7 +782,8 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
                                         // ✅ Guest flow — Local Add
                                         if (isGuest) {
-                                           final storeId = await TokenStorage.getChosenStoreId();
+                                          final storeId =
+                                              await TokenStorage.getChosenStoreId();
                                           await LocalCartStorage.addGuestCartItem(
                                             storeId!,
                                             GuestCartItemModel(
@@ -909,7 +910,8 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
           /// Base radio options (one selectable)
           ...optionSet.options.map((opt) {
-            final isSelected = state.selectedBase == opt.name;
+            final isSelected =
+                state.selectedRadioOptions[optionSet.name] == opt.name;
 
             return Container(
               margin: EdgeInsets.symmetric(vertical: 6.h),
@@ -919,7 +921,17 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12.r),
-                onTap: () => bloc.add(SelectBaseEvent(opt.name, opt.price)),
+                onTap: () {
+                  context.read<PizzaDetailsBloc>().add(
+                    SelectOptionSetRadioEvent(
+                      optionSetName: optionSet
+                          .name, // The group name (Base / Crust / Size)
+                      selectedOptionName: opt.name, // The chosen option
+                      extraPrice: opt.price, // Extra price if needed
+                    ),
+                  );
+                },
+
                 child: Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: 14.w,

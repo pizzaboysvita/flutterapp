@@ -57,7 +57,7 @@ class ApiClient {
 
   static final Dio dio = Dio(
     BaseOptions(
-      baseUrl: "http://78.142.47.247:3004/api/",
+      baseUrl: "http://78.142.47.247:3003/api/",
       connectTimeout: const Duration(minutes: 2),
       receiveTimeout: const Duration(minutes: 2),
       validateStatus: (status) => true,
