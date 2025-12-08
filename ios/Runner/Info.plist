@@ -32,6 +32,15 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+
+	<!-- ✅ Added required permission strings -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires camera access to allow users to upload or capture images.</string>
+
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app uses your location to provide accurate delivery options and nearby service information.</string>
+	<!-- ⭐ You can rewrite these descriptions however you want -->
+
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
