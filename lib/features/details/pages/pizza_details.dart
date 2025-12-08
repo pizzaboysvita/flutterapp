@@ -9,7 +9,6 @@ import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
-import 'package:pizza_boys/core/storage/guset_local_storage.dart';
 import 'package:pizza_boys/data/models/dish/addon_model.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/data/models/dish/guest_cart_item_model.dart';
@@ -76,7 +75,6 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               print(
                 "🔹 PizzaDetailsView → Received dishId from constructor: $dishId",
               );
-
               // ✅ Debug: print all dishes loaded
               // print(
               //   "📦 PizzaDetailsView → Total dishes loaded: ${state.dishes.length}",
@@ -218,7 +216,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                         // Normal Section Divider
 
                         // Loop through dynamic option sets
-                        ...?dish.optionSets.map((optionSet) {
+                        ...dish.optionSets.map((optionSet) {
                           return _buildDynamicOptionSet(
                             optionSet,
                             dishSelection,
@@ -261,10 +259,56 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                         ? comboState.expandedSides[sideIndex]
                                         : comboSide.expanded;
 
+                                    // 🔹 Flatten dishes
                                     final sideDishes = comboSide.menuItems
-                                        .expand((menu) => menu.categories)
-                                        .expand((cat) => cat.dishes)
+                                        .expand((menu) {
+                                          debugPrint(
+                                            "➡️ Side: ${comboSide.name} | Menu: ${menu.menuName} | Categories: ${menu.categories.length}",
+                                          );
+                                          return menu.categories;
+                                        })
+                                        .expand((cat) {
+                                          debugPrint(
+                                            "   🔸 Category: ${cat.categoryName} | Dishes: ${cat.dishes.length}",
+                                          );
+                                          return cat.dishes;
+                                        })
                                         .toList();
+
+                                    // 🔴 DEBUG – Side summary
+                                    debugPrint(
+                                      "\n===============================\n"
+                                      "🟩 COMBO SIDE [$sideIndex]\n"
+                                      "Name : ${comboSide.name}\n"
+                                      "Menus : ${comboSide.menuItems.length}\n"
+                                      "Total Dishes : ${sideDishes.length}\n"
+                                      "================================",
+                                    );
+
+                                    // 🔴 DEBUG – Dish Details
+                                    for (final dish in sideDishes) {
+                                      debugPrint(
+                                        "🍕 Dish: ${dish.name} (ID: ${dish.id})\n"
+                                        "   → OptionSets: ${dish.optionSets.length}\n"
+                                        "   → Ingredients: ${dish.ingredients.length}\n"
+                                        "   → Choices: ${dish.choices.length}\n"
+                                        "   → Has Dynamic Data: ${dish.optionSets.isNotEmpty || dish.ingredients.isNotEmpty || dish.choices.isNotEmpty}\n",
+                                      );
+                                    }
+
+                                    // ✅ Check if this combo side has any expandable dishes
+                                    final bool hasExpandableContent = sideDishes
+                                        .any(
+                                          (dish) =>
+                                              dish.optionSets.isNotEmpty ||
+                                              dish.ingredients.isNotEmpty ||
+                                              dish.choices.isNotEmpty,
+                                        );
+
+                                    // 🔍 Debug
+                                    debugPrint(
+                                      "▶️ Side: ${comboSide.name} | Expandable Content: $hasExpandableContent",
+                                    );
 
                                     return Container(
                                       margin: EdgeInsets.symmetric(
@@ -287,6 +331,9 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                           // 🔹 Combo Side Header
                                           GestureDetector(
                                             onTap: () {
+                                              debugPrint(
+                                                "🟨 TAPPED SIDE: ${comboSide.name}  (Index: $sideIndex)",
+                                              );
                                               context
                                                   .read<ComboDetailsBloc>()
                                                   .add(
@@ -303,10 +350,8 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                               decoration: BoxDecoration(
                                                 gradient: LinearGradient(
                                                   colors: [
-                                                    AppColors
-                                                        .blackColor, // redPrimary
-                                                    Colors
-                                                        .black54, // redSecondary
+                                                    AppColors.blackColor,
+                                                    Colors.black54,
                                                   ],
                                                   begin: Alignment.topLeft,
                                                   end: Alignment.bottomRight,
@@ -337,7 +382,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                         .spaceBetween,
                                                 children: [
                                                   Text(
-                                                    comboSide.name.isNotEmpty ||
+                                                    comboSide.name.isNotEmpty &&
                                                             comboSide.name !=
                                                                 null
                                                         ? comboSide.name
@@ -347,8 +392,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                       fontSize: 15.w,
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      color: Colors
-                                                          .white, // white text on red gradient
+                                                      color: Colors.white,
                                                     ),
                                                   ),
                                                   AnimatedRotation(
@@ -358,10 +402,9 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                     duration: const Duration(
                                                       milliseconds: 300,
                                                     ),
-                                                    child: Icon(
+                                                    child: const Icon(
                                                       Icons.keyboard_arrow_down,
-                                                      color: Colors
-                                                          .white, // white arrow for contrast
+                                                      color: Colors.white,
                                                     ),
                                                   ),
                                                 ],
@@ -382,6 +425,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                 ) {
                                                   final pizzaBloc = context
                                                       .read<PizzaDetailsBloc>();
+
                                                   final isSelected =
                                                       pizzaBloc
                                                           .state
@@ -400,17 +444,34 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                           .choices
                                                           .isNotEmpty;
 
+                                                  // 🔵 DEBUG – Dish click info
+                                                  debugPrint(
+                                                    "🔹 UI BUILD → Dish: ${sideDish.name} | "
+                                                    "Selected: $isSelected | "
+                                                    "DynamicOptions: $hasDynamicOptions",
+                                                  );
+
                                                   return GestureDetector(
                                                     onTap: () {
+                                                      debugPrint(
+                                                        "✅ DISH TAP → ${sideDish.name} (ID: ${sideDish.id})",
+                                                      );
+
                                                       if (isSelected) {
                                                         pizzaBloc.add(
                                                           ResetPizzaDetailsEvent(),
+                                                        );
+                                                        debugPrint(
+                                                          "↩️ Reset selection",
                                                         );
                                                       } else {
                                                         pizzaBloc.add(
                                                           FetchComboDishDetailsEvent(
                                                             sideDish.id,
                                                           ),
+                                                        );
+                                                        debugPrint(
+                                                          "➡️ Fetch combo dish details",
                                                         );
                                                       }
                                                     },
@@ -434,9 +495,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                           10.r,
                                                         ),
                                                         decoration: BoxDecoration(
-                                                          color: isSelected
-                                                              ? Colors.white
-                                                              : Colors.white,
+                                                          color: Colors.white,
                                                           borderRadius:
                                                               BorderRadius.circular(
                                                                 12.r,
@@ -475,6 +534,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                                     ),
                                                                   ),
                                                                 ),
+
                                                                 if (hasDynamicOptions)
                                                                   Icon(
                                                                     Icons
@@ -487,30 +547,29 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                                               .grey,
                                                                     size: 20.sp,
                                                                   ),
+
                                                                 const SizedBox(
                                                                   width: 8,
                                                                 ),
-                                                                AnimatedRotation(
-                                                                  turns:
-                                                                      isSelected
-                                                                      ? 0.5
-                                                                      : 0.0,
-                                                                  duration:
-                                                                      const Duration(
-                                                                        milliseconds:
-                                                                            300,
-                                                                      ),
-                                                                  child: Icon(
-                                                                    Icons
-                                                                        .keyboard_arrow_down,
-                                                                    color:
+                                                                if (hasDynamicOptions)
+                                                                  AnimatedRotation(
+                                                                    turns:
                                                                         isSelected
-                                                                        ? AppColors
-                                                                              .redPrimary
-                                                                        : Colors
-                                                                              .grey,
+                                                                        ? 0.5
+                                                                        : 0.0,
+                                                                    duration: const Duration(
+                                                                      milliseconds:
+                                                                          300,
+                                                                    ),
+                                                                    child: Icon(
+                                                                      Icons
+                                                                          .keyboard_arrow_down,
+                                                                      color:
+                                                                          isSelected
+                                                                          ? AppColors.redPrimary
+                                                                          : Colors.grey,
+                                                                    ),
                                                                   ),
-                                                                ),
                                                               ],
                                                             ),
 
@@ -530,6 +589,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                                                             .id ==
                                                                         sideDish
                                                                             .id;
+
                                                                     final selectedDish =
                                                                         detailsState
                                                                             .selectedComboDish;
@@ -644,31 +704,35 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
             return BlocBuilder<PizzaDetailsBloc, PizzaDetailsState>(
               builder: (context, detailsState) {
-                final total = _getTotal(detailsState, dish);
-                final unitPrice =
-                    _getTotal(detailsState, dish) / detailsState.quantity;
+                final finalState = context.read<PizzaDetailsBloc>().state;
+                final total = _getTotal(finalState, dish);
 
                 return BlocConsumer<CartBloc, CartState>(
                   listener: (context, state) {
-                    if (state is CartSuccess) {
+                    if (state is CartSuccess && state.action == "add") {
                       // ScaffoldMessenger.of(context).showSnackBar(
                       //   const SnackBar(
                       //     content: Text("✅ Added to cart successfully!"),
                       //   ),
                       // );
+                      final isAlreadyOnCart =
+                          ModalRoute.of(context)?.settings.name ==
+                          AppRoutes.cartView;
                       print(
                         "✅ CartBloc → Added to cart: dishId=${dish.id}, quantity=${detailsState.quantity}, total=\$$total",
                       );
 
-                      Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.cartView,
-                        arguments: {
-                          "imageUrl": dish.imageUrl,
-                          "name": dish.name,
-                          "price": total,
-                        },
-                      );
+                      if (!isAlreadyOnCart) {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.cartView,
+                          arguments: {
+                            "imageUrl": dish.imageUrl,
+                            "name": dish.name,
+                            "price": total,
+                          },
+                        );
+                      }
                     } else if (state is CartFailure) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("❌ Failed: ${state.error}")),
@@ -753,10 +817,15 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                           // 🛒 Order Button with Total
                           Expanded(
                             child: SizedBox(
+                              // height: 48.h,
                               child: ElevatedButton(
                                 onPressed: state is CartLoading
                                     ? null
                                     : () async {
+                                        debugPrint(
+                                          "========== ADD TO CART CLICK ==========",
+                                        );
+
                                         final isGuest =
                                             await TokenStorage.isGuest();
                                         final userId =
@@ -764,52 +833,147 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                         final storeId =
                                             await TokenStorage.getChosenStoreId();
 
+                                        debugPrint("IsGuest      : $isGuest");
+                                        debugPrint("UserId       : $userId");
+                                        debugPrint("StoreId      : $storeId");
+
+                                        // ✅ Freeze bloc state
+                                        final finalState = context
+                                            .read<PizzaDetailsBloc>()
+                                            .state;
+
+                                        debugPrint("----- PIZZA STATE -----");
+                                        debugPrint(
+                                          "Quantity     : ${finalState.quantity}",
+                                        );
+                                        debugPrint(
+                                          "Size         : ${finalState.selectedSize}",
+                                        );
+                                        debugPrint(
+                                          "LargeOption  : ${finalState.selectedLargeOption}",
+                                        );
+                                        // debugPrint(
+                                        //   "Addons       : ${finalState.selectedAddons}",
+                                        // );
+                                        debugPrint(
+                                          "Choices      : ${finalState.selectedChoices}",
+                                        );
+
                                         final total = _getTotal(
-                                          detailsState,
+                                          finalState,
                                           dish,
                                         );
                                         final unitPrice =
-                                            total / detailsState.quantity;
+                                            total / finalState.quantity;
+
+                                        debugPrint("----- PRICE -----");
+                                        debugPrint("Total        : $total");
+                                        debugPrint("Unit Price   : $unitPrice");
+
+                                        debugPrint(
+                                          "============== FINAL UI SELECTION ==============",
+                                        );
+
+                                        debugPrint(
+                                          "Size: ${finalState.selectedSize}",
+                                        );
+                                        debugPrint(
+                                          "Large: ${finalState.selectedLargeOption}",
+                                        );
+
+                                        debugPrint(
+                                          "RADIOS: ${finalState.selectedRadioOptions}",
+                                        );
+                                        debugPrint(
+                                          "BASE: ${finalState.selectedBase}",
+                                        );
+
+                                        debugPrint(
+                                          "TOPPINGS: ${finalState.selectedToppings}",
+                                        );
+                                        debugPrint(
+                                          "SAUCES: ${finalState.sauceQuantities}",
+                                        );
+                                        debugPrint(
+                                          "INGREDIENTS: ${finalState.selectedIngredients}",
+                                        );
+                                        debugPrint(
+                                          "CHOICES: ${finalState.selectedChoices}",
+                                        );
 
                                         final optionsJson = {
-                                          "size": detailsState.selectedSize,
+                                          "size": finalState.selectedSize,
                                           "largeOption":
-                                              detailsState.selectedLargeOption,
-                                          "addons": detailsState.selectedAddons,
-                                          "choices":
-                                              detailsState.selectedChoices,
+                                              finalState.selectedLargeOption,
+
+                                          "radioOptions":
+                                              finalState.selectedRadioOptions,
+
+                                          "toppings":
+                                              finalState.selectedToppings,
+
+                                          "sauces": finalState.sauceQuantities,
+
+                                          "ingredients":
+                                              finalState.selectedIngredients,
+
+                                          "choices": finalState.selectedChoices,
+
+                                          "base": finalState.selectedBase,
                                         };
 
-                                        // ✅ Guest flow — Local Add
+                                        debugPrint("----- OPTIONS JSON -----");
+                                        debugPrint(optionsJson.toString());
+
+                                        debugPrint("----- DISH -----");
+                                        debugPrint("DishId       : ${dish.id}");
+                                        debugPrint(
+                                          "DishName     : ${dish.name}",
+                                        );
+
+                                        // ✅ Guest Flow
                                         if (isGuest) {
-                                          final storeId =
-                                              await TokenStorage.getChosenStoreId();
-                                          await LocalCartStorage.addGuestCartItem(
-                                            storeId!,
-                                            GuestCartItemModel(
-                                              dish: dish,
-                                              quantity: detailsState.quantity,
-                                              unitPrice: unitPrice,
-                                              totalPrice: total,
-                                              options: optionsJson,
+                                          debugPrint("🔥 ADDING AS GUEST");
+                                          debugPrint(
+                                            "GuestCartItem => qty:${finalState.quantity}, "
+                                            "unit:$unitPrice, total:$total, "
+                                            "options:$optionsJson",
+                                          );
+
+                                          context.read<CartBloc>().add(
+                                            AddGuestToCartEvent(
+                                              GuestCartItemModel(
+                                                dish: dish,
+                                                quantity: finalState.quantity,
+                                                unitPrice: unitPrice,
+                                                totalPrice: total,
+                                                options: optionsJson,
+                                              ),
                                             ),
                                           );
 
-                                          Navigator.pushReplacementNamed(
-                                            context,
-                                            AppRoutes.cartView,
-                                          );
                                           return;
                                         }
 
-                                        // ✅ Logged-in flow — API Add
+                                        // ✅ Logged-in Flow
+                                        debugPrint("🔥 ADDING AS USER");
+                                        debugPrint(
+                                          "Payload => "
+                                          "UserId:$userId, "
+                                          "StoreId:$storeId, "
+                                          "DishId:${dish.id}, "
+                                          "Qty:${finalState.quantity}, "
+                                          "Unit:$unitPrice, "
+                                          "Options:${jsonEncode(optionsJson)}",
+                                        );
+
                                         context.read<CartBloc>().add(
                                           AddToCartEvent(
                                             type: "insert",
                                             userId: int.parse(userId!),
                                             dishId: dish.id,
                                             storeId: int.parse(storeId!),
-                                            quantity: detailsState.quantity,
+                                            quantity: finalState.quantity,
                                             price: unitPrice,
                                             optionsJson: jsonEncode(
                                               optionsJson,
@@ -821,10 +985,12 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.redPrimary,
+                                  elevation: 2,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10.r),
                                   ),
                                 ),
+
                                 child: state is CartLoading
                                     ? const SizedBox(
                                         height: 20,
@@ -834,14 +1000,33 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                           strokeWidth: 2.0,
                                         ),
                                       )
-                                    : Text(
-                                        'Total \$${total.toStringAsFixed(2)} (NZD)',
-                                        style: TextStyle(
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                        textAlign: TextAlign.center,
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // ✅ Cart Icon
+                                          const Icon(
+                                            Icons.shopping_cart,
+                                            size: 22,
+                                            color: Colors.white,
+                                          ),
+
+                                          SizedBox(width: 10.w),
+
+                                          // ✅ Total price only
+                                          Text(
+                                            "\$${total.toStringAsFixed(2)} NZD",
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w600,
+                                              fontFamily: 'Poppins',
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                               ),
                             ),
@@ -1495,25 +1680,19 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
     );
   }
 
-  double _getTotal(PizzaDetailsState state, DishModel dish) {
-    double total = dish.price;
+  double _getTotal(PizzaDetailsState s, DishModel dish) {
+    final basePrice = dish.price;
 
-    // 👇 Base extra price
-    total += state.baseExtraPrice;
+    final addonsTotal =
+        s.toppingsExtraPrice +
+        s.saucesExtraPrice +
+        s.choicesExtraPrice +
+        s.baseExtraPrice +
+        s.radiosExtraPrice; // ✅ CRITICAL FIX
 
-    // 👇 Toppings total
-    total += state.toppingsExtraPrice;
+    final unitPrice = basePrice + addonsTotal;
 
-    // 👇 Sauces total
-    total += state.saucesExtraPrice;
-
-    // 👇 Choices total
-    total += state.choicesExtraPrice;
-
-    // 👇 Multiply by quantity
-    double finalTotal = total * state.quantity;
-
-    return finalTotal;
+    return unitPrice * s.quantity;
   }
 
   IconData? getAddonIcon(String title) {

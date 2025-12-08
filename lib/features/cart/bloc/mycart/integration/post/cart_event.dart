@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
+import 'package:pizza_boys/data/models/dish/guest_cart_item_model.dart';
 
 abstract class CartEvent extends Equatable {
   const CartEvent();
@@ -50,4 +51,11 @@ class RemoveFromCartEvent extends CartEvent {
 
   @override
   List<Object?> get props => [cartId, userId];
+}
+
+
+class AddGuestToCartEvent extends CartEvent {
+  final GuestCartItemModel item;
+
+  const AddGuestToCartEvent(this.item);
 }

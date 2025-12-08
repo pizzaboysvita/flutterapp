@@ -12,7 +12,6 @@ import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
 import 'package:pizza_boys/core/helpers/buttons/outline_button.dart';
 import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
-import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/repositories/auth/login_repo.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/login/login_bloc.dart';
@@ -99,7 +98,6 @@ class _LoginState extends State<Login> {
               }
             },
             builder: (context, state) {
-              bool isLoading = state is LoginLoading;
               return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,82 +110,146 @@ class _LoginState extends State<Login> {
                         child: Column(
                           children: [
                             SizedBox(height: 12.h),
+                            // ✅ Email Field with Validation
                             _inputField(
                               "Email",
                               emailController,
                               isEmail: true,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return "Email cannot be empty";
+                                }
+                                final emailRegex = RegExp(
+                                  r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$",
+                                );
+                                if (!emailRegex.hasMatch(value.trim())) {
+                                  return "Enter a valid email address";
+                                }
+                                return null;
+                              },
                             ),
+
                             SizedBox(height: 16.h),
-                            _passwordField(),
+
+                            // ✅ Password Field with Validation
+                            _passwordField(
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return "Password cannot be empty";
+                                }
+                                if (value.trim().length < 6) {
+                                  return "Password must be at least 6 characters";
+                                }
+                                return null;
+                              },
+                            ),
+
                             SizedBox(height: 6.h),
 
-                            // SizedBox(height: 12.h),
+                            // Terms & Conditions + Login Button
                             BlocBuilder<LoginCheckboxBloc, LoginCheckboxState>(
                               builder: (context, settingsState) {
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Checkbox(
-                                      value: settingsState.acceptTerms,
-                                      fillColor:
-                                          MaterialStateProperty.resolveWith<
-                                            Color
-                                          >((states) {
-                                            if (states.contains(
-                                              MaterialState.selected,
-                                            )) {
-                                              return AppColors
-                                                  .blackColor; // Fill color when checked
-                                            }
-                                            return Colors
-                                                .white; // Fill color when unchecked
-                                          }),
-                                      checkColor: AppColors
-                                          .whiteColor, // Color of the check mark
-                                      side: MaterialStateBorderSide.resolveWith((
-                                        states,
-                                      ) {
-                                        return BorderSide(
-                                          color: AppColors
-                                              .blackColor, // Border color always black
-                                          width: 1.5,
-                                        );
-                                      }),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(
-                                          4.r,
-                                        ), // Rounded corners
-                                      ),
-                                      onChanged: (v) {
-                                        context.read<LoginCheckboxBloc>().add(
-                                          ToggleAcceptTerms(),
-                                        );
-                                      },
-                                    ),
+                                final canLogin =
+                                    settingsState.acceptTerms &&
+                                    state is! LoginLoading;
 
-                                    Expanded(
-                                      child: GestureDetector(
-                                        onTap: () => context
-                                            .read<LoginCheckboxBloc>()
-                                            .add(ToggleAcceptTerms()),
-                                        child: Text.rich(
-                                          TextSpan(
-                                            text: "I agree to the ",
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
-                                              color: AppColors.blackColor,
-                                              fontFamily: 'Poppins',
-                                            ),
-                                            children: [
-                                              TextSpan(
-                                                text: "Terms & Conditions",
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.redAccent,
-                                                ),
+                                return Column(
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Checkbox(
+                                          value: settingsState.acceptTerms,
+                                          fillColor:
+                                              MaterialStateProperty.resolveWith<
+                                                Color
+                                              >((states) {
+                                                return states.contains(
+                                                      MaterialState.selected,
+                                                    )
+                                                    ? AppColors.blackColor
+                                                    : Colors.white;
+                                              }),
+                                          checkColor: AppColors.whiteColor,
+                                          side:
+                                              MaterialStateBorderSide.resolveWith(
+                                                (states) {
+                                                  return BorderSide(
+                                                    color: AppColors.blackColor,
+                                                    width: 1.5,
+                                                  );
+                                                },
                                               ),
-                                            ],
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              4.r,
+                                            ),
                                           ),
+                                          onChanged: (v) {
+                                            context
+                                                .read<LoginCheckboxBloc>()
+                                                .add(ToggleAcceptTerms());
+                                          },
+                                        ),
+                                        Expanded(
+                                          child: GestureDetector(
+                                            onTap: () => context
+                                                .read<LoginCheckboxBloc>()
+                                                .add(ToggleAcceptTerms()),
+                                            child: Text.rich(
+                                              TextSpan(
+                                                text: "I agree to the ",
+                                                style: TextStyle(
+                                                  fontSize: 12.sp,
+                                                  color: AppColors.blackColor,
+                                                  fontFamily: 'Poppins',
+                                                ),
+                                                children: [
+                                                  TextSpan(
+                                                    text: "Terms & Conditions",
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          AppColors.redAccent,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 16.h),
+
+                                    // Login Button with blur/fade effect when disabled
+                                    Opacity(
+                                      opacity: canLogin ? 1.0 : 0.5,
+                                      child: IgnorePointer(
+                                        ignoring: !canLogin,
+                                        child: LoadingFillButton(
+                                          text: "Login",
+                                          isLoading: state is LoginLoading,
+                                          onPressedAsync: canLogin
+                                              ? () async {
+                                                  if (formKey.currentState!
+                                                      .validate()) {
+                                                    context
+                                                        .read<LoginBloc>()
+                                                        .add(
+                                                          LoginButtonPressed(
+                                                            emailController.text
+                                                                .trim(),
+                                                            passwordController
+                                                                .text
+                                                                .trim(),
+                                                          ),
+                                                        );
+                                                  }
+                                                }
+                                              : null,
                                         ),
                                       ),
                                     ),
@@ -195,24 +257,6 @@ class _LoginState extends State<Login> {
                                 );
                               },
                             ),
-
-                            SizedBox(height: 16.h),
-
-                            LoadingFillButton(
-                              text: "Login",
-                              isLoading: isLoading,
-                              onPressedAsync: () async {
-                                if (formKey.currentState!.validate()) {
-                                  context.read<LoginBloc>().add(
-                                    LoginButtonPressed(
-                                      emailController.text.trim(),
-                                      passwordController.text.trim(),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-
                             SizedBox(height: 14.h),
 
                             LoadingOutlineButton(
@@ -332,27 +376,31 @@ class _LoginState extends State<Login> {
   }
 
   // 🔹 Input Field with validation
+  // 🔹 Input Field with optional external validator
   Widget _inputField(
     String hint,
     TextEditingController controller, {
     bool isEmail = false,
+    String? Function(String?)? validator, // ✅ add validator parameter
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
       autofillHints: isEmail ? [AutofillHints.email] : null,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return "$hint is required";
-        }
-        if (isEmail &&
-            !RegExp(
-              r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$",
-            ).hasMatch(value.trim())) {
-          return "Enter a valid email";
-        }
-        return null;
-      },
+      validator:
+          validator ??
+          (value) {
+            if (value == null || value.trim().isEmpty) {
+              return "$hint is required";
+            }
+            if (isEmail &&
+                !RegExp(
+                  r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$",
+                ).hasMatch(value.trim())) {
+              return "Enter a valid email";
+            }
+            return null;
+          },
       style: TextStyle(fontSize: 14.sp),
       decoration: InputDecoration(
         labelText: hint,
@@ -365,7 +413,6 @@ class _LoginState extends State<Login> {
           borderRadius: BorderRadius.circular(12.r),
           borderSide: BorderSide.none,
         ),
-
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.r),
           borderSide: BorderSide(color: AppColors.redPrimary, width: 1.5),
@@ -383,8 +430,8 @@ class _LoginState extends State<Login> {
     );
   }
 
-  // 🔹 Password Field with validation
-  Widget _passwordField() {
+  // 🔹 Password Field with optional validator
+  Widget _passwordField({String? Function(String?)? validator}) {
     return BlocBuilder<PsObscureBloc, PsObscureState>(
       builder: (context, state) {
         final isObscure = state is PsObscureValue ? state.obscure : false;
@@ -394,15 +441,17 @@ class _LoginState extends State<Login> {
           obscureText: isObscure,
           keyboardType: TextInputType.visiblePassword,
           autofillHints: [AutofillHints.password],
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return "Password is required";
-            }
-            if (value.trim().length < 6) {
-              return "Password must be at least 6 characters";
-            }
-            return null;
-          },
+          validator:
+              validator ??
+              (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return "Password is required";
+                }
+                if (value.trim().length < 6) {
+                  return "Password must be at least 6 characters";
+                }
+                return null;
+              },
           style: TextStyle(fontSize: 14.sp),
           decoration: InputDecoration(
             labelText: "Password",
@@ -418,7 +467,6 @@ class _LoginState extends State<Login> {
               borderRadius: BorderRadius.circular(12.r),
               borderSide: BorderSide.none,
             ),
-
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
               borderSide: BorderSide(color: AppColors.redAccent, width: 1.5),

@@ -2,10 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:lottie/lottie.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
-import 'package:pizza_boys/core/constant/lottie_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/cart/bloc/order/get/order_get_bloc.dart';
@@ -419,216 +417,216 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
   }
 
   // Order Items (Indivisual)
-  Future<void> _showOrderItemsBottomSheet(
-    BuildContext context,
-    List<Map<String, dynamic>> items,
-  ) async {
-    // ✅ Step 1: Merge duplicates by dish_id
-    final Map<int, Map<String, dynamic>> mergedItems = {};
+  // Future<void> _showOrderItemsBottomSheet(
+  //   BuildContext context,
+  //   List<Map<String, dynamic>> items,
+  // ) async {
+  //   // ✅ Step 1: Merge duplicates by dish_id
+  //   final Map<int, Map<String, dynamic>> mergedItems = {};
 
-    for (var item in items) {
-      final dishId = int.tryParse(item['dish_id'].toString()) ?? -1;
-      final dishName = item['dish_name'] ?? "Unknown";
-      final price = double.tryParse(item['price'].toString()) ?? 0.0;
-      final qty = int.tryParse(item['quantity'].toString()) ?? 0;
+  //   for (var item in items) {
+  //     final dishId = int.tryParse(item['dish_id'].toString()) ?? -1;
+  //     final dishName = item['dish_name'] ?? "Unknown";
+  //     final price = double.tryParse(item['price'].toString()) ?? 0.0;
+  //     final qty = int.tryParse(item['quantity'].toString()) ?? 0;
 
-      if (mergedItems.containsKey(dishId)) {
-        // Add to existing → update quantity & totalPrice
-        mergedItems[dishId]!['quantity'] += qty;
-        mergedItems[dishId]!['totalPrice'] += (price * qty);
-      } else {
-        // New dish entry
-        mergedItems[dishId] = {
-          'dish_id': dishId,
-          'dish_name': dishName,
-          'quantity': qty,
-          'totalPrice': price * qty, // store computed total
-        };
-      }
-    }
+  //     if (mergedItems.containsKey(dishId)) {
+  //       // Add to existing → update quantity & totalPrice
+  //       mergedItems[dishId]!['quantity'] += qty;
+  //       mergedItems[dishId]!['totalPrice'] += (price * qty);
+  //     } else {
+  //       // New dish entry
+  //       mergedItems[dishId] = {
+  //         'dish_id': dishId,
+  //         'dish_name': dishName,
+  //         'quantity': qty,
+  //         'totalPrice': price * qty, // store computed total
+  //       };
+  //     }
+  //   }
 
-    final List<Map<String, dynamic>> uniqueItems = mergedItems.values.toList();
+  //   final List<Map<String, dynamic>> uniqueItems = mergedItems.values.toList();
 
-    // ✅ Step 2: Show bottom sheet
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.45,
-          minChildSize: 0.35,
-          maxChildSize: 0.9,
-          builder: (context, scrollController) {
-            return Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Drag Handle
-                  Center(
-                    child: Container(
-                      width: 40.w,
-                      height: 4.h,
-                      margin: EdgeInsets.only(bottom: 14.h),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade400,
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                  ),
+  //   // ✅ Step 2: Show bottom sheet
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     backgroundColor: Colors.transparent,
+  //     builder: (ctx) {
+  //       return DraggableScrollableSheet(
+  //         expand: false,
+  //         initialChildSize: 0.45,
+  //         minChildSize: 0.35,
+  //         maxChildSize: 0.9,
+  //         builder: (context, scrollController) {
+  //           return Container(
+  //             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+  //             decoration: BoxDecoration(
+  //               color: Colors.white,
+  //               borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+  //               boxShadow: [
+  //                 BoxShadow(
+  //                   color: Colors.black.withOpacity(0.08),
+  //                   blurRadius: 12,
+  //                   offset: const Offset(0, -4),
+  //                 ),
+  //               ],
+  //             ),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 // Drag Handle
+  //                 Center(
+  //                   child: Container(
+  //                     width: 40.w,
+  //                     height: 4.h,
+  //                     margin: EdgeInsets.only(bottom: 14.h),
+  //                     decoration: BoxDecoration(
+  //                       color: Colors.grey.shade400,
+  //                       borderRadius: BorderRadius.circular(8.r),
+  //                     ),
+  //                   ),
+  //                 ),
 
-                  // Header: Order (black) + Items (red)
-                  RichText(
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "Order ",
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontFamily: "Poppins",
-                          ),
-                        ),
-                        TextSpan(
-                          text: "Items",
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.redAccent,
-                            fontFamily: "Poppins",
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 12.h),
+  //                 // Header: Order (black) + Items (red)
+  //                 RichText(
+  //                   maxLines: 1,
+  //                   overflow: TextOverflow.ellipsis,
+  //                   text: TextSpan(
+  //                     children: [
+  //                       TextSpan(
+  //                         text: "Order ",
+  //                         style: TextStyle(
+  //                           fontSize: 16.sp,
+  //                           fontWeight: FontWeight.bold,
+  //                           color: Colors.black,
+  //                           fontFamily: "Poppins",
+  //                         ),
+  //                       ),
+  //                       TextSpan(
+  //                         text: "Items",
+  //                         style: TextStyle(
+  //                           fontSize: 16.sp,
+  //                           fontWeight: FontWeight.bold,
+  //                           color: AppColors.redAccent,
+  //                           fontFamily: "Poppins",
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //                 SizedBox(height: 12.h),
 
-                  // Items List (merged)
-                  Expanded(
-                    child: ListView.separated(
-                      controller: scrollController,
-                      itemCount: uniqueItems.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(color: Colors.grey.shade300, thickness: 0.8),
-                      itemBuilder: (context, index) {
-                        final item = uniqueItems[index];
-                        final dishName = item['dish_name'];
-                        final qty = item['quantity'];
-                        final totalPrice = item['totalPrice'];
+  //                 // Items List (merged)
+  //                 Expanded(
+  //                   child: ListView.separated(
+  //                     controller: scrollController,
+  //                     itemCount: uniqueItems.length,
+  //                     separatorBuilder: (_, __) =>
+  //                         Divider(color: Colors.grey.shade300, thickness: 0.8),
+  //                     itemBuilder: (context, index) {
+  //                       final item = uniqueItems[index];
+  //                       final dishName = item['dish_name'];
+  //                       final qty = item['quantity'];
+  //                       final totalPrice = item['totalPrice'];
 
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                dishName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: "Poppins",
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 8.w),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                "Qty: $qty",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: Colors.grey.shade600,
-                                  fontFamily: "Poppins",
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  "\$${totalPrice.toStringAsFixed(2)}",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Poppins",
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
+  //                       return Row(
+  //                         crossAxisAlignment: CrossAxisAlignment.center,
+  //                         children: [
+  //                           Expanded(
+  //                             flex: 3,
+  //                             child: Text(
+  //                               dishName,
+  //                               maxLines: 1,
+  //                               overflow: TextOverflow.ellipsis,
+  //                               style: TextStyle(
+  //                                 fontSize: 13.sp,
+  //                                 fontWeight: FontWeight.w500,
+  //                                 fontFamily: "Poppins",
+  //                                 color: Colors.black87,
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           SizedBox(width: 8.w),
+  //                           Expanded(
+  //                             flex: 2,
+  //                             child: Text(
+  //                               "Qty: $qty",
+  //                               maxLines: 1,
+  //                               overflow: TextOverflow.ellipsis,
+  //                               style: TextStyle(
+  //                                 fontSize: 12.sp,
+  //                                 color: Colors.grey.shade600,
+  //                                 fontFamily: "Poppins",
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           Expanded(
+  //                             flex: 2,
+  //                             child: Align(
+  //                               alignment: Alignment.centerRight,
+  //                               child: Text(
+  //                                 "\$${totalPrice.toStringAsFixed(2)}",
+  //                                 maxLines: 1,
+  //                                 overflow: TextOverflow.ellipsis,
+  //                                 style: TextStyle(
+  //                                   fontSize: 13.sp,
+  //                                   fontWeight: FontWeight.w500,
+  //                                   fontFamily: "Poppins",
+  //                                   color: Colors.black,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       );
+  //                     },
+  //                   ),
+  //                 ),
 
-                  // ✅ Sticky Footer: Total Summary
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      vertical: 10.h,
-                      horizontal: 12.w,
-                    ),
-                    margin: EdgeInsets.only(top: 10.h),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Total Items: ${uniqueItems.fold<int>(0, (sum, item) => sum + (item['quantity'] as int))}",
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: "Poppins",
-                            color: Colors.black,
-                          ),
-                        ),
-                        Text(
-                          "Total: \$${uniqueItems.fold<double>(0, (sum, item) => sum + (item['totalPrice'] as double)).toStringAsFixed(2)}",
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: "Poppins",
-                            color: AppColors.greenColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  //                 // ✅ Sticky Footer: Total Summary
+  //                 Container(
+  //                   padding: EdgeInsets.symmetric(
+  //                     vertical: 10.h,
+  //                     horizontal: 12.w,
+  //                   ),
+  //                   margin: EdgeInsets.only(top: 10.h),
+  //                   decoration: BoxDecoration(
+  //                     color: Colors.grey.shade100,
+  //                     borderRadius: BorderRadius.circular(12.r),
+  //                   ),
+  //                   child: Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                     children: [
+  //                       Text(
+  //                         "Total Items: ${uniqueItems.fold<int>(0, (sum, item) => sum + (item['quantity'] as int))}",
+  //                         style: TextStyle(
+  //                           fontSize: 13.sp,
+  //                           fontWeight: FontWeight.w500,
+  //                           fontFamily: "Poppins",
+  //                           color: Colors.black,
+  //                         ),
+  //                       ),
+  //                       Text(
+  //                         "Total: \$${uniqueItems.fold<double>(0, (sum, item) => sum + (item['totalPrice'] as double)).toStringAsFixed(2)}",
+  //                         style: TextStyle(
+  //                           fontSize: 14.sp,
+  //                           fontWeight: FontWeight.bold,
+  //                           fontFamily: "Poppins",
+  //                           color: AppColors.greenColor,
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
   // // Helper function to get badge color based on status
   // Color getStatusColor(String status) {

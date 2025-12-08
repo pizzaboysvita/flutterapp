@@ -2,9 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:pizza_boys/core/bloc/refresh_cubit_helper.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
-import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
 import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
@@ -385,8 +383,8 @@ class _CategoryPizzaDetailsState extends State<CategoryPizzaDetails> {
   }
 
   // ⭐ REMOVE FLOW — logged in (wishlistId available)
-  if (favDish?.wishlistId != null) {
-    print("🗑 Removing using wishlistId: ${favDish!.wishlistId}");
+  if (favDish.wishlistId != null) {
+    print("🗑 Removing using wishlistId: ${favDish.wishlistId}");
 
     setState(() => isCDRemoving = true);
 

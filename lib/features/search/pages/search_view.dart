@@ -189,19 +189,18 @@ class _SearchViewState extends State<SearchView> {
 
   Widget _buildSearchBody(SearchState state) {
     if (query.isNotEmpty) {
-      if (state.isLoading)
+      if (state.isLoading) {
         return const Center(child: CircularProgressIndicator());
+      }
       if (state.error != null) return Center(child: Text("❌ ${state.error}"));
       return _buildSearchResults(state.results);
     }
-
     // Show recent or suggestions
     if (state.recentSearches.isNotEmpty) {
       return SingleChildScrollView(
         child: _buildRecentSearches(state.recentSearches),
       );
     }
-
     return SingleChildScrollView(child: _buildSuggestions());
   }
 
@@ -235,26 +234,40 @@ class _SearchViewState extends State<SearchView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Search bar
-            TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  context.read<SearchBloc>().add(AddRecentSearchEvent(value));
-                  _onSearchChanged(value);
-                }
-              },
-              decoration: InputDecoration(
-                hintText: 'Search for pizzas, combos...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
+           TextField(
+  controller: _searchController,
+  onChanged: _onSearchChanged,
+  onSubmitted: (value) {
+    if (value.trim().isNotEmpty) {
+      context.read<SearchBloc>().add(AddRecentSearchEvent(value));
+      _onSearchChanged(value);
+    }
+  },
+  decoration: InputDecoration(
+    hintText: 'Search for pizzas, combos...',
+    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+
+    // ✅ CLEAR BUTTON
+    suffixIcon: _searchController.text.isNotEmpty
+        ? IconButton(
+            icon: const Icon(Icons.clear, color: Colors.grey),
+            onPressed: () {
+              _searchController.clear();
+              setState(() {
+                query = "";
+              });
+            },
+          )
+        : null,
+
+    filled: true,
+    fillColor: Colors.white,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12.r),
+      borderSide: BorderSide.none,
+    ),
+  ),
+),
             SizedBox(height: 20.h),
 
             // BlocBuilder for dynamic results / recent searches / suggestions

@@ -79,7 +79,6 @@ class FBCloudMSG {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      // TODO: Navigate on tap
     });
 
     //-------------------------------------------------------------

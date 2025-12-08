@@ -158,7 +158,6 @@ class DashboardHeroSection extends StatelessWidget {
 }
 
 //Category of Pizzas
-// Define pastel colors list
 final List<Color> categoryColors = [
   AppColors.categoryOrange, // Light Orange
   AppColors.categoryGreen, // Light Green

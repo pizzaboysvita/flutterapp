@@ -34,15 +34,29 @@ class PizzaDetailsBloc extends Bloc<PizzaDetailsEvent, PizzaDetailsState> {
     });
 
     on<SelectOptionSetRadioEvent>((event, emit) {
-  final updatedMap = Map<String, String>.from(state.selectedRadioOptions);
-  updatedMap[event.optionSetName] = event.selectedOptionName;
+  final updatedOptions =
+      Map<String, String>.from(state.selectedRadioOptions);
+  final updatedPrices =
+      Map<String, double>.from(state.radioExtraPrices);
+
+  updatedOptions[event.optionSetName] = event.selectedOptionName;
+  updatedPrices[event.optionSetName] = event.extraPrice;
+
+  // ✅ Sum all radio prices
+  double totalRadioPrice = 0;
+  for (final p in updatedPrices.values) {
+    totalRadioPrice += p;
+  }
 
   emit(
     state.copyWith(
-      selectedRadioOptions: updatedMap,
+      selectedRadioOptions: updatedOptions,
+      radioExtraPrices: updatedPrices,
+      radiosExtraPrice: totalRadioPrice,
     ),
   );
 });
+
 
 
     on<ToggleToppingEvent>((event, emit) {

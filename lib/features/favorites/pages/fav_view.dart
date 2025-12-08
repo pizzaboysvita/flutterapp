@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:pizza_boys/core/bloc/refresh_cubit_helper.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
@@ -205,38 +204,38 @@ class _FavoritesViewState extends State<FavoritesView> {
                                         ),
 
                                         // 🛒 Add to Cart Button
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 10.w,
-                                          ), // small padding inside
-                                          height: 28.h, // smaller height
-                                          decoration: BoxDecoration(
-                                            gradient: AppColors.buttonGradient,
-                                            borderRadius: BorderRadius.circular(
-                                              8.r,
-                                            ),
-                                          ),
-                                          child: InkWell(
-                                            borderRadius: BorderRadius.circular(
-                                              8.r,
-                                            ),
-                                            onTap: () {
-                                              // Navigate to the dish details page
-                                            },
-                                            child: Center(
-                                              child: Text(
-                                                'Order Now',
-                                                style: TextStyle(
-                                                  fontSize:
-                                                      10.sp, // smaller font
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Poppins',
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
+                                        // Container(
+                                        //   padding: EdgeInsets.symmetric(
+                                        //     horizontal: 10.w,
+                                        //   ), // small padding inside
+                                        //   height: 28.h, // smaller height
+                                        //   decoration: BoxDecoration(
+                                        //     gradient: AppColors.buttonGradient,
+                                        //     borderRadius: BorderRadius.circular(
+                                        //       8.r,
+                                        //     ),
+                                        //   ),
+                                        //   child: InkWell(
+                                        //     borderRadius: BorderRadius.circular(
+                                        //       8.r,
+                                        //     ),
+                                        //     onTap: () {
+                                        //       // Navigate to the dish details page
+                                        //     },
+                                        //     child: Center(
+                                        //       child: Text(
+                                        //         'Order Now',
+                                        //         style: TextStyle(
+                                        //           fontSize:
+                                        //               10.sp, // smaller font
+                                        //           color: Colors.white,
+                                        //           fontWeight: FontWeight.w500,
+                                        //           fontFamily: 'Poppins',
+                                        //         ),
+                                        //       ),
+                                        //     ),
+                                        //   ),
+                                        // ),
                                       ],
                                     ),
                                   ],

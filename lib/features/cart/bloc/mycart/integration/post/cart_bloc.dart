@@ -14,6 +14,21 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   CartBloc({required this.cartRepository}) : super(CartInitial()) {
     on<AddToCartEvent>(_onAddToCart);
     on<RemoveFromCartEvent>(_onRemoveFromCart);
+
+    on<AddGuestToCartEvent>((event, emit) async {
+      emit(CartLoading());
+
+      try {
+        final storeId = await TokenStorage.getChosenStoreId();
+
+        await LocalCartStorage.addGuestCartItem(storeId!, event.item);
+
+        // ✅ action = add
+        emit(const CartSuccess({"message": "Added to cart (guest)"}, "add"));
+      } catch (e) {
+        emit(CartFailure(e.toString()));
+      }
+    });
   }
 
   Future<void> _onAddToCart(
@@ -24,32 +39,29 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     final isGuest = await TokenStorage.isGuest();
     final storeId = await TokenStorage.getChosenStoreId();
 
-
     try {
-     if (isGuest) {
-  if (event.dish == null) {
-    throw Exception("Dish data missing for guest cart add");
-  }
+      if (isGuest) {
+        if (event.dish == null) {
+          throw Exception("Dish data missing for guest cart add");
+        }
 
-  final optionsMap = jsonDecode(event.optionsJson);
+        final optionsMap = jsonDecode(event.optionsJson);
 
-  await LocalCartStorage.addGuestCartItem(
-  storeId!, // 👈 First param
-  GuestCartItemModel(
-    dish: event.dish!,
-    quantity: event.quantity,
-    unitPrice: event.price,
-    totalPrice: event.quantity * event.price,
-    options: optionsMap,
-  ),
-);
+        await LocalCartStorage.addGuestCartItem(
+          storeId!,
+          GuestCartItemModel(
+            dish: event.dish!,
+            quantity: event.quantity,
+            unitPrice: event.price,
+            totalPrice: event.quantity * event.price,
+            options: optionsMap,
+          ),
+        );
 
-
-  emit(const CartSuccess({"message": "Added to cart (guest)"}));
-  return;
-}
- else {
-        // ✅ Logged-in: API add
+        // ✅ action = add
+        emit(const CartSuccess({"message": "Added to cart (guest)"}, "add"));
+        return;
+      } else {
         final response = await cartRepository.addDishToCart(
           userId: event.userId,
           dishId: event.dishId,
@@ -58,7 +70,9 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           price: event.price,
           optionsJson: event.optionsJson,
         );
-        emit(CartSuccess(response));
+
+        // ✅ action = add
+        emit(CartSuccess(response, "add"));
       }
     } catch (e) {
       emit(CartFailure("Add to cart failed: $e"));
@@ -74,20 +88,23 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
     try {
       if (isGuest) {
-        // ✅ Guest: Local remove
         final storeId = await TokenStorage.getChosenStoreId();
 
-  await LocalCartStorage.removeFromCart(
-    storeId!,       // ✅ String storeId
-    event.cartId,   // ✅ int dishId
-  );
+        await LocalCartStorage.removeFromCart(
+          storeId!,
+          event.cartId,
+        );
+
+        // ✅ action = remove
+        emit(const CartSuccess({"message": "Removed from cart (guest)"}, "remove"));
       } else {
-        // ✅ Logged-in: API remove
         final response = await cartRepository.removeFromCart(
           cartId: event.cartId,
           userId: event.userId,
         );
-        emit(CartSuccess(response));
+
+        // ✅ action = remove
+        emit(CartSuccess(response, "remove"));
       }
     } catch (e) {
       emit(CartFailure("Remove from cart failed: $e"));

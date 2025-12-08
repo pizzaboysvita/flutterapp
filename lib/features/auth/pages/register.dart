@@ -9,7 +9,11 @@ import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
 import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/reusable_widgets/shapes/hero_bottomcurve.dart';
+import 'package:pizza_boys/data/repositories/auth/login_repo.dart';
 import 'package:pizza_boys/data/repositories/auth/register_repo.dart';
+import 'package:pizza_boys/features/auth/bloc/integration/login/login_bloc.dart';
+import 'package:pizza_boys/features/auth/bloc/integration/login/login_event.dart';
+import 'package:pizza_boys/features/auth/bloc/integration/login/login_state.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/register/register_bloc.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/register/register_event.dart';
 import 'package:pizza_boys/features/auth/bloc/integration/register/register_state.dart';
@@ -49,233 +53,301 @@ class _RegisterState extends State<Register> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => RegisterBloc(AuthRepository()),
-      child: BlocConsumer<RegisterBloc, RegisterState>(
-        listener: (context, state) {
-          if (state is RegisterSuccess) {
-            SnackbarHelper.green(context, "Registered successfully");
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.login, // replace with your login route
-              (route) => false,
-            );
-          } else if (state is RegisterFailure) {
-            SnackbarHelper.red(context, state.error);
-          }
-        },
-        builder: (context, state) {
-          return Scaffold(
-            appBar: AppBar(
-              toolbarHeight: 0,
-              backgroundColor: AppColors.blackColor,
-            ),
-            body: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _headerSection(),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 24.w,
-                      vertical: 16.h,
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // 🔹 Profile Image Picker with guidance
-                            GestureDetector(
-                              onTap: _pickImage,
-                              child: Stack(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 45.r,
-                                    backgroundColor: Colors.grey.shade200,
-                                    backgroundImage: _image != null
-                                        ? FileImage(_image!)
-                                        : null,
-                                    child: _image == null
-                                        ? Icon(
-                                            Icons.camera_alt,
-                                            size: 32.r,
-                                            color: Colors.grey.shade500,
-                                          )
-                                        : null,
-                                  ),
-                                  if (_image == null)
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: CircleAvatar(
-                                        radius: 12.r,
-                                        backgroundColor: AppColors.redAccent,
-                                        child: Icon(
-                                          Icons.add,
-                                          size: 16.r,
-                                          color: Colors.white,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => RegisterBloc(AuthRepository())),
+        BlocProvider(create: (_) => LoginBloc(LoginRepo())),
+      ],
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<RegisterBloc, RegisterState>(
+            listener: (context, state) {
+              if (state is RegisterSuccess) {
+                SnackbarHelper.green(context, "Registered successfully");
+
+                // 🔥 Trigger login only (no navigation here)
+                context.read<LoginBloc>().add(
+                  LoginButtonPressed(
+                    emailCtrl.text.trim(),
+                    passwordCtrl.text.trim(),
+                  ),
+                );
+              } else if (state is RegisterFailure) {
+                SnackbarHelper.red(context, state.error);
+              }
+            },
+          ),
+
+          // ✅ Listen Login Result
+          BlocListener<LoginBloc, LoginState>(
+            listener: (context, state) {
+              // ✅ Navigate ONLY on login success
+              if (state is LoginSuccess) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.home,
+                  (route) => false,
+                );
+              }
+              // ❌ Login failed after register
+              else if (state is LoginFailure) {
+                SnackbarHelper.red(context, state.error);
+              }
+            },
+          ),
+        ],
+
+        child: BlocConsumer<RegisterBloc, RegisterState>(
+          listener: (context, state) {
+            if (state is RegisterSuccess) {
+              SnackbarHelper.green(context, "Registered successfully");
+              context.read<LoginBloc>().add(
+                LoginButtonPressed(
+                  emailCtrl.text.trim(),
+                  passwordCtrl.text.trim(),
+                ),
+              );
+            } else if (state is RegisterFailure) {
+              SnackbarHelper.red(context, state.error);
+            }
+          },
+          builder: (context, state) {
+            return Scaffold(
+              appBar: AppBar(
+                toolbarHeight: 0,
+                backgroundColor: AppColors.blackColor,
+              ),
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _headerSection(),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 16.h,
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // 🔹 Profile Image Picker with guidance
+                              GestureDetector(
+                                onTap: _pickImage,
+                                child: Stack(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 45.r,
+                                      backgroundColor: Colors.grey.shade200,
+                                      backgroundImage: _image != null
+                                          ? FileImage(_image!)
+                                          : null,
+                                      child: _image == null
+                                          ? Icon(
+                                              Icons.camera_alt,
+                                              size: 32.r,
+                                              color: Colors.grey.shade500,
+                                            )
+                                          : null,
+                                    ),
+                                    if (_image == null)
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: CircleAvatar(
+                                          radius: 12.r,
+                                          backgroundColor: AppColors.redAccent,
+                                          child: Icon(
+                                            Icons.add,
+                                            size: 16.r,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 16.h),
+                              Text(
+                                "Upload your profile photo",
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              SizedBox(height: 24.h),
+
+                              // 🔹 Name Fields in one row for better UX
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _field(
+                                      "First Name",
+                                      _firstNameCtrl,
+                                      isName: true,
                                     ),
+                                  ),
+                                  SizedBox(width: 10.w),
+                                  Expanded(
+                                    child: _field(
+                                      "Last Name",
+                                      _lastNameCtrl,
+                                      isName: true,
+                                    ),
+                                  ),
                                 ],
                               ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              "Upload your profile photo",
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: Colors.grey.shade600,
+                              SizedBox(height: 10.h),
+
+                              _field(
+                                "Phone Number",
+                                _phoneCtrl,
+                                keyboard: TextInputType.phone,
+                                isPhone: true,
                               ),
-                            ),
-                            SizedBox(height: 24.h),
+                              SizedBox(height: 10.h),
 
-                            // 🔹 Name Fields in one row for better UX
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _field("First Name", _firstNameCtrl),
-                                ),
-                                SizedBox(width: 10.w),
-                                Expanded(
-                                  child: _field("Last Name", _lastNameCtrl),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 10.h),
+                              _field("Email", emailCtrl, isEmail: true),
+                              SizedBox(height: 10.h),
 
-                            _field(
-                              "Phone Number",
-                              _phoneCtrl,
-                              keyboard: TextInputType.phone,
-                            ),
-                            SizedBox(height: 10.h),
-
-                            _field("Email", emailCtrl, isEmail: true),
-                            SizedBox(height: 10.h),
-
-                            _field(
-                              "Password",
-                              passwordCtrl,
-                              obscure: true,
-                              isPassword: true,
-                            ),
-                            SizedBox(height: 10.h),
-
-                            // 🔹 Address block
-                            _field("Address", _addressCtrl),
-                            SizedBox(height: 10.h),
-                            _field("Country", _countryCtrl),
-                            SizedBox(height: 10.h),
-                            Row(
-                              children: [
-                                Expanded(child: _field("State", _stateCtrl)),
-                                SizedBox(width: 10.w),
-                                Expanded(child: _field("City", _cityCtrl)),
-                              ],
-                            ),
-                            SizedBox(height: 10.h),
-                            _field(
-                              "Pin Code",
-                              _pinCtrl,
-                              keyboard: TextInputType.number,
-                            ),
-                            SizedBox(height: 24.h),
-
-                            // 🔹 Register Button with loading
-                            BlocBuilder<RegisterBloc, RegisterState>(
-                              builder: (context, state) {
-                                final isLoading = state is RegisterLoading;
-
-                                return LoadingFillButton(
-                                  text: "Register",
-                                  isLoading:
-                                      isLoading, // This tells the button to show spinner
-                                  backgroundColor: AppColors.redPrimary,
-                                  textColor: Colors.grey.shade200,
-                                  borderRadius: 8.r,
-                                  onPressedAsync: () async {
-                                    if (_formKey.currentState!.validate()) {
-                                      context.read<RegisterBloc>().add(
-                                        SubmitRegister(
-                                          firstName: _firstNameCtrl.text.trim(),
-                                          lastName: _lastNameCtrl.text.trim(),
-                                          phone: _phoneCtrl.text.trim(),
-                                          email: emailCtrl.text.trim(),
-                                          password: passwordCtrl.text.trim(),
-                                          address: _addressCtrl.text.trim(),
-                                          country: _countryCtrl.text.trim(),
-                                          state: _stateCtrl.text.trim(),
-                                          city: _cityCtrl.text.trim(),
-                                          pinCode:
-                                              int.tryParse(
-                                                _pinCtrl.text.trim(),
-                                              ) ??
-                                              0,
-                                          imageFile: _image,
-                                        ),
-                                      );
-                                    }
-                                  },
-                                );
-                              },
-                            ),
-
-                            SizedBox(height: 12.h),
-
-                            // 🔹 Already have an account? Login
-                            InkWell(
-                              onTap: () {
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  AppRoutes.login,
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(8.r),
-                              splashColor: AppColors.redAccent.withOpacity(0.2),
-                              highlightColor: AppColors.redAccent.withOpacity(
-                                0.1,
+                              _field(
+                                "Password",
+                                passwordCtrl,
+                                obscure: true,
+                                isPassword: true,
                               ),
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8.h),
-                                child: Text.rich(
-                                  TextSpan(
-                                    text: "Already have an account? ",
-                                    style: TextStyle(
-                                      fontSize: 12.sp,
-                                      color: Colors.black87,
+                              SizedBox(height: 10.h),
+
+                              // 🔹 Address block
+                              _field("Address", _addressCtrl),
+                              SizedBox(height: 10.h),
+                              _field("Country", _countryCtrl, isTextOnly: true),
+                              SizedBox(height: 10.h),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _field(
+                                      "State",
+                                      _stateCtrl,
+                                      isTextOnly: true,
                                     ),
-                                    children: [
-                                      TextSpan(
-                                        text: " Login",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.redAccent,
-                                        ),
+                                  ),
+                                  SizedBox(width: 10.w),
+                                  Expanded(
+                                    child: _field(
+                                      "City",
+                                      _cityCtrl,
+                                      isTextOnly: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 10.h),
+                              _field(
+                                "Pin Code",
+                                _pinCtrl,
+                                keyboard: TextInputType.number,
+                                isPin: true,
+                              ),
+                              SizedBox(height: 24.h),
+
+                              // 🔹 Register Button with loading
+                              BlocBuilder<RegisterBloc, RegisterState>(
+                                builder: (context, state) {
+                                  final isLoading = state is RegisterLoading;
+
+                                  return LoadingFillButton(
+                                    text: "Register",
+                                    isLoading:
+                                        isLoading, // This tells the button to show spinner
+                                    backgroundColor: AppColors.redPrimary,
+                                    textColor: Colors.grey.shade200,
+                                    borderRadius: 8.r,
+                                    onPressedAsync: () async {
+                                      if (_formKey.currentState!.validate()) {
+                                        context.read<RegisterBloc>().add(
+                                          SubmitRegister(
+                                            firstName: _firstNameCtrl.text
+                                                .trim(),
+                                            lastName: _lastNameCtrl.text.trim(),
+                                            phone: _phoneCtrl.text.trim(),
+                                            email: emailCtrl.text.trim(),
+                                            password: passwordCtrl.text.trim(),
+                                            address: _addressCtrl.text.trim(),
+                                            country: _countryCtrl.text.trim(),
+                                            state: _stateCtrl.text.trim(),
+                                            city: _cityCtrl.text.trim(),
+                                            pinCode:
+                                                int.tryParse(
+                                                  _pinCtrl.text.trim(),
+                                                ) ??
+                                                0,
+                                            imageFile: _image,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+
+                              SizedBox(height: 12.h),
+
+                              // 🔹 Already have an account? Login
+                              InkWell(
+                                onTap: () {
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    AppRoutes.login,
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(8.r),
+                                splashColor: AppColors.redAccent.withOpacity(
+                                  0.2,
+                                ),
+                                highlightColor: AppColors.redAccent.withOpacity(
+                                  0.1,
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                                  child: Text.rich(
+                                    TextSpan(
+                                      text: "Already have an account? ",
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        color: Colors.black87,
                                       ),
-                                    ],
+                                      children: [
+                                        TextSpan(
+                                          text: " Login",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.redAccent,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            SizedBox(height: 24.h),
-                          ],
+                              SizedBox(height: 24.h),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  // 🔹 Header section like login
   Widget _headerSection() {
     return Stack(
       children: [
@@ -327,13 +399,17 @@ class _RegisterState extends State<Register> {
     );
   }
 
-  // 🔹 Custom TextFormField with validation
+  // 🔹 Custom TextFormField with professional-level validation
   Widget _field(
     String hint,
     TextEditingController controller, {
     bool obscure = false,
     bool isEmail = false,
     bool isPassword = false,
+    bool isName = false, // First/Last Name
+    bool isPhone = false,
+    bool isPin = false,
+    bool isTextOnly = false, // City/State/Country
     TextInputType keyboard = TextInputType.text,
     int? maxLength,
   }) {
@@ -349,15 +425,53 @@ class _RegisterState extends State<Register> {
           if (value == null || value.trim().isEmpty) {
             return "$hint is required";
           }
+
+          final trimmed = value.trim();
+
+          // Name validation
+          if (isName) {
+            if (!RegExp(r"^[a-zA-Z\s]+$").hasMatch(trimmed)) {
+              return "letters only";
+            }
+            if (trimmed.length < 2) {
+              return "at least 2 letters";
+            }
+          }
+
+          // Text-only fields: City, State, Country
+          if (isTextOnly) {
+            if (!RegExp(r"^[a-zA-Z\s]+$").hasMatch(trimmed)) {
+              return "letters only";
+            }
+          }
+
+          // Phone validation
+          if (isPhone) {
+            if (!RegExp(r"^[0-9]{10}$").hasMatch(trimmed)) {
+              return "Enter a valid 10-digit phone number";
+            }
+          }
+
+          // Pin code validation
+          if (isPin) {
+            if (!RegExp(r"^[0-9]{6}$").hasMatch(trimmed)) {
+              return "Enter a valid 6-digit pin code";
+            }
+          }
+
+          // Email validation
           if (isEmail &&
-              !RegExp(
-                r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$",
-              ).hasMatch(value.trim())) {
+              !RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(trimmed)) {
             return "Enter a valid email";
           }
-          if (isPassword && value.length < 6) {
-            return "Password must be at least 6 characters";
+
+          // Password validation
+          if (isPassword) {
+            if (trimmed.length < 6) {
+              return "Password must be at least 6 characters";
+            }
           }
+
           return null;
         },
         style: TextStyle(fontSize: 14.sp),

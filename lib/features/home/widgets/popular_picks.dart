@@ -1,12 +1,8 @@
-import 'dart:async';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:pizza_boys/core/bloc/refresh_cubit_helper.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
-import 'package:pizza_boys/core/constant/image_urls.dart';
 import 'package:pizza_boys/core/helpers/ui/snackbar_helper.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
@@ -15,6 +11,8 @@ import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_state.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_bloc.dart';
+import 'package:pizza_boys/features/home/bloc/integration/category/category_state.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_event.dart';
 import 'package:pizza_boys/features/home/bloc/integration/dish/dish_state.dart';
@@ -30,6 +28,8 @@ class PopularPicks extends StatefulWidget {
 
 class _PopularPicksState extends State<PopularPicks> {
   bool isRemoving = false;
+  int? _pickedCategoryId;
+  List<DishModel> _cachedDishes = [];
   @override
   void initState() {
     super.initState();
@@ -38,11 +38,48 @@ class _PopularPicksState extends State<PopularPicks> {
 
   void _loadDishes() async {
     final storeId = await TokenStorage.getChosenStoreId() ?? "-1";
-    if (mounted) {
+
+    final catState = context.read<CategoryBloc>().state;
+
+    if (catState is CategoryLoaded && catState.categories.isNotEmpty) {
+      // ✅ RANDOM ONLY ONCE
+      _pickedCategoryId ??= (List.of(catState.categories)..shuffle()).first.id;
+
       context.read<DishBloc>().add(
-        GetAllDishesEvent(storeId: storeId, categoryId: 1),
+        GetAllDishesEvent(storeId: storeId, categoryId: _pickedCategoryId!),
       );
     }
+  }
+
+  Future<void> _loadOrPickDishes(List<DishModel> dishes) async {
+    // ✅ 1. Load saved ids
+    final savedIds = await TokenStorage.loadPopularDishIds();
+
+    // ✅ 2. Use saved dishes if present
+    if (savedIds.isNotEmpty) {
+      _cachedDishes = dishes
+          .where((dish) => savedIds.contains(dish.id))
+          .toList();
+
+      // ✅ fallback if saved ids no longer exist
+      if (_cachedDishes.isNotEmpty) {
+        print("📦 Loaded stored Popular Picks: $savedIds");
+        setState(() {});
+        return;
+      }
+    }
+
+    // ✅ 3. Pick new dishes only once (FIRST RUN)
+    final shuffled = List.of(dishes)..shuffle();
+    _cachedDishes = shuffled.take(4).toList();
+
+    // ✅ 4. Save ids
+    await TokenStorage.savePopularDishIds(
+      _cachedDishes.map((e) => e.id).toList(),
+    );
+
+    print("🎯 Created new Popular Picks: ${_cachedDishes.map((e) => e.id)}");
+    setState(() {});
   }
 
   @override
@@ -137,7 +174,15 @@ class _PopularPicksState extends State<PopularPicks> {
             },
           );
         } else if (state is DishLoaded) {
-          final List<DishModel> dishes = state.dishes;
+          if (_cachedDishes.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadOrPickDishes(state.dishes);
+            });
+          }
+
+          final List<DishModel> dishes = _cachedDishes.length > 4
+              ? _cachedDishes.take(4).toList()
+              : _cachedDishes;
 
           if (dishes.isEmpty) {
             return Center(
@@ -195,25 +240,25 @@ class _PopularPicksState extends State<PopularPicks> {
                         ? dish.imageUrl
                         : "https://wallpapers.com/images/hd/error-placeholder-image-2e1q6z01rfep95v0.jpg";
 
-                    return GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        context.read<PizzaDetailsBloc>().add(
-                          ResetPizzaDetailsEvent(),
-                        );
+                    return Stack(
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            context.read<PizzaDetailsBloc>().add(
+                              ResetPizzaDetailsEvent(),
+                            );
 
-                        // ✅ Then navigate to PizzaDetailsView with dishId
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.pizzaDetails,
-                          arguments: dish.id, // pass correct id
-                        );
+                            // ✅ Then navigate to PizzaDetailsView with dishId
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.pizzaDetails,
+                              arguments: dish.id, // pass correct id
+                            );
 
-                        print('👉 Passing Selected Dish ID: ${dish.id}');
-                      },
-                      child: Stack(
-                        children: [
-                          Container(
+                            print('👉 Passing Selected Dish ID: ${dish.id}');
+                          },
+                          child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12.r),
@@ -352,172 +397,170 @@ class _PopularPicksState extends State<PopularPicks> {
                               ],
                             ),
                           ),
+                        ),
 
-                          /// Top Choice Tag
-                          name == 'Hawaiian Pizza'
-                              ? Positioned(
-                                  top: 0.h,
-                                  left: 0,
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                      vertical: 3.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.secondaryBlack(context),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(12.r),
-                                        bottomRight: Radius.circular(8.r),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Top Choice',
-                                      style: TextStyle(
-                                        color: AppColors.whiteColor,
-                                        fontSize: 9.sp,
-                                        fontWeight: FontWeight.w800,
-                                        fontFamily: 'Poppins',
-                                      ),
+                        /// Top Choice Tag
+                        name == 'Hawaiian Pizza'
+                            ? Positioned(
+                                top: 0.h,
+                                left: 0,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8.w,
+                                    vertical: 3.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondaryBlack(context),
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(12.r),
+                                      bottomRight: Radius.circular(8.r),
                                     ),
                                   ),
-                                )
-                              : const SizedBox(),
-
-                          /// Favorite Icon
-                          Positioned(
-                            top: 7.h,
-                            right: 7.w,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-
-                              onTap: () async {
-                                if (isRemoving) {
-                                  print(
-                                    "⏳ Remove already in progress… ignoring tap",
-                                  );
-                                  return;
-                                }
-
-                                print("==============================");
-                                print("⭐ FAVORITE BUTTON PRESSED ⭐");
-                                print(
-                                  "dishId: ${dish.id}, wishlistId: ${dish.wishlistId}",
-                                );
-                                print("==============================");
-
-                                final favBloc = context.read<FavoriteBloc>();
-                                final isGuest = await TokenStorage.isGuest();
-
-                                // 🔍 FIND EXISTING FAVORITE
-                                final favDish = favBloc.getFavoriteDishById(
-                                  dish.id,
-                                );
-                                final isFavorite = favDish != null;
-
-                                print("🔥 isFavorite: $isFavorite");
-
-                                // ⭐ ADD FLOW
-                                if (!isFavorite) {
-                                  print(
-                                    "➕ Adding dish ${dish.id} to favorites",
-                                  );
-                                  favBloc.add(AddToFavoriteEvent(dish));
-                                  SnackbarHelper.green(
-                                    context,
-                                    "❤️ Added to Favorites!",
-                                  );
-                                  return;
-                                }
-
-                                // ⭐ REMOVE FLOW — guest
-                                if (isGuest) {
-                                  print(
-                                    "🧑‍🤝‍🧑 Guest removing favorite locally",
-                                  );
-                                  setState(() => isRemoving = true);
-
-                                  favBloc.add(
-                                    RemoveFromFavoriteEvent(dish: dish),
-                                  );
-                                  // SnackbarHelper.red(
-                                  //   context,
-                                  //   "Removed from Favorites!",
-                                  // );
-
-                                  // 🔄 ONLY FETCH FAVORITES AGAIN
-                                  favBloc.add(FetchWishlistEvent());
-
-                                  setState(() => isRemoving = false);
-                                  return;
-                                }
-
-                                // ⭐ REMOVE FLOW — logged in (wishlistId available)
-                                if (favDish?.wishlistId != null) {
-                                  print(
-                                    "🗑 Removing using wishlistId: ${favDish!.wishlistId}",
-                                  );
-
-                                  setState(() => isRemoving = true);
-
-                                  favBloc.add(
-                                    RemoveFromFavoriteEvent(
-                                      dish: dish,
-                                      wishlistId: favDish.wishlistId,
+                                  child: Text(
+                                    'Top Choice',
+                                    style: TextStyle(
+                                      color: AppColors.whiteColor,
+                                      fontSize: 9.sp,
+                                      fontWeight: FontWeight.w800,
+                                      fontFamily: 'Poppins',
                                     ),
-                                  );
+                                  ),
+                                ),
+                              )
+                            : const SizedBox(),
 
-                                  // 🔄 ONLY FETCH FAVORITES AGAIN
-                                  favBloc.add(FetchWishlistEvent());
+                        /// Favorite Icon
+                        Positioned(
+                          top: 7.h,
+                          right: 7.w,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
 
-                                  setState(() => isRemoving = false);
-                                  return;
-                                }
+                            onTap: () async {
+                              if (isRemoving) {
+                                print(
+                                  "⏳ Remove already in progress… ignoring tap",
+                                );
+                                return;
+                              }
 
-                                // ⭐ wishlistId missing → fetch first
-                                print("⚠ wishlistId missing! Fetching first…");
+                              print("==============================");
+                              print("⭐ FAVORITE BUTTON PRESSED ⭐");
+                              print(
+                                "dishId: ${dish.id}, wishlistId: ${dish.wishlistId}",
+                              );
+                              print("==============================");
 
+                              final favBloc = context.read<FavoriteBloc>();
+                              final isGuest = await TokenStorage.isGuest();
+
+                              // 🔍 FIND EXISTING FAVORITE
+                              final favDish = favBloc.getFavoriteDishById(
+                                dish.id,
+                              );
+                              final isFavorite = favDish != null;
+
+                              print("🔥 isFavorite: $isFavorite");
+
+                              // ⭐ ADD FLOW
+                              if (!isFavorite) {
+                                print("➕ Adding dish ${dish.id} to favorites");
+                                favBloc.add(AddToFavoriteEvent(dish));
+                                SnackbarHelper.green(
+                                  context,
+                                  "❤️ Added to Favorites!",
+                                );
+                                return;
+                              }
+
+                              // ⭐ REMOVE FLOW — guest
+                              if (isGuest) {
+                                print(
+                                  "🧑‍🤝‍🧑 Guest removing favorite locally",
+                                );
                                 setState(() => isRemoving = true);
 
-                                // internal fetch+remove logic
-                                await favBloc.fetchAndRemove(dish);
-
-                                print("🗑 Removed after fetch flow");
+                                favBloc.add(
+                                  RemoveFromFavoriteEvent(dish: dish),
+                                );
+                                // SnackbarHelper.red(
+                                //   context,
+                                //   "Removed from Favorites!",
+                                // );
 
                                 // 🔄 ONLY FETCH FAVORITES AGAIN
                                 favBloc.add(FetchWishlistEvent());
 
                                 setState(() => isRemoving = false);
+                                return;
+                              }
+
+                              // ⭐ REMOVE FLOW — logged in (wishlistId available)
+                              if (favDish.wishlistId != null) {
+                                print(
+                                  "🗑 Removing using wishlistId: ${favDish.wishlistId}",
+                                );
+
+                                setState(() => isRemoving = true);
+
+                                favBloc.add(
+                                  RemoveFromFavoriteEvent(
+                                    dish: dish,
+                                    wishlistId: favDish.wishlistId,
+                                  ),
+                                );
+
+                                // 🔄 ONLY FETCH FAVORITES AGAIN
+                                favBloc.add(FetchWishlistEvent());
+
+                                setState(() => isRemoving = false);
+                                return;
+                              }
+
+                              // ⭐ wishlistId missing → fetch first
+                              print("⚠ wishlistId missing! Fetching first…");
+
+                              setState(() => isRemoving = true);
+
+                              // internal fetch+remove logic
+                              await favBloc.fetchAndRemove(dish);
+
+                              print("🗑 Removed after fetch flow");
+
+                              // 🔄 ONLY FETCH FAVORITES AGAIN
+                              favBloc.add(FetchWishlistEvent());
+
+                              setState(() => isRemoving = false);
+                            },
+                            child: BlocBuilder<FavoriteBloc, FavoriteState>(
+                              builder: (context, state) {
+                                bool isFavorite = false;
+
+                                if (state is FavoriteLoaded) {
+                                  isFavorite = state.favorites.any(
+                                    (favorite) => favorite.id == dish.id,
+                                  );
+                                }
+
+                                return isRemoving
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Icon(
+                                        isFavorite
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: AppColors.redPrimary,
+                                      );
                               },
-                              child: BlocBuilder<FavoriteBloc, FavoriteState>(
-                                builder: (context, state) {
-                                  bool isFavorite = false;
-
-                                  if (state is FavoriteLoaded) {
-                                    isFavorite = state.favorites.any(
-                                      (favorite) => favorite.id == dish.id,
-                                    );
-                                  }
-
-                                  return isRemoving
-                                      ? const SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : Icon(
-                                          isFavorite
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          color: AppColors.redPrimary,
-                                        );
-                                },
-                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     );
                   },
                 ),

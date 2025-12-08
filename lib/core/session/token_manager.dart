@@ -7,11 +7,13 @@ import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 
 class TokenManager {
+
+  
   static final Dio _dio = Dio(
     BaseOptions(baseUrl: "http://78.142.47.247:3003/api/"),
   );
   static bool _isRefreshing = false;
-  static List<Function(String)> _queue = [];
+  static final List<Function(String)> _queue = [];
 
   /// ✅ Get a valid access token
 /// ✅ Get a valid access token
@@ -139,4 +141,9 @@ static Future<String?> getValidAccessToken() async {
     }
     _queue.clear();
   }
+
+  // popular picks
+  
 }
+
+

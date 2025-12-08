@@ -9,15 +9,11 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lottie/lottie.dart';
 import 'package:overlay_support/overlay_support.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 import 'package:pizza_boys/core/bloc/firebase/maintenance_bloc.dart';
 import 'package:pizza_boys/core/bloc/firebase/maintenance_event.dart';
 import 'package:pizza_boys/core/bloc/firebase/maintenance_state.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_bloc.dart';
 import 'package:pizza_boys/core/bloc/internet_check/internet_check_state.dart';
-
-import 'package:pizza_boys/core/constant/app_colors.dart';
-import 'package:pizza_boys/core/constant/lottie_urls.dart';
 import 'package:pizza_boys/core/constant/stripe_keys.dart';
 import 'package:pizza_boys/core/helpers/api_client_helper.dart';
 import 'package:pizza_boys/core/helpers/bloc_provider_helper.dart';
@@ -30,12 +26,9 @@ import 'package:pizza_boys/core/helpers/internet_helper/error_screen_tracker.dar
 import 'package:pizza_boys/core/helpers/internet_helper/maintenance_helper.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/navigation_error.dart';
 import 'package:pizza_boys/core/helpers/internet_helper/network_issue_helper.dart';
-
 import 'package:pizza_boys/core/helpers/notification_server.dart';
 import 'package:pizza_boys/core/theme/default_theme.dart';
-
 import 'package:pizza_boys/firebase_options.dart';
-
 import 'package:pizza_boys/routes/app_pages.dart';
 import 'package:pizza_boys/routes/app_route_obs.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
@@ -298,8 +291,15 @@ class PizzaBoysApp extends StatelessWidget {
               darkTheme: DefaultTheme.darkTheme,
               themeMode: ThemeMode.light,
               navigatorObservers: [routeLogger],
-              builder: (context, child) =>
-                  ConnectivityWrapper(child: child ?? const SizedBox()),
+              builder: (context, child) => ConnectivityWrapper(
+                child: SafeArea(
+                  top: false,
+                  left: false,
+                  right: false,
+                  bottom: true,
+                  child: child ?? const SizedBox(),
+                ),
+              ),
               initialRoute: AppRoutes.splashScreen,
               onGenerateRoute: AppPages.generateRoutes,
             );
