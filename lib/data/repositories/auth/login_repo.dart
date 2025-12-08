@@ -20,7 +20,7 @@ class LoginRepo {
    final storeId = await TokenStorage.getChosenStoreId(); // or your store watcher state
 
 await LocalCartStorage.clearCart(storeId!);
-await LocalCartStorage.clearFavorites(storeId!);
+await LocalCartStorage.clearFavorites(storeId);
 
     print("✅ [LoginRepo] Guest session initialized locally.");
   }

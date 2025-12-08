@@ -13,7 +13,7 @@ class OrderService {
 
       print("📤 Sending Order to Backend...");
       print("🔗 Endpoint: ${ApiUrls.postOrders}");
-      print("🧾 Payload: ${orderJson}");
+      print("🧾 Payload: $orderJson");
 
       final response = await ApiClient.dio.post(
         ApiUrls.postOrders,

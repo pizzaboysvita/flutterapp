@@ -25,8 +25,9 @@ class _GuestCheckoutState extends State<GuestCheckout> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: 0.0.h,
+          // toolbarHeight: 0.0.h,
           backgroundColor: AppColors.blackColor,
+          iconTheme: IconThemeData(color: AppColors.whiteColor),
         ),
         body: SingleChildScrollView(
           child: Column(
@@ -39,7 +40,7 @@ class _GuestCheckoutState extends State<GuestCheckout> {
                   key: formKey,
                   child: Column(
                     children: [
-                            SizedBox(height: 14.h),
+                      SizedBox(height: 14.h),
                       _inputField("Full Name", nameController, isEmail: false),
                       SizedBox(height: 14.h),
                       _inputField("Email", emailController, isEmail: true),

@@ -59,6 +59,7 @@ class Profile extends StatelessWidget {
     );
   }
 
+
   void _showLogoutConfirmationDialog(BuildContext context) {
     final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
@@ -118,26 +119,31 @@ class Profile extends StatelessWidget {
                       ),
                     ),
                   ),
-                Expanded(
-  child: ElevatedButton(
-    onPressed: () async {
-      Navigator.pop(ctx);
-      await SessionManager.clearSession(context);
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await SessionManager.clearSession(context);
 
-      // Clear logged-in user's favorites in Bloc
-      context.read<FavoriteBloc>().clearFavorites();
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.redPrimary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      padding: EdgeInsets.symmetric(vertical: 12),
-    ),
-    child: Text(
-      "Logout",
-      style: TextStyle(color: Colors.white, fontFamily: 'Poppins'),
-    ),
-  ),
-)
+                        // Clear logged-in user's favorites in Bloc
+                        context.read<FavoriteBloc>().clearFavorites();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.redPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(
+                        "Logout",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -238,46 +244,46 @@ class Profile extends StatelessWidget {
         },
       ),
 
-      _ProfileOption(
-        FontAwesomeIcons.locationDot, // Filled (solid)
-        "Saved Addresses",
-        "Manage your delivery locations",
-        ontap: () {
-          Navigator.pushNamed(context, AppRoutes.saveAddress);
-        },
-      ),
-      _ProfileOption(
-        FontAwesomeIcons.solidBell, // Filled
-        "Notifications",
-        "Order updates and exclusive offers",
-        ontap: () {
-          Navigator.pushNamed(context, AppRoutes.notifications);
-        },
-      ),
-      _ProfileOption(
-        FontAwesomeIcons.solidCreditCard, // Filled
-        "Payment Methods",
-        "Manage your saved cards",
-        ontap: () {
-          Navigator.pushNamed(context, AppRoutes.paymentMethods);
-        },
-      ),
-      _ProfileOption(
-        FontAwesomeIcons.solidCircleQuestion, // Filled support/help icon
-        "Support",
-        "Get help with orders or payments",
-        ontap: () {
-          Navigator.pushNamed(context, AppRoutes.support);
-        },
-      ),
-      _ProfileOption(
-        FontAwesomeIcons.shieldHalved, // Filled (solid) shield
-        "Security Settings",
-        "Manage password & login methods",
-        ontap: () {
-          Navigator.pushNamed(context, AppRoutes.securityAndSetting);
-        },
-      ),
+      // _ProfileOption(
+      //   FontAwesomeIcons.locationDot, // Filled (solid)
+      //   "Saved Addresses",
+      //   "Manage your delivery locations",
+      //   ontap: () {
+      //     Navigator.pushNamed(context, AppRoutes.saveAddress);
+      //   },
+      // ),
+      // _ProfileOption(
+      //   FontAwesomeIcons.solidBell, // Filled
+      //   "Notifications",
+      //   "Order updates and exclusive offers",
+      //   ontap: () {
+      //     Navigator.pushNamed(context, AppRoutes.notifications);
+      //   },
+      // ),
+      // _ProfileOption(
+      //   FontAwesomeIcons.solidCreditCard, // Filled
+      //   "Payment Methods",
+      //   "Manage your saved cards",
+      //   ontap: () {
+      //     Navigator.pushNamed(context, AppRoutes.paymentMethods);
+      //   },
+      // ),
+      // _ProfileOption(
+      //   FontAwesomeIcons.solidCircleQuestion, // Filled support/help icon
+      //   "Support",
+      //   "Get help with orders or payments",
+      //   ontap: () {
+      //     Navigator.pushNamed(context, AppRoutes.support);
+      //   },
+      // ),
+      // _ProfileOption(
+      //   FontAwesomeIcons.shieldHalved, // Filled (solid) shield
+      //   "Security Settings",
+      //   "Manage password & login methods",
+      //   ontap: () {
+      //     Navigator.pushNamed(context, AppRoutes.securityAndSetting);
+      //   },
+      // ),
     ];
 
     return options.map((e) => _buildListTile(e)).toList();

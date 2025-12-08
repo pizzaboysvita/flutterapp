@@ -21,6 +21,8 @@ class TokenStorage {
   static const _chosenLocationKey = 'chosen_location';
   static const _chosenStoreIdKey = 'chosen_store_id';
   static const _storeNameKey = 'store_name';
+  static const _popularDishIdsKey = "popular_dish_ids";
+
 
   // 🟢 Save user session (normal login)
   static Future<void> saveSession(Map<String, dynamic> data) async {
@@ -204,4 +206,45 @@ class TokenStorage {
       return null;
     }
   }
+
+  // ============================
+//  POPULAR PICKS STORAGE
+// ============================
+
+static Future<void> savePopularDishIds(List<int> ids) async {
+  try {
+    final value = ids.join(",");
+
+    await _storage.write(
+      key: _popularDishIdsKey,
+      value: value,
+    );
+
+    print("✅ [TokenStorage] Saved Popular Picks IDs: $value");
+  } catch (e) {
+    print("❌ [TokenStorage] savePopularDishIds failed: $e");
+  }
+}
+
+static Future<List<int>> loadPopularDishIds() async {
+  try {
+    final value = await _storage.read(key: _popularDishIdsKey);
+
+    if (value == null || value.isEmpty) return [];
+
+    final ids = value
+        .split(",")
+        .map((e) => int.tryParse(e))
+        .whereType<int>()
+        .toList();
+
+    print("✅ [TokenStorage] Loaded Popular Picks IDs: $ids");
+
+    return ids;
+  } catch (e) {
+    print("❌ [TokenStorage] loadPopularDishIds failed: $e");
+    return [];
+  }
+}
+
 }

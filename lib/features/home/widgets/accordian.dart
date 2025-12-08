@@ -39,34 +39,35 @@ class _IconAccordionState extends State<IconAccordion> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (isExpanded) ...[
-                _buildIcon(FontAwesomeIcons.solidHeart, () {
-                  Navigator.pushNamed(context, AppRoutes.favorites);
-                }),
-    
-                SizedBox(width: 11.0.w),
-    
-                // 🔹 Cart Badge with dynamic BlocBuilder
-                BlocBuilder<CartGetBloc, CartGetState>(
-                  builder: (context, state) {
-                    int count = 0;
-                    if (state is CartLoaded) {
-                      count =
-                          state.cartItems.length; // number of items in cart
-                    }
-                    return _buildIcon(FontAwesomeIcons.cartShopping, () {
-                      Navigator.pushNamed(context, AppRoutes.cartView);
-                    }, badgeCount: count);
-                  },
-                ),
-    
-                SizedBox(width: 12.0.w),
-              ],
-    
+              // Always show Cart and Profile
+              BlocBuilder<CartGetBloc, CartGetState>(
+                builder: (context, state) {
+                  int count = 0;
+                  if (state is CartLoaded) {
+                    count = state.cartItems.length;
+                  }
+                  return _buildIcon(FontAwesomeIcons.cartShopping, () {
+                    Navigator.pushNamed(context, AppRoutes.cartView);
+                  }, badgeCount: count);
+                },
+              ),
+
+              SizedBox(width: 10.w),
+
               _buildIcon(FontAwesomeIcons.solidUser, () {
                 Navigator.pushNamed(context, AppRoutes.profile);
               }),
-    
+
+              // Only show these when expanded
+              if (isExpanded) ...[
+                SizedBox(width: 11.0.w),
+                _buildIcon(FontAwesomeIcons.solidHeart, () {
+                  Navigator.pushNamed(context, AppRoutes.favorites);
+                }),
+                SizedBox(width: 12.0.w),
+              ],
+
+              // Expand/collapse button
               _buildIcon(
                 isExpanded
                     ? FontAwesomeIcons.chevronLeft

@@ -2,7 +2,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/core/storage/guset_local_storage.dart';
 import 'package:pizza_boys/data/models/cart/cart_item_model.dart';
-import 'package:pizza_boys/data/models/dish/dish_model.dart';
 import 'package:pizza_boys/data/models/dish/guest_cart_item_model.dart';
 import 'package:pizza_boys/data/repositories/cart/cart_repo.dart';
 import 'cart_get_event.dart';
@@ -37,7 +36,7 @@ class CartGetBloc extends Bloc<CartGetEvent, CartGetState> {
       cartId: item.dish.id,
       userId: 0,
       dishId: item.dish.id,
-      storeId: item.dish.storeId ?? 0,
+      storeId: item.dish.storeId,
       quantity: item.quantity,
       price: item.unitPrice,
       status: "guest",

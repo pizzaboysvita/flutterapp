@@ -69,7 +69,7 @@ static Future<void> clearSession(BuildContext context) async {
 
   // 👇 Clear cart & fav only of that store
   await LocalCartStorage.clearCart(storeId!);
-  await LocalCartStorage.clearFavorites(storeId!);
+  await LocalCartStorage.clearFavorites(storeId);
 
     // 4️⃣ Reset blocs safely
     if (context.mounted) {
