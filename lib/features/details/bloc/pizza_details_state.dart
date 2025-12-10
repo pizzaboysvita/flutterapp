@@ -4,6 +4,7 @@ class PizzaDetailsState {
   final bool isLoading;
   final bool isBaseExpanded;
   final DishModel? dish;
+  
 
   final Map<String, bool> selectedCombo;
   final double comboExtraPrice;

@@ -20,6 +20,62 @@ class PizzaDetailsBloc extends Bloc<PizzaDetailsEvent, PizzaDetailsState> {
       emit(PizzaDetailsState.initial());
     });
 
+on<RestorePizzaFromCartEvent>((event, emit) {
+  final cart = event.cartItem;
+  final options = cart.options;
+
+  emit(
+    state.copyWith(
+      /// 🍕 BASIC
+      selectedSize: options['size'] ?? "Small",
+      selectedLargeOption: options['largeOption'],
+      largeOptionExtraPrice:
+          double.tryParse(options['largeOptionPrice']?.toString() ?? "0") ?? 0,
+
+      quantity: cart.quantity,
+      
+
+      /// 🍕 BASE
+      selectedBase: options['base'],
+      baseExtraPrice:
+          double.tryParse(options['basePrice']?.toString() ?? "0") ?? 0,
+
+      /// 🧀 TOPPINGS
+      selectedToppings: toBoolMap(options['toppings']),
+      toppingsExtraPrice:
+          double.tryParse(options['toppingsPrice']?.toString() ?? "0") ?? 0,
+
+      /// 🥫 SAUCES
+      sauceQuantities: toIntMap(options['sauces']),
+      saucesExtraPrice:
+          double.tryParse(options['saucesPrice']?.toString() ?? "0") ?? 0,
+
+      /// 🥦 INGREDIENTS
+      selectedIngredients: toBoolMap(options['ingredients']),
+
+      /// 🍟 CHOICES
+      selectedChoices: toBoolMap(options['choices']),
+      choicesExtraPrice:
+          double.tryParse(options['choicesPrice']?.toString() ?? "0") ?? 0,
+
+      /// ✅ RADIO OPTIONS
+      selectedRadioOptions: toStringMap(options['radioOptions']),
+      radioExtraPrices: toDoubleMap(options['radioPrices']),
+      radiosExtraPrice:
+          double.tryParse(options['radioTotalPrice']?.toString() ?? "0") ?? 0,
+
+      /// 🍱 COMBO
+      selectedCombo: toBoolMap(options['combo']),
+      comboExtraPrice:
+          double.tryParse(options['comboPrice']?.toString() ?? "0") ?? 0,
+
+      selectedComboDish:
+          DishModelExtensionsEmpty.empty(),
+    ),
+  );
+});
+
+
     on<ToggleBaseExpandEvent>((event, emit) {
       emit(state.copyWith(isBaseExpanded: !state.isBaseExpanded));
     });
@@ -141,3 +197,38 @@ class PizzaDetailsBloc extends Bloc<PizzaDetailsEvent, PizzaDetailsState> {
     });
   }
 }
+
+Map<String, bool> toBoolMap(dynamic raw) =>
+    raw is Map
+        ? raw.map(
+            (k, v) => MapEntry(k.toString(), v == true),
+          )
+        : {};
+
+Map<String, int> toIntMap(dynamic raw) =>
+    raw is Map
+        ? raw.map(
+            (k, v) => MapEntry(
+              k.toString(),
+              int.tryParse(v.toString()) ?? 0,
+            ),
+          )
+        : {};
+
+Map<String, String> toStringMap(dynamic raw) =>
+    raw is Map
+        ? raw.map(
+            (k, v) => MapEntry(k.toString(), v.toString()),
+          )
+        : {};
+
+Map<String, double> toDoubleMap(dynamic raw) =>
+    raw is Map
+        ? raw.map(
+            (k, v) => MapEntry(
+              k.toString(),
+              double.tryParse(v.toString()) ?? 0,
+            ),
+          )
+        : {};
+
