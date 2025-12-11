@@ -165,22 +165,20 @@ class _CartViewState extends State<CartView> {
                 }
 
                 return ListView.builder(
-                  itemCount: cartItems.length,
+                  itemCount: cartItems.length,    
                   itemBuilder: (context, index) {
                     final item = cartItems[index];
 
                     return GestureDetector(
                       behavior: HitTestBehavior.translucent,
                       onTap: () {
+                        // ✅ Restore pizza data from cart item into bloc
                         context.read<PizzaDetailsBloc>().add(
-                          ResetPizzaDetailsEvent(),
+                          RestorePizzaFromCartEvent(item),
                         );
 
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.pizzaDetails,
-                          arguments: item.dishId, // 🔥 Use item.dishId for cart
-                        );
+                        // ✅ Just go BACK — NOT push again
+                        Navigator.pop(context);
 
                         print('👉 Cart item tapped → Dish ID: ${item.dishId}');
                       },

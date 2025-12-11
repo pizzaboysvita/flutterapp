@@ -1,5 +1,6 @@
 // ignore_for_file: override_on_non_overriding_member
 
+import 'package:pizza_boys/data/models/cart/cart_item_model.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
 
 abstract class PizzaDetailsEvent {}
@@ -85,3 +86,11 @@ class FetchComboDishDetailsEvent extends PizzaDetailsEvent {
   final int dishId;
   FetchComboDishDetailsEvent(this.dishId);
 }
+
+/// 🔁 Restore full pizza config from cart
+class RestorePizzaFromCartEvent extends PizzaDetailsEvent {
+  final CartItem cartItem;
+
+  RestorePizzaFromCartEvent(this.cartItem);
+}
+
