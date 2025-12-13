@@ -51,4 +51,15 @@ class CartRepository {
       throw Exception("CartRepository Error: $e");
     }
   }
+
+// delete all items
+Future<Map<String, dynamic>> clearEntireCart(int userId) async {
+  try {
+    final response = await _cartService.clearEntireCart(userId: userId);
+    return response;
+  } catch (e) {
+    throw Exception("CartRepository Error: $e");
+  }
 }
+
+}                     

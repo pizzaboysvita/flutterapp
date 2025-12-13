@@ -40,6 +40,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
   List<String> selectedToppings = [];
   Map<String, int> sauceQuantity = {};
   List<String> selectedIngredients = [];
+  bool showBaseError = false;
 
   @override
   Widget build(BuildContext context) {
@@ -287,13 +288,13 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
 
                                     // 🔴 DEBUG – Dish Details
                                     for (final dish in sideDishes) {
-                                      debugPrint(
-                                        "🍕 Dish: ${dish.name} (ID: ${dish.id})\n"
-                                        "   → OptionSets: ${dish.optionSets.length}\n"
-                                        "   → Ingredients: ${dish.ingredients.length}\n"
-                                        "   → Choices: ${dish.choices.length}\n"
-                                        "   → Has Dynamic Data: ${dish.optionSets.isNotEmpty || dish.ingredients.isNotEmpty || dish.choices.isNotEmpty}\n",
-                                      );
+                                      // debugPrint(
+                                      //   "🍕 Dish: ${dish.name} (ID: ${dish.id})\n"
+                                      //   "   → OptionSets: ${dish.optionSets.length}\n"
+                                      //   "   → Ingredients: ${dish.ingredients.length}\n"
+                                      //   "   → Choices: ${dish.choices.length}\n"
+                                      //   "   → Has Dynamic Data: ${dish.optionSets.isNotEmpty || dish.ingredients.isNotEmpty || dish.choices.isNotEmpty}\n",
+                                      // );
                                     }
 
                                     // ✅ Check if this combo side has any expandable dishes
@@ -822,6 +823,46 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                 onPressed: state is CartLoading
                                     ? null
                                     : () async {
+                                        final pizzaState = context
+                                            .read<PizzaDetailsBloc>()
+                                            .state;
+
+                                        // ❗ BASE VALIDATION
+                                        // 1️⃣ Find required radio option sets like Base / Crust / Dough etc.
+                                        final requiredRadioSets = dish
+                                            .optionSets
+                                            .where(
+                                              (s) =>
+                                                  s.optionType.toLowerCase() ==
+                                                  "radio",
+                                            )
+                                            .toList();
+
+                                        // 2️⃣ If NO radio sets exist → skip validation completely
+                                        if (requiredRadioSets.isEmpty) {
+                                          // print("🍕 No base/crust radio options → skipping validation");
+                                        } else {
+                                          // 3️⃣ Validate each radio set
+                                          bool allSelected = true;
+                                          for (final set in requiredRadioSets) {
+                                            if (pizzaState
+                                                    .selectedRadioOptions[set
+                                                    .name] ==
+                                                null) {
+                                              allSelected = false;
+                                              break;
+                                            }
+                                          }
+
+                                          // 4️⃣ If any required set missing → show error and stop
+                                          if (!allSelected) {
+                                            setState(
+                                              () => showBaseError = true,
+                                            );
+                                            return;
+                                          }
+                                        }
+
                                         debugPrint(
                                           "========== ADD TO CART CLICK ==========",
                                         );
@@ -1072,23 +1113,43 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
   ) {
     return Container(
       padding: EdgeInsets.all(0.r),
-      // decoration: BoxDecoration(
-      //   color: AppColors.whiteColor,
-      //   borderRadius: BorderRadius.circular(12.r),
-      // ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        border:
+            showBaseError && state.selectedRadioOptions[optionSet.name] == null
+            ? Border.all(color: Colors.red, width: 1.5)
+            : null,
+      ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// Section title
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.h),
-            child: Text(
-              optionSet.name,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+            padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 6.0.w),
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: optionSet.name,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  TextSpan(
+                    text: '  (You must select at least one)',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12.sp, // smaller
+                      fontWeight: FontWeight.w400, // thinner
+                      color: Colors.black54, // hint-style
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1107,12 +1168,13 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12.r),
                 onTap: () {
+                  setState(() => showBaseError = false);
+
                   context.read<PizzaDetailsBloc>().add(
                     SelectOptionSetRadioEvent(
-                      optionSetName: optionSet
-                          .name, // The group name (Base / Crust / Size)
-                      selectedOptionName: opt.name, // The chosen option
-                      extraPrice: opt.price, // Extra price if needed
+                      optionSetName: optionSet.name,
+                      selectedOptionName: opt.name,
+                      extraPrice: opt.price,
                     ),
                   );
                 },

@@ -14,6 +14,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   CartBloc({required this.cartRepository}) : super(CartInitial()) {
     on<AddToCartEvent>(_onAddToCart);
     on<RemoveFromCartEvent>(_onRemoveFromCart);
+    on<ClearCartRemoteEvent>(_onClearCartRemote);
 
     on<AddGuestToCartEvent>((event, emit) async {
       emit(CartLoading());
@@ -79,6 +80,22 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
+  Future<void> _onClearCartRemote(
+    ClearCartRemoteEvent event,
+    Emitter<CartState> emit,
+  ) async {
+    emit(CartLoading());
+
+    try {
+      // Backend API to clear all items
+      await cartRepository.clearEntireCart(event.userId);
+
+      emit(const CartSuccess({"message": "Cart cleared"}, "clear"));
+    } catch (e) {
+      emit(CartFailure("Failed to clear cart: $e"));
+    }
+  }
+
   Future<void> _onRemoveFromCart(
     RemoveFromCartEvent event,
     Emitter<CartState> emit,
@@ -90,13 +107,12 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       if (isGuest) {
         final storeId = await TokenStorage.getChosenStoreId();
 
-        await LocalCartStorage.removeFromCart(
-          storeId!,
-          event.cartId,
-        );
+        await LocalCartStorage.removeFromCart(storeId!, event.cartId);
 
         // ✅ action = remove
-        emit(const CartSuccess({"message": "Removed from cart (guest)"}, "remove"));
+        emit(
+          const CartSuccess({"message": "Removed from cart (guest)"}, "remove"),
+        );
       } else {
         final response = await cartRepository.removeFromCart(
           cartId: event.cartId,

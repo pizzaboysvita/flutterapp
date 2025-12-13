@@ -23,7 +23,6 @@ class TokenStorage {
   static const _storeNameKey = 'store_name';
   static const _popularDishIdsKey = "popular_dish_ids";
 
-
   // 🟢 Save user session (normal login)
   static Future<void> saveSession(Map<String, dynamic> data) async {
     try {
@@ -208,43 +207,39 @@ class TokenStorage {
   }
 
   // ============================
-//  POPULAR PICKS STORAGE
-// ============================
+  //  POPULAR PICKS STORAGE
+  // ============================
 
-static Future<void> savePopularDishIds(List<int> ids) async {
-  try {
-    final value = ids.join(",");
+  static Future<void> savePopularDishIds(List<int> ids) async {
+    try {
+      final value = ids.join(",");
 
-    await _storage.write(
-      key: _popularDishIdsKey,
-      value: value,
-    );
+      await _storage.write(key: _popularDishIdsKey, value: value);
 
-    print("✅ [TokenStorage] Saved Popular Picks IDs: $value");
-  } catch (e) {
-    print("❌ [TokenStorage] savePopularDishIds failed: $e");
+      print("✅ [TokenStorage] Saved Popular Picks IDs: $value");
+    } catch (e) {
+      print("❌ [TokenStorage] savePopularDishIds failed: $e");
+    }
   }
-}
 
-static Future<List<int>> loadPopularDishIds() async {
-  try {
-    final value = await _storage.read(key: _popularDishIdsKey);
+  static Future<List<int>> loadPopularDishIds() async {
+    try {
+      final value = await _storage.read(key: _popularDishIdsKey);
 
-    if (value == null || value.isEmpty) return [];
+      if (value == null || value.isEmpty) return [];
 
-    final ids = value
-        .split(",")
-        .map((e) => int.tryParse(e))
-        .whereType<int>()
-        .toList();
+      final ids = value
+          .split(",")
+          .map((e) => int.tryParse(e))
+          .whereType<int>()
+          .toList();
 
-    print("✅ [TokenStorage] Loaded Popular Picks IDs: $ids");
+      print("✅ [TokenStorage] Loaded Popular Picks IDs: $ids");
 
-    return ids;
-  } catch (e) {
-    print("❌ [TokenStorage] loadPopularDishIds failed: $e");
-    return [];
+      return ids;
+    } catch (e) {
+      print("❌ [TokenStorage] loadPopularDishIds failed: $e");
+      return [];
+    }
   }
-}
-
 }

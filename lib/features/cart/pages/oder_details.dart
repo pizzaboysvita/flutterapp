@@ -18,19 +18,17 @@ class OrderDetails extends StatefulWidget {
 
 class _OrderDetailsState extends State<OrderDetails> {
   late final OrderModel order;
-   final storeName = TokenStorage.getChosenLocation();
+  final storeName = TokenStorage.getChosenLocation();
 
   @override
   void initState() {
     super.initState();
-    order = widget.order;
+     order = widget.order;
+    _loadUserNameEmail();
   }
 
   @override
   Widget build(BuildContext context) {
-   
-
-    
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushNamedAndRemoveUntil(
@@ -153,19 +151,38 @@ class _OrderDetailsState extends State<OrderDetails> {
               // 🔹 Delivery Info
               _sectionCard(
                 title: "Delivery Information",
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _infoTile("Name", order.orderType),
-                    _infoTile("Phone", order.orderType),
-                    _infoTile("Address", order.deliveryAddress ?? "-"),
-                  ],
+                child: FutureBuilder<Map<String, String?>>(
+                  future: _loadUserNameEmail(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const SizedBox(
+                        height: 40,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
+
+                    final userName = snapshot.data!['name'] ?? "-";
+                    final userEmail = snapshot.data!['email'] ?? "-";
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _infoTile("Name", userName),
+                        _infoTile(
+                          "Email",
+                          userEmail,
+                        ), // if phone also stored, replace with phone
+                        _infoTile("Address", order.deliveryAddress ?? "-"),
+                      ],
+                    );
+                  },
                 ),
               ),
 
               SizedBox(height: 16.h),
 
-              // 🔹 Order Items
               // 🔹 Order Items
               _sectionCard(
                 title: "Order Items",
@@ -314,25 +331,25 @@ class _OrderDetailsState extends State<OrderDetails> {
                     // Payment Method
                     _infoTilePaymentSummary(
                       "Payment Method",
-                      order.paymentMethod ,
+                      order.paymentMethod,
                     ),
 
                     SizedBox(height: 8.h),
-                    Divider(color: Colors.grey[300]),
-                    // Total Quantity
-                    _infoTilePaymentSummary(
-                      "Total Quantity",
-                      order.totalQuantity.toString(),
-                    ),
+                    // Divider(color: Colors.grey[300]),
+                    // // Total Quantity
+                    // _infoTilePaymentSummary(
+                    //   "Total Quantity",
+                    //   order.totalQuantity.toString(),
+                    // ),
 
-                    SizedBox(height: 8.h),
-                    Divider(color: Colors.grey[300]),
+                    // SizedBox(height: 8.h),
+                    // Divider(color: Colors.grey[300]),
 
-                    // Total Amount
-                    _infoTilePaymentSummary(
-                      "Total Amount",
-                      "\$${order.totalPrice.toStringAsFixed(2)}",
-                    ),
+                    // // Total Amount
+                    // _infoTilePaymentSummary(
+                    //   "Total Amount",
+                    //   "\$${order.totalPrice.toStringAsFixed(2)}",
+                    // ),
                   ],
                 ),
               ),
@@ -443,6 +460,12 @@ class _OrderDetailsState extends State<OrderDetails> {
         ],
       ),
     );
+  }
+
+  Future<Map<String, String?>> _loadUserNameEmail() async {
+    final name = await TokenStorage.getName();
+    final email = await TokenStorage.getEmail();
+    return {'name': name ?? "-", 'email': email ?? "-"};
   }
 
   Widget _infoTile(String label, String value) {

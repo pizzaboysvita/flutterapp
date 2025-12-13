@@ -50,11 +50,13 @@ class OrderService {
   }
 
   // Get API: Fetch Orders
-
   Future<List<OrderGetModel>> fetchOrders() async {
     try {
       final userId = await TokenStorage.getUserId();
       final storeId = await TokenStorage.getChosenStoreId();
+      final sid = int.tryParse(storeId ?? "");
+
+      print("🔍 FETCH ORDERS FOR userId=$userId storeId=$sid");
 
       final getOrders = 'order?user_id=$userId&store_id=$storeId&type=web';
 
@@ -63,17 +65,32 @@ class OrderService {
         options: Options(headers: {"Content-Type": "application/json"}),
       );
 
+      print("📡 STATUS CODE: ${response.statusCode}");
+
       if (response.statusCode == 200) {
         final data = response.data;
 
-        if (data['code'] == '1') {
-          final orders = (data['categories'] as List)
-              .map((json) => OrderGetModel.fromJson(json))
-              .toList();
-          return orders;
-        } else {
-          throw Exception(data['message']);
-        }
+        print("📦 RAW RESPONSE: $data");
+        print("🔍 API 'code': ${data['code']}");
+        print("🔍 API 'message': ${data['message']}");
+
+        // Convert ALL orders
+        final rawOrders = (data['categories'] as List)
+            .map((json) => OrderGetModel.fromJson(json))
+            .toList();
+
+        print("📦 RAW ORDERS COUNT: ${rawOrders.length}");
+
+        // 🔥 FILTER HERE
+        final filteredOrders = rawOrders
+            .where((o) => o.storeId == sid)
+            .toList();
+
+        print(
+          "🎯 FILTERED ORDERS COUNT (storeId=$sid): ${filteredOrders.length}",
+        );
+
+        return filteredOrders;
       } else {
         throw Exception('Failed to load orders: ${response.statusCode}');
       }
