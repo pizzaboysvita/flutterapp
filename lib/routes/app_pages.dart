@@ -137,20 +137,9 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => Googlemap());
 
       default:
+        debugPrint("⚠️ Unknown route: ${setting.name}");
         return MaterialPageRoute(
-          builder: (context) {
-            return Scaffold(
-              body: Center(
-                child: Text(
-                  'No Route Found!',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-            );
-          },
+          builder: (_) => Home(scrollController: ScrollController()),
         );
     }
   }
