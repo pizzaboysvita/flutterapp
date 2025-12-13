@@ -103,184 +103,193 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
           print("🔹 Popup already shown, skipping...");
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          automaticallyImplyLeading: false,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.only(left: 2.0.w),
-                child: Image.asset(
-                  ImageUrls.logoWhite, // replace with your image path
-                  height: 22.sp, // matches your text height
-                  fit: BoxFit.contain,
+      child: WillPopScope(
+        onWillPop: () async {
+          SystemNavigator.pop();
+          return false;
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            automaticallyImplyLeading: false,
+            systemOverlayStyle: SystemUiOverlayStyle.light,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(left: 2.0.w),
+                  child: Image.asset(
+                    ImageUrls.logoWhite, // replace with your image path
+                    height: 22.sp, // matches your text height
+                    fit: BoxFit.contain,
+                  ),
                 ),
-              ),
 
-              BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
-                builder: (context, state) {
-                  String selectedStore = "Select Store";
+                BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+                  builder: (context, state) {
+                    String selectedStore = "Select Store";
 
-                  if (state is StoreSelectionLoaded) {
-                    final current = state.stores.firstWhere(
-                      (store) => store.id == state.selectedStoreId,
-                      orElse: () => Store(
-                        id: 0,
-                        name: "",
-                        address: "",
-                        phone: "",
-                        image: "",
-                      ),
-                    );
-
-                    if (current.id != 0 && current.name.isNotEmpty) {
-                      selectedStore = current.name;
-                      // 💾 Persist selection
-                      TokenStorage.saveSelectedStore(current);
-                    }
-                  }
-
-                  return FutureBuilder<String?>(
-                    future: TokenStorage.loadSelectedStoreName(),
-                    builder: (context, snapshot) {
-                      final storedName = snapshot.data;
-                      // if Bloc didn’t give valid name, fallback to stored one
-                      if (selectedStore == "Select Store" &&
-                          storedName != null &&
-                          storedName.isNotEmpty) {
-                        selectedStore = storedName;
-                      }
-
-                      return InkWell(
-                        onTap: () async {
-                          final changed = await Navigator.pushNamed(
-                            context,
-                            AppRoutes.chooseStoreLocation,
-                            arguments: {"isChangeLocation": true},
-                          );
-
-                          debugPrint(
-                            "⬅️ Returned from Location page → changed = $changed",
-                          );
-
-                          if (changed == true) {
-                            context.read<StoreSelectionBloc>().add(
-                              LoadStoresEvent(),
-                            );
-                          } else {
-                            debugPrint(
-                              "⚠️ No store change detected → keeping stored store",
-                            );
-                          }
-                        },
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              color: AppColors.whiteColor,
-                              size: 14.w,
-                            ),
-                            SizedBox(width: 2.w),
-                            Flexible(
-                              child: Text(
-                                selectedStore,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: Colors.white70,
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
+                    if (state is StoreSelectionLoaded) {
+                      final current = state.stores.firstWhere(
+                        (store) => store.id == state.selectedStoreId,
+                        orElse: () => Store(
+                          id: 0,
+                          name: "",
+                          address: "",
+                          phone: "",
+                          image: "",
                         ),
                       );
-                    },
+
+                      if (current.id != 0 && current.name.isNotEmpty) {
+                        selectedStore = current.name;
+                        // 💾 Persist selection
+                        TokenStorage.saveSelectedStore(current);
+                      }
+                    }
+
+                    return FutureBuilder<String?>(
+                      future: TokenStorage.loadSelectedStoreName(),
+                      builder: (context, snapshot) {
+                        final storedName = snapshot.data;
+                        // if Bloc didn’t give valid name, fallback to stored one
+                        if (selectedStore == "Select Store" &&
+                            storedName != null &&
+                            storedName.isNotEmpty) {
+                          selectedStore = storedName;
+                        }
+
+                        return InkWell(
+                          onTap: () async {
+                            final changed = await Navigator.pushNamed(
+                              context,
+                              AppRoutes.chooseStoreLocation,
+                              arguments: {"isChangeLocation": true},
+                            );
+
+                            debugPrint(
+                              "⬅️ Returned from Location page → changed = $changed",
+                            );
+
+                            if (changed == true) {
+                              context.read<StoreSelectionBloc>().add(
+                                LoadStoresEvent(),
+                              );
+                            } else {
+                              debugPrint(
+                                "⚠️ No store change detected → keeping stored store",
+                              );
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: AppColors.whiteColor,
+                                size: 14.w,
+                              ),
+                              SizedBox(width: 2.w),
+                              Flexible(
+                                child: Text(
+                                  selectedStore,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: Colors.white70,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              IconAccordion(),
+              SizedBox(width: 6.0.w),
+            ],
+          ),
+          body: Stack(
+            children: [
+              BlocBuilder<RefreshCubit, bool>(
+                builder: (context, isRefresh) {
+                  return RefreshIndicator(
+                    onRefresh: () =>
+                        context.read<RefreshCubit>().refreshAll(context),
+                    child: ListView(
+                      controller: widget.scrollController,
+                      children: [
+                        Column(
+                          children: [
+                            const DashboardHeroSection(),
+
+                            SizedBox(height: 20.h),
+                            const PromotionalBanner(),
+                            SizedBox(height: 16.h),
+
+                            const PizzaCategoriesRow(),
+                            const PopularPicks(),
+                            SizedBox(height: 20.h),
+                          ],
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
-            ],
-          ),
-          actions: [
-            IconAccordion(),
-            SizedBox(width: 6.0.w),
-          ],
-        ),
-        body: Stack(
-          children: [
-            BlocBuilder<RefreshCubit, bool>(
-              builder: (context, isRefresh) {
-                return RefreshIndicator(
-                  onRefresh: () =>
-                      context.read<RefreshCubit>().refreshAll(context),
-                  child: ListView(
-                    controller: widget.scrollController,
-                    children: [
-                      Column(
-                        children: [
-                          const DashboardHeroSection(),
 
-                          SizedBox(height: 20.h),
-                          const PromotionalBanner(),
-                          SizedBox(height: 16.h),
-
-                          const PizzaCategoriesRow(),
-                          const PopularPicks(),
-                          SizedBox(height: 20.h),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            // Floating Search Button
-            Positioned(
-              bottom: 20.h,
-              right: 20.w,
-              child: AnimatedSlide(
-                duration: const Duration(milliseconds: 300),
-                offset: _isFabVisible ? Offset.zero : const Offset(0, 2),
-                child: AnimatedOpacity(
+              // Floating Search Button
+              Positioned(
+                bottom: 20.h,
+                right: 20.w,
+                child: AnimatedSlide(
                   duration: const Duration(milliseconds: 300),
-                  opacity: _isFabVisible ? 1 : 0,
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.searchView);
-                    },
-                    child: Container(
-                      width: 56.w,
-                      height: 56.h,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Colors.black, Color(0xFFB71C1C)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 6,
-                            offset: const Offset(2, 2),
+                  offset: _isFabVisible ? Offset.zero : const Offset(0, 2),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: _isFabVisible ? 1 : 0,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.searchView);
+                      },
+                      child: Container(
+                        width: 56.w,
+                        height: 56.h,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Colors.black, Color(0xFFB71C1C)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                           ),
-                        ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(2, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          FontAwesomeIcons.search,
+                          color: Colors.white,
+                        ),
                       ),
-                      child: Icon(FontAwesomeIcons.search, color: Colors.white),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
