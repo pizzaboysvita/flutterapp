@@ -212,12 +212,46 @@ class _RegisterState extends State<Register> {
                               _field("Email", emailCtrl, isEmail: true),
                               SizedBox(height: 10.h),
 
-                              _field(
-                                "Password",
-                                passwordCtrl,
-                                obscure: true,
-                                isPassword: true,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _field(
+                                    "Password",
+                                    passwordCtrl,
+                                    obscure: true,
+                                    isPassword: true,
+                                  ),
+
+                                  SizedBox(height: 1.5.h),
+
+                                  Padding(
+                                    padding: EdgeInsets.only(left: 12.0.w),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info,
+                                          color: Colors.grey.shade600,
+                                          size: 15.w,
+                                        ),
+                                        SizedBox(width: 1.5.h),
+
+                                        Text(
+                                          "At least 8 chars with A-Z, a-z, 0-9 & a special symbol",
+                                          style: TextStyle(
+                                            fontSize: 9.5.sp,
+                                            fontFamily: 'Poppins',
+
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 1.5.h),
+                                ],
                               ),
+
                               SizedBox(height: 10.h),
 
                               // 🔹 Address block
@@ -466,9 +500,22 @@ class _RegisterState extends State<Register> {
           }
 
           // Password validation
+          // Strong Password Validation
           if (isPassword) {
-            if (trimmed.length < 6) {
-              return "Password must be at least 6 characters";
+            if (trimmed.length < 8) {
+              return "Minimum 8 characters required";
+            }
+            if (!RegExp(r'[A-Z]').hasMatch(trimmed)) {
+              return "Add at least 1 uppercase letter (A-Z)";
+            }
+            if (!RegExp(r'[a-z]').hasMatch(trimmed)) {
+              return "Add at least 1 lowercase letter (a-z)";
+            }
+            if (!RegExp(r'[0-9]').hasMatch(trimmed)) {
+              return "Add at least 1 number (0-9)";
+            }
+            if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(trimmed)) {
+              return "Add at least 1 special character";
             }
           }
 

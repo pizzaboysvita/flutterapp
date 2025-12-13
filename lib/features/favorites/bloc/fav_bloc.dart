@@ -50,38 +50,36 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
   }
 
   /// ➖ Remove from favorites with optimistic update
-Future<void> _onRemove(
-  RemoveFromFavoriteEvent event,
-  Emitter<FavoriteState> emit,
-) async {
-  final dish = event.dish!;
-  final wishlistId = event.wishlistId;
+  Future<void> _onRemove(
+    RemoveFromFavoriteEvent event,
+    Emitter<FavoriteState> emit,
+  ) async {
+    final dish = event.dish!;
+    final wishlistId = event.wishlistId;
 
-  // ⭐ optimistic update
-  _favorites.removeWhere((d) => d.id == dish.id);
-  emit(FavoriteLoaded(List.from(_favorites)));
-
-  try {
-    final success = await repository.removeFavorite(dish, wishlistId);
-
-    if (!success) {
-      _favorites.add(dish); // rollback
-      emit(FavoriteError("Failed to remove from favorites"));
-      return;
-    }
-
-    // ⭐⭐⭐ KEY FIX — FETCH FRESH FAVORITES HERE ⭐⭐⭐
-    final favs = await repository.getFavorites();
-    _favorites
-      ..clear()
-      ..addAll(favs);
+    // ⭐ optimistic update
+    _favorites.removeWhere((d) => d.id == dish.id);
     emit(FavoriteLoaded(List.from(_favorites)));
 
-  } catch (e) {
-    _favorites.add(dish); // rollback
-    emit(FavoriteError(e.toString()));
+    try {
+      final success = await repository.removeFavorite(dish, wishlistId);
+
+      if (!success) {
+        _favorites.add(dish); // rollback
+        emit(FavoriteError("Failed to remove from favorites"));
+        return;
+      }
+
+      final favs = await repository.getFavorites();
+      _favorites
+        ..clear()
+        ..addAll(favs);
+      emit(FavoriteLoaded(List.from(_favorites)));
+    } catch (e) {
+      _favorites.add(dish); // rollback
+      emit(FavoriteError(e.toString()));
+    }
   }
-}
 
   /// 📦 Load favorites from guest/local or API
   Future<void> _onLoad(

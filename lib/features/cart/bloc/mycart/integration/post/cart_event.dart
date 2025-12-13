@@ -59,3 +59,14 @@ class AddGuestToCartEvent extends CartEvent {
 
   const AddGuestToCartEvent(this.item);
 }
+
+
+class ClearCartRemoteEvent extends CartEvent {
+  final int userId;
+
+  const ClearCartRemoteEvent(this.userId);
+
+  @override
+  List<Object?> get props => [userId];
+}
+

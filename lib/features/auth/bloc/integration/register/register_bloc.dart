@@ -10,6 +10,7 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
   RegisterBloc(this.repo) : super(RegisterInitial()) {
     on<SubmitRegister>((event, emit) async {
       emit(RegisterLoading());
+
       try {
         final result = await repo.register(
           firstName: event.firstName,
@@ -24,6 +25,13 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
           pinCode: event.pinCode,
           imageFile: event.imageFile,
         );
+
+        // 🔥 SUPER IMPORTANT FIX
+        if (result["status"] == false) {
+          emit(RegisterFailure(result["message"] ?? "Registration failed"));
+          return;
+        }
+
         emit(RegisterSuccess(result));
       } catch (e) {
         final errorMsg = ApiErrorHandler.handle(e);

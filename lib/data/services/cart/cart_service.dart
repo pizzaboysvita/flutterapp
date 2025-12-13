@@ -58,6 +58,25 @@ class CartService {
     }
   }
 
+// delete all
+// 🗑 Clear Entire Cart
+Future<Map<String, dynamic>> clearEntireCart({
+  required int userId,
+}) async {
+  final body = {
+    "type": "delete_all",
+    "user_id": userId,
+  };
+
+  try {
+    final response = await ApiClient.dio.post("cart", data: body);
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    throw Exception("Failed to clear cart: ${e.response?.data ?? e.message}");
+  }
+}
+
+
   // 📦 Get Cart Items
   Future<List<CartItem>> getCartItems() async {
     final userIdString = await TokenStorage.getUserId();

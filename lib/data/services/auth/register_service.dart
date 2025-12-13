@@ -25,8 +25,11 @@ class AuthService {
       final storeIdStr = await TokenStorage.getChosenStoreId();
 
       if (storeIdStr == null) {
+        print("❌ [AuthService] Store ID is NULL");
         throw Exception("Store ID not available.");
       }
+
+      print("🟦 [AuthService] Preparing register request...");
 
       final Map<String, dynamic> body = {
         "type": "insert",
@@ -67,6 +70,9 @@ class AuthService {
         },
       };
 
+      print("📤 [AuthService] Request Body:");
+      print(jsonEncode(body));
+
       FormData formData = FormData.fromMap({
         "body": jsonEncode(body),
         if (imageFile != null)
@@ -79,15 +85,31 @@ class AuthService {
 
       final registerUrl = await ApiUrls.getRegisterUrl();
 
+      print("🌍 [AuthService] Register URL: $registerUrl");
+
       final response = await ApiClient.dio.post(
         registerUrl,
         data: formData,
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
       );
 
+      print("📥 [AuthService] Response Status: ${response.statusCode}");
+      print("📥 [AuthService] Raw Response: ${response.data}");
+
+      // 🔎 Special check for already exists errors
+      if (response.data.toString().contains("already exists") ||
+          response.data.toString().contains("exists") ||
+          response.statusCode == 409) {
+        print("⚠️ [AuthService] Backend says: Duplicate entry");
+        return {"status": false, "message": "User already exists"};
+      }
+
       if (response.statusCode == 200) {
+        print("✅ [AuthService] Registration success");
         return response.data;
       } else {
+        print("❌ [AuthService] Server returned an error");
+        print(response.data);
         throw Exception(
           ApiErrorHandler.handle(
             DioException(
@@ -98,8 +120,13 @@ class AuthService {
         );
       }
     } on DioException catch (e) {
+      print("🔥 [AuthService] DioException caught");
+      print("Status: ${e.response?.statusCode}");
+      print("Data: ${e.response?.data}");
+      print("Message: ${e.message}");
       throw ApiErrorHandler.handle(e);
     } catch (e) {
+      print("🔥 [AuthService] General Exception: $e");
       throw ApiErrorHandler.handle(e);
     }
   }

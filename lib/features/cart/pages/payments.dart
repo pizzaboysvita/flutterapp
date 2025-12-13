@@ -4,7 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
+import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/order/order_post_model.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_bloc.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_event.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_bloc.dart';
+import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_event.dart';
+import 'package:pizza_boys/features/cart/bloc/order/post/order_post_bloc.dart';
+import 'package:pizza_boys/features/cart/bloc/order/post/order_post_event.dart';
 import 'package:pizza_boys/features/cart/widgets/payments/payment_tile.dart';
 import 'package:pizza_boys/features/stripe/bloc/stripe_pay_bloc.dart';
 import 'package:pizza_boys/features/stripe/bloc/stripe_pay_event.dart';
@@ -38,7 +45,7 @@ class _PaymentPageState extends State<PaymentPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        // automaticallyImplyLeading: false,
         title: Text.rich(
           TextSpan(
             text: 'Choose',
@@ -55,16 +62,6 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
             ],
           ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.home,
-              (route) => false,
-            );
-          },
         ),
       ),
       body: Padding(
@@ -224,20 +221,41 @@ class _PaymentPageState extends State<PaymentPage> {
         ),
       ),
       bottomNavigationBar: BlocConsumer<PaymentBloc, PaymentState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state is PaymentSuccess) {
+            // ⬇️ Load userId from token storage
+            final userIdString = await TokenStorage.getUserId();
+            final userId = int.tryParse(userIdString ?? "");
+
+            debugPrint("🟦 PaymentSuccess → Loaded UserId: $userIdString");
+
+            // If NOT guest → clear cart on server
+            final isGuest = await TokenStorage.isGuest();
+
+            if (!isGuest && userId != null) {
+              debugPrint("🟩 Sending ClearCartRemoteEvent for user $userId");
+              context.read<CartBloc>().add(ClearCartRemoteEvent(userId));
+            } else {
+              debugPrint("🟨 Guest user → skipping remote clear");
+            }
+
+            // Always clear UI cart
+            context.read<CartGetBloc>().add(ClearCartEvent());
+            debugPrint("🟫 UI Cart Cleared");
+
+            // Place order
+            context.read<OrderBloc>().add(PlaceOrderEvent(order));
+
+            // Navigate
             Navigator.pushReplacementNamed(
               context,
               AppRoutes.orderDetails,
-              arguments: order, // 👈 pass your order model here
+              arguments: order,
             );
+
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(const SnackBar(content: Text("Payment Success")));
-          } else if (state is PaymentFailure) {
-            // ScaffoldMessenger.of(
-            //   context,
-            // ).showSnackBar(SnackBar(content: Text("Error: ${state.error}")));
           }
         },
         builder: (context, state) {
