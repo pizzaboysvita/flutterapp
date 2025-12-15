@@ -171,7 +171,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
           onTap: () async {
             context.read<StoreSelectionBloc>().add(SelectStoreEvent(store.id));
 
-            _safeAnimateCamera(CameraUpdate.newLatLngZoom(storeLocation, 15));
+            await moveCameraSafely(storeLocation);
           },
         ),
       );
@@ -229,6 +229,21 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     } else {}
   }
 
+  Future<void> moveCameraSafely(LatLng target) async {
+    // ⏳ wait until map + UI + GPU are fully ready (important for iPhone 13)
+    await Future.delayed(const Duration(milliseconds: 900));
+
+    if (!mounted || _mapController == null) return;
+
+    try {
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(target, 14),
+      );
+    } catch (_) {
+      // silently ignore to avoid iOS crash
+    }
+  }
+
   // .......... Google-Map ............
   Future<void> updateMarkers(List<Store> stores, String? selectedId) async {
     _markers.clear();
@@ -270,16 +285,23 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             BlocListener<StoreSelectionBloc, StoreSelectionState>(
               listener: (context, state) async {
                 if (state is StoreSelectionLoaded) {
+                  // 1️⃣ Load markers first
                   await _updateMarkers(
                     state.stores,
                     state.selectedStoreId?.toString(),
                   );
-                  // 🔥 Fit all markers initially if no store selected
-                  if (state.selectedStoreId == null) {
-                    _fitMarkersToBounds(state.stores);
-                  }
-                  if (mounted) {
-                    setState(() {});
+
+                  // 2️⃣ Safely move camera AFTER markers are ready
+                  if (state.selectedStoreId != null) {
+                    final selectedStore = state.stores.firstWhere(
+                      (s) => s.id == state.selectedStoreId,
+                    );
+
+                    final latLng = await getStoreLatLng(selectedStore);
+                    await moveCameraSafely(latLng);
+                  } else {
+                    // No selection → fit all markers (safe)
+                    await _fitMarkersToBounds(state.stores);
                   }
                 }
               },
@@ -288,40 +310,29 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   if (state is StoreSelectionLoaded) {
                     return Column(
                       children: [
-                        Container(
+                        SizedBox(
                           height: 200.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12.r),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black26, blurRadius: 4),
-                            ],
-                          ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12.r),
                             child: GoogleMap(
+                              initialCameraPosition: const CameraPosition(
+                                target: LatLng(20.5937, 78.9629), // India
+                                zoom: 4,
+                              ),
+
                               onMapCreated: (controller) {
                                 _mapController = controller;
-
-                                Future.delayed(
-                                  const Duration(milliseconds: 300),
-                                  () {
-                                    _safeAnimateCamera(
-                                      CameraUpdate.newLatLngZoom(
-                                        LatLng(-36.8485, 174.7633),
-                                        14,
-                                      ),
-                                    );
-                                  },
-                                );
                               },
-                              initialCameraPosition: CameraPosition(
-                                target: LatLng(-36.8485, 174.7633),
-                                zoom: 2, // world view
-                              ),
+
                               markers: _markers,
-                              myLocationEnabled: true,
+
+                              // ❗ VERY IMPORTANT
+                              myLocationEnabled:
+                                  false, // enable AFTER permission
                               myLocationButtonEnabled: false,
                               zoomControlsEnabled: false,
+                              compassEnabled: false,
+                              mapToolbarEnabled: false,
                             ),
                           ),
                         ),
@@ -416,7 +427,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
             // Get coordinates dynamically
             final latLng = await getStoreLatLng(store);
-            _safeAnimateCamera(CameraUpdate.newLatLngZoom(latLng, 15));
+            await moveCameraSafely(latLng);
           },
 
           child: Container(

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:pizza_boys/core/bloc/profile/user_bloc.dart';
+import 'package:pizza_boys/core/bloc/profile/user_event.dart';
+import 'package:pizza_boys/core/bloc/profile/user_state.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/data/repositories/profile/user_repo.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
@@ -14,51 +18,66 @@ class Profile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        automaticallyImplyLeading: true,
-        title: Text.rich(
-          TextSpan(
-            text: 'User',
-            style: _textStyle(16.sp, FontWeight.w600),
-            children: [
-              TextSpan(
-                text: ' Profile',
-                style: TextStyle(color: AppColors.redAccent),
-              ),
-            ],
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              FontAwesomeIcons.powerOff,
-              color: AppColors.redPrimary,
-              size: 18.sp,
+    return BlocProvider(
+      create: (_) => DeleteAccountBloc(UserRepo()),
+      child: Scaffold(
+        appBar: AppBar(
+          elevation: 0,
+          automaticallyImplyLeading: true,
+          title: Text.rich(
+            TextSpan(
+              text: 'User',
+              style: _textStyle(16.sp, FontWeight.w600),
+              children: [
+                TextSpan(
+                  text: ' Profile',
+                  style: TextStyle(color: AppColors.redAccent),
+                ),
+              ],
             ),
-            onPressed: () {
-              _showLogoutConfirmationDialog(context);
-            },
           ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: Icon(
+                FontAwesomeIcons.powerOff,
+                color: AppColors.redPrimary,
+                size: 18.sp,
+              ),
+              onPressed: () {
+                _showLogoutConfirmationDialog(context);
+              },
+            ),
+            SizedBox(width: 6.w),
 
-          SizedBox(width: 16.w),
-        ],
-      ),
-      body: ListView(
-        controller: scrollController,
-        padding: EdgeInsets.all(16.w),
-        children: [
-          _buildUserCard(context),
-          SizedBox(height: 20.h),
-          ..._buildProfileOptions(context),
-          SizedBox(height: 20.h),
-        ],
+            Builder(
+              builder: (innerContext) {
+                return IconButton(
+                  icon: const Icon(
+                    Icons.delete_forever,
+                    color: AppColors.redPrimary,
+                  ),
+                  onPressed: () => _showDeleteAccountSheet(innerContext),
+                );
+              },
+            ),
+
+            SizedBox(width: 16.w),
+          ],
+        ),
+        body: ListView(
+          controller: scrollController,
+          padding: EdgeInsets.all(16.w),
+          children: [
+            _buildUserCard(context),
+            SizedBox(height: 20.h),
+            ..._buildProfileOptions(context),
+            SizedBox(height: 20.h),
+          ],
+        ),
       ),
     );
   }
-
 
   void _showLogoutConfirmationDialog(BuildContext context) {
     final height = MediaQuery.of(context).size.height;
@@ -287,6 +306,107 @@ class Profile extends StatelessWidget {
     ];
 
     return options.map((e) => _buildListTile(e)).toList();
+  }
+
+  void _showDeleteAccountSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return BlocProvider.value(
+          value: context.read<DeleteAccountBloc>(),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: BlocConsumer<DeleteAccountBloc, DeleteAccountState>(
+              listener: (blocContext, state) async {
+                // Capture messenger BEFORE pop
+                final messenger = ScaffoldMessenger.of(context);
+
+                if (state is DeleteAccountSuccess) {
+                  Navigator.pop(ctx); // close bottom sheet
+
+                  await SessionManager.clearSession(context);
+
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(state.message)),
+                  );
+                }
+
+                if (state is DeleteAccountFailure) {
+                  messenger.showSnackBar(SnackBar(content: Text(state.error)));
+                }
+              },
+              builder: (context, state) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Delete Account",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.redPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Are you sure you want to delete your account? This action cannot be undone.",
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+
+                    if (state is DeleteAccountLoading)
+                      const CircularProgressIndicator()
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text("NO"),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.redPrimary,
+                              ),
+                              onPressed: () async {
+                                final isGuest = await TokenStorage.isGuest();
+
+                                if (isGuest) {
+                                  // 👤 Guest → frontend-only delete
+                                  Navigator.pop(ctx);
+                                  await SessionManager.clearSession(context);
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Guest account cleared"),
+                                    ),
+                                  );
+                                } else {
+                                  // 🔐 Logged-in → API delete via Bloc
+                                  context.read<DeleteAccountBloc>().add(
+                                    DeleteAccountRequested(),
+                                  );
+                                }
+                              },
+                              child: const Text("YES"),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildListTile(_ProfileOption option) {
