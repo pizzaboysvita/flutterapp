@@ -14,7 +14,6 @@ import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_ev
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/get/cart_get_state.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/mycart/integration/post/cart_event.dart';
-
 import 'package:pizza_boys/features/details/bloc/pizza_details_bloc.dart';
 import 'package:pizza_boys/features/details/bloc/pizza_details_event.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
@@ -149,8 +148,11 @@ class _CartViewState extends State<CartView> {
                         RestorePizzaFromCartEvent(item),
                       );
 
-                      // ✅ Just go BACK — NOT push again
-                      Navigator.pop(context);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.pizzaDetails,
+                        arguments: item.dishId, // pass correct id
+                      );
 
                       print('👉 Cart item tapped → Dish ID: ${item.dishId}');
                     },
@@ -364,8 +366,10 @@ class _CartViewState extends State<CartView> {
       bottomNavigationBar: BlocBuilder<CartGetBloc, CartGetState>(
         builder: (context, state) {
           double total = 0;
+          bool isCartEmpty = true;
           if (state is CartLoaded) {
             total = calculateTotal(state.cartItems);
+            isCartEmpty = state.cartItems.isEmpty;
           }
           return Container(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -408,108 +412,125 @@ class _CartViewState extends State<CartView> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () async {
-                      final isGuest =
-                          await TokenStorage.isGuest(); // 👈 check guest session
+                    onPressed: isCartEmpty
+                        ? null
+                        : () async {
+                            final isGuest =
+                                await TokenStorage.isGuest(); // 👈 check guest session
 
-                      if (isGuest) {
-                        // 👇 redirect guest user to guest login page
-                        Navigator.pushNamed(context, AppRoutes.guestLogin);
-                        return;
-                      }
+                            if (isGuest) {
+                              // 👇 redirect guest user to guest login page
+                              Navigator.pushNamed(
+                                context,
+                                AppRoutes.guestLogin,
+                              );
+                              return;
+                            }
 
-                      // ✅ Continue existing logic for logged-in users
-                      final cartState = context.read<CartGetBloc>().state;
-                      if (cartState is CartLoaded) {
-                        final cartItems = cartState.cartItems;
+                            // ✅ Continue existing logic for logged-in users
+                            final cartState = context.read<CartGetBloc>().state;
+                            if (cartState is CartLoaded) {
+                              final cartItems = cartState.cartItems;
 
-                        // Prepare order details
-                        final orderDetails = cartItems.map((item) {
-                          return OrderDetail(
-                            dishId: item.dishId,
-                            dishName: item.dishName ?? "Unknown Dish",
-                            dishNote: item.dishNote ?? "",
-                            quantity: item.quantity,
-                            price: item.price,
-                            base: item.options["base"] ?? "small",
-                            basePrice:
-                                item.options["basePrice"]?.toDouble() ?? 0.0,
-                          );
-                        }).toList();
+                              // Prepare order details
+                              final orderDetails = cartItems.map((item) {
+                                return OrderDetail(
+                                  dishId: item.dishId,
+                                  dishName: item.dishName ?? "Unknown Dish",
+                                  dishNote: item.dishNote ?? "",
+                                  quantity: item.quantity,
+                                  price: item.price,
+                                  base: item.options["base"] ?? "small",
+                                  basePrice:
+                                      item.options["basePrice"]?.toDouble() ??
+                                      0.0,
+                                );
+                              }).toList();
 
-                        final toppingDetails = cartItems.map((item) {
-                          return ToppingDetail(
-                            dishId: item.dishId,
-                            name: item.options["toppingName"] ?? "Extra Cheese",
-                            price:
-                                item.options["toppingPrice"]?.toDouble() ??
-                                10.0,
-                            quantity: 1,
-                          );
-                        }).toList();
+                              final toppingDetails = cartItems.map((item) {
+                                return ToppingDetail(
+                                  dishId: item.dishId,
+                                  name:
+                                      item.options["toppingName"] ??
+                                      "Extra Cheese",
+                                  price:
+                                      item.options["toppingPrice"]
+                                          ?.toDouble() ??
+                                      10.0,
+                                  quantity: 1,
+                                );
+                              }).toList();
 
-                        final ingredientDetails = cartItems.map((item) {
-                          return IngredientDetail(
-                            dishId: item.dishId,
-                            name: item.options["ingredientName"] ?? "Tomato",
-                            price:
-                                item.options["ingredientPrice"]?.toDouble() ??
-                                2.0,
-                            quantity: 1,
-                          );
-                        }).toList();
+                              final ingredientDetails = cartItems.map((item) {
+                                return IngredientDetail(
+                                  dishId: item.dishId,
+                                  name:
+                                      item.options["ingredientName"] ??
+                                      "Tomato",
+                                  price:
+                                      item.options["ingredientPrice"]
+                                          ?.toDouble() ??
+                                      2.0,
+                                  quantity: 1,
+                                );
+                              }).toList();
 
-                        final userId = await TokenStorage.getUserId();
-                        final storeId = await TokenStorage.getChosenStoreId();
-                        final formattedDate = DateFormat(
-                          'yyyy-MM-dd HH:mm:ss',
-                        ).format(DateTime.now());
+                              final userId = await TokenStorage.getUserId();
+                              final storeId =
+                                  await TokenStorage.getChosenStoreId();
+                              final formattedDate = DateFormat(
+                                'yyyy-MM-dd HH:mm:ss',
+                              ).format(DateTime.now());
 
-                        final order = OrderModel(
-                          totalPrice: calculateTotal(cartItems),
-                          totalQuantity: cartItems.length,
-                          storeId: int.parse(storeId!),
-                          orderType: "online",
-                          pickupDatetime: formattedDate,
-                          deliveryDatetime: formattedDate,
-                          deliveryAddress: null,
-                          deliveryFees: 0,
+                              final order = OrderModel(
+                                totalPrice: calculateTotal(cartItems),
+                                totalQuantity: cartItems.length,
+                                storeId: int.parse(storeId!),
+                                orderType: "online",
+                                pickupDatetime: formattedDate,
+                                deliveryDatetime: formattedDate,
+                                deliveryAddress: null,
+                                deliveryFees: 0,
 
-                          orderNotes: deliveryNote.isNotEmpty
-                              ? deliveryNote
-                              : "Customer will pick up",
-                          orderStatus: "Order_placed",
-                          orderCreatedBy: int.parse(userId!),
-                          toppingDetails: toppingDetails,
-                          ingredientDetails: ingredientDetails,
-                          orderDetails: orderDetails,
-                          paymentMethod: "Cash",
-                          paymentStatus: "Completed",
-                          paymentAmount: calculateTotal(cartItems),
-                          unitNumber: "POS-001",
-                          isPosOrder: 0,
-                          gstPrice: 0.1,
-                          orderDue: null,
-                          orderDueDatetime: null,
-                          deliveryNotes: null,
-                        );
+                                orderNotes: deliveryNote.isNotEmpty
+                                    ? deliveryNote
+                                    : "Customer will pick up",
+                                orderStatus: "Order_placed",
+                                orderCreatedBy: int.parse(userId!),
+                                toppingDetails: toppingDetails,
+                                ingredientDetails: ingredientDetails,
+                                orderDetails: orderDetails,
+                                paymentMethod: "Cash",
+                                paymentStatus: "Completed",
+                                paymentAmount: calculateTotal(cartItems),
+                                unitNumber: "POS-001",
+                                isPosOrder: 0,
+                                gstPrice: 0.1,
+                                orderDue: null,
+                                orderDueDatetime: null,
+                                deliveryNotes: null,
+                              );
 
-                        print(" ==== ORDER DEBUG START ====");
-                        print("userId: $userId | storeId: $storeId");
-                        print("Total items: ${cartItems.length}");
-                        print("Total price: ${calculateTotal(cartItems)}");
-                        print("Order JSON: ${order.toJson()}");
-                        print("==== ORDER DEBUG END ====");
+                              print(" ==== ORDER DEBUG START ====");
+                              print("userId: $userId | storeId: $storeId");
+                              print("Total items: ${cartItems.length}");
+                              print(
+                                "Total price: ${calculateTotal(cartItems)}",
+                              );
+                              print("Order JSON: ${order.toJson()}");
+                              print("==== ORDER DEBUG END ====");
 
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.payments,
-                          arguments: order,
-                        );
-                      }
-                    },
+                              Navigator.pushNamed(
+                                context,
+                                AppRoutes.payments,
+                                arguments: order,
+                              );
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.redPrimary,
+                      backgroundColor: isCartEmpty
+                          ? Colors.grey.shade400
+                          : AppColors.redPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10.r),
                       ),
@@ -544,8 +565,10 @@ class _CartViewState extends State<CartView> {
     return CachedNetworkImage(
       imageUrl: imageUrl ?? fallbackImage,
       fit: BoxFit.cover,
-      memCacheHeight: 200, // reduces memory usage
-      memCacheWidth: 200, // resizes large image
+      memCacheHeight: 200,
+      // reduces memory usage
+      memCacheWidth: 200,
+      // resizes large image
       placeholder: (context, url) => Shimmer.fromColors(
         baseColor: Colors.grey[300]!,
         highlightColor: Colors.grey[100]!,
