@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/features/cart/bloc/order/get/order_get_bloc.dart';
@@ -126,7 +127,24 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                           color: Colors.grey.shade700,
                         ),
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: 24.h),
+
+                      /// ⭐ Browse Menu Button Using Helper
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        child: LoadingFillButton(
+                          text: "Place Order",
+                          backgroundColor: AppColors.redAccent,
+                          borderRadius: 12,
+                          onPressedAsync: () async {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              AppRoutes.home,
+                              (route) => false,
+                            );
+                          },
+                        ),
+                      ),
                       // SizedBox(
                       //   width: 150.w,
                       //   child: ElevatedButton(

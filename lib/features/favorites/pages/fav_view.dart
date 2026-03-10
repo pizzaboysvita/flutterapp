@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/data/models/dish/dish_model.dart';
@@ -85,7 +86,71 @@ class _FavoritesViewState extends State<FavoritesView> {
               return const Center(child: LottieLoader());
             } else if (state is FavoriteLoaded) {
               if (state.favorites.isEmpty) {
-                return const Center(child: Text("No favorites yet ❤️"));
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        /// ❤️ Icon
+                        // Icon(
+                        //   Icons.favorite_border,
+                        //   size: 90,
+                        //   color: AppColors.redSecondary.withOpacity(0.9),
+                        // ),
+
+                        // const SizedBox(height: 20),
+
+                        /// Title
+                        // Text(
+                        //   "No favorites yet",
+                        //   style: TextStyle(
+                        //     fontSize: 18.sp,
+                        //     fontWeight: FontWeight.w600,
+                        //     color: AppColors.redPrimary,
+                        //   ),
+                        // ),
+
+                        // const SizedBox(height: 8),
+                        Icon(
+                          Icons
+                              .favorite_outline_sharp, // 🛒 or use Icons.shopping_basket_outlined
+                          size: 60.sp,
+                          color: Colors.grey.shade500,
+                        ),
+                        SizedBox(height: 16.h),
+
+                        /// Subtitle
+                        Text(
+                          "Looks like you haven't added anything.\nStart browsing menu now!",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+
+                        SizedBox(height: 24.h),
+
+                        /// ⭐ Browse Menu Button Using Helper
+                        LoadingFillButton(
+                          text: "Browse Menu",
+                          backgroundColor: AppColors.redAccent,
+                          borderRadius: 12,
+                          onPressedAsync: () async {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              AppRoutes.home,
+                              (route) => false,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               }
 
               // Group by dish id

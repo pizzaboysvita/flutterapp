@@ -22,14 +22,16 @@ class AuthService {
     File? imageFile,
   }) async {
     try {
+      print("━━━━━━━━ REGISTER USER API START ━━━━━━━━");
+
       final storeIdStr = await TokenStorage.getChosenStoreId();
 
+      print("🟦 Store ID From TokenStorage => $storeIdStr");
+
       if (storeIdStr == null) {
-        print("❌ [AuthService] Store ID is NULL");
+        print("❌ Store ID is NULL");
         throw Exception("Store ID not available.");
       }
-
-      print("🟦 [AuthService] Preparing register request...");
 
       final Map<String, dynamic> body = {
         "type": "insert",
@@ -70,8 +72,19 @@ class AuthService {
         },
       };
 
-      print("📤 [AuthService] Request Body:");
+      /// ✅ PRINT COMPLETE BODY
+      print("📤 Sending JSON Body:");
       print(jsonEncode(body));
+
+      /// ✅ IMAGE DEBUG
+      if (imageFile != null) {
+        print("🖼 Image Selected:");
+        print("   Path => ${imageFile.path}");
+        print("   Name => ${imageFile.path.split('/').last}");
+        print("   Size => ${await imageFile.length()} bytes");
+      } else {
+        print("🖼 No Image Selected");
+      }
 
       FormData formData = FormData.fromMap({
         "body": jsonEncode(body),
@@ -83,9 +96,20 @@ class AuthService {
           ),
       });
 
+      /// ✅ PRINT FORMDATA FIELDS
+      print("📦 FormData Fields:");
+      formData.fields.forEach((field) {
+        print("   ${field.key} => ${field.value}");
+      });
+
+      print("📦 FormData Files:");
+      formData.files.forEach((file) {
+        print("   ${file.key} => ${file.value.filename}");
+      });
+
       final registerUrl = await ApiUrls.getRegisterUrl();
 
-      print("🌍 [AuthService] Register URL: $registerUrl");
+      print("🌍 Register URL => $registerUrl");
 
       final response = await ApiClient.dio.post(
         registerUrl,
@@ -93,23 +117,26 @@ class AuthService {
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
       );
 
-      print("📥 [AuthService] Response Status: ${response.statusCode}");
-      print("📥 [AuthService] Raw Response: ${response.data}");
+      /// ✅ FULL RESPONSE DEBUG
+      print("━━━━━━━━ RESPONSE RECEIVED ━━━━━━━━");
+      print("📥 Status Code => ${response.statusCode}");
+      print("📥 Headers => ${response.headers}");
+      print("📥 Response Data => ${response.data}");
+      print("━━━━━━━━ END RESPONSE ━━━━━━━━");
 
-      // 🔎 Special check for already exists errors
+      /// 🔎 DUPLICATE CHECK
       if (response.data.toString().contains("already exists") ||
           response.data.toString().contains("exists") ||
           response.statusCode == 409) {
-        print("⚠️ [AuthService] Backend says: Duplicate entry");
+        print("⚠️ Duplicate User Found");
         return {"status": false, "message": "User already exists"};
       }
 
       if (response.statusCode == 200) {
-        print("✅ [AuthService] Registration success");
+        print("✅ Registration SUCCESS");
         return response.data;
       } else {
-        print("❌ [AuthService] Server returned an error");
-        print(response.data);
+        print("❌ Server Error Returned");
         throw Exception(
           ApiErrorHandler.handle(
             DioException(
@@ -120,14 +147,18 @@ class AuthService {
         );
       }
     } on DioException catch (e) {
-      print("🔥 [AuthService] DioException caught");
-      print("Status: ${e.response?.statusCode}");
-      print("Data: ${e.response?.data}");
-      print("Message: ${e.message}");
+      print("🔥 DioException CAUGHT");
+      print("Status => ${e.response?.statusCode}");
+      print("Headers => ${e.response?.headers}");
+      print("Data => ${e.response?.data}");
+      print("Message => ${e.message}");
+
       throw ApiErrorHandler.handle(e);
     } catch (e) {
-      print("🔥 [AuthService] General Exception: $e");
+      print("🔥 GENERAL EXCEPTION => $e");
       throw ApiErrorHandler.handle(e);
+    } finally {
+      print("━━━━━━━━ REGISTER USER API END ━━━━━━━━");
     }
   }
 
@@ -145,4 +176,6 @@ class AuthService {
         throw Exception("Unsupported file type: $ext");
     }
   }
+
+
 }

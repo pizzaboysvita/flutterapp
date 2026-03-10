@@ -59,7 +59,6 @@ class CartService {
   }
 
 // delete all
-// 🗑 Clear Entire Cart
 Future<Map<String, dynamic>> clearEntireCart({
   required int userId,
 }) async {

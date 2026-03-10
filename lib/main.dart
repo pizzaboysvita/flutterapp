@@ -34,8 +34,8 @@ import 'package:pizza_boys/routes/app_route_obs.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
 
+  WidgetsFlutterBinding.ensureInitialized();
   Stripe.publishableKey = StripeKeysUrl.publishableKey;
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -48,7 +48,7 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-  ]);
+  ]); 
 
   runApp(
     OverlaySupport.global(
@@ -234,7 +234,7 @@ class _StartupWrapperState extends State<StartupWrapper> {
 
   Widget _loadingScreen() {
     return Scaffold(
-      body: Center(
+      body: Center(   
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

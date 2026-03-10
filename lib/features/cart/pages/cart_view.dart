@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/constant/image_urls.dart';
+import 'package:pizza_boys/core/helpers/buttons/filled_button.dart';
 import 'package:pizza_boys/core/reusable_widgets/loaders/lottie_loader.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
 import 'package:pizza_boys/core/storage/guset_local_storage.dart';
@@ -128,7 +129,57 @@ class _CartViewState extends State<CartView> {
 
               if (cartItems.isEmpty) {
                 debugPrint("🛒 [CartGetBloc] Cart is EMPTY!");
-                return const Center(child: Text("Your cart is empty"));
+
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        /// 🛒 Cart Icon
+                        Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 70.sp,
+                          color: Colors.grey.shade500,
+                        ),
+
+                        SizedBox(height: 18.h),
+
+                        /// Title
+
+                        /// Subtitle
+                        Text(
+                          "Looks like you haven’t added anything yet.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+
+                        SizedBox(height: 28.h),
+
+                        /// ⭐ Place Order Button
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 0.w),
+                          child: LoadingFillButton(
+                            text: "Browse Menu",
+                            backgroundColor: AppColors.redAccent,
+                            borderRadius: 12,
+                            onPressedAsync: () async {
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                AppRoutes.home,
+                                (route) => false,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               }
 
               // Log one sample item if available

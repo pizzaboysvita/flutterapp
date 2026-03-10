@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -23,6 +24,7 @@ import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_state.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_event.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -34,6 +36,14 @@ class _LoginState extends State<Login> {
   final formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
+  Future<void> openTerms() async {
+    final Uri url = Uri.parse("https://abhivk108.github.io/privacy-policy/");
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception("Could not launch Terms & Conditions");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +224,9 @@ class _LoginState extends State<Login> {
                                                       color:
                                                           AppColors.redAccent,
                                                     ),
+                                                    recognizer:
+                                                        TapGestureRecognizer()
+                                                          ..onTap = openTerms,
                                                   ),
                                                 ],
                                               ),

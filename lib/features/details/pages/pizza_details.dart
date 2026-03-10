@@ -284,7 +284,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                                       "Menus : ${comboSide.menuItems.length}\n"
                                       "Total Dishes : ${sideDishes.length}\n"
                                       "================================",
-                                    );
+                                    ); 
 
                                     // 🔴 DEBUG – Dish Details
                                     for (final dish in sideDishes) {

@@ -9,6 +9,7 @@ import 'package:pizza_boys/data/repositories/category/category_repo.dart';
 
 import 'package:pizza_boys/data/repositories/dish/dish_repo.dart';
 import 'package:pizza_boys/data/repositories/order/order_repo.dart';
+import 'package:pizza_boys/data/repositories/profile/user_repo.dart';
 import 'package:pizza_boys/data/repositories/promocodes/promocode_repo.dart';
 import 'package:pizza_boys/data/repositories/search/search_repo.dart';
 import 'package:pizza_boys/data/repositories/whishlist/whishlist_repo.dart';
@@ -17,6 +18,7 @@ import 'package:pizza_boys/data/services/category/category_service.dart';
 
 import 'package:pizza_boys/data/services/dish/dish_service.dart';
 import 'package:pizza_boys/data/services/order/order_service.dart';
+import 'package:pizza_boys/data/services/profile/user_service.dart';
 import 'package:pizza_boys/data/services/whishlist/whishlist_service.dart';
 import 'package:pizza_boys/features/auth/bloc/ui/ps_obscure_bloc.dart';
 import 'package:pizza_boys/features/cart/bloc/checkout/checkout_cubit.dart';
@@ -35,6 +37,8 @@ import 'package:pizza_boys/features/home/bloc/ui/hero/animation_bloc.dart';
 import 'package:pizza_boys/features/home/bloc/ui/nav/nav_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_bloc.dart';
 import 'package:pizza_boys/features/onboard.dart/bloc/location/store_selection_event.dart';
+import 'package:pizza_boys/features/profile/bloc/profile_bloc.dart';
+import 'package:pizza_boys/features/profile/bloc/user_info_cubit.dart';
 import 'package:pizza_boys/features/search/bloc/search_bloc.dart';
 import 'package:pizza_boys/features/stripe/bloc/stripe_pay_bloc.dart';
 
@@ -42,7 +46,6 @@ class BlocProviderHelper {
   static Widget getAllProviders({required Widget child}) {
     return MultiBlocProvider(
       providers: [
-
         BlocProvider(create: (_) => ConnectivityBloc()),
         BlocProvider(create: (_) => PizzaDetailsBloc()),
         BlocProvider(create: (_) => PromoBloc(PromoRepository())),
@@ -60,6 +63,8 @@ class BlocProviderHelper {
         BlocProvider(
           create: (context) => OrderGetBloc(OrderRepository(OrderService())),
         ),
+
+        
         BlocProvider(create: (_) => SearchBloc(SearchRepo())),
         BlocProvider(create: (_) => NavCubit()),
         BlocProvider(create: (_) => PsObscureBloc()),
@@ -70,8 +75,19 @@ class BlocProviderHelper {
         BlocProvider(create: (_) => BikeAnimationBloc()),
         BlocProvider(create: (_) => RefreshCubit()),
 
+        BlocProvider(
+  create: (_) => UserBloc(
+    UserRepo(UserService()),
+  ),
+
+),
+
+ BlocProvider<UserCubit>(
+          create: (_) => UserCubit(UserRepo(UserService()))..loadUser(),
+        ),
 
         BlocProvider(create: (_) => StoreWatcherCubit()..loadInitialStore()),
+
 
         BlocProvider(
           create: (context) => FavoriteBloc(

@@ -24,41 +24,51 @@ class TokenStorage {
   static const _popularDishIdsKey = "popular_dish_ids";
 
   // 🟢 Save user session (normal login)
-  static Future<void> saveSession(Map<String, dynamic> data) async {
-    try {
-      await _storage.write(key: _isGuestKey, value: 'false');
+static Future<void> saveSession(Map<String, dynamic> data) async {
+  try {
+    await _storage.write(key: _isGuestKey, value: 'false');
 
-      final accessToken = data["access_token"];
-      final refreshToken = data["refresh_token"];
+    final accessToken = data["access_token"];
+    final refreshToken = data["refresh_token"];
 
-      await _storage.write(key: _accessTokenKey, value: accessToken);
-      await _storage.write(key: _refreshTokenKey, value: refreshToken);
+    await _storage.write(key: _accessTokenKey, value: accessToken);
+    await _storage.write(key: _refreshTokenKey, value: refreshToken);
 
-      final user = data["user"];
-      if (user != null) {
+    final user = data["user"];
+    if (user != null) {
+
+      await _storage.write(key: _userIdKey, value: user["user_id"].toString());
+      await _storage.write(key: _roleIdKey, value: user["role_id"].toString());
+      await _storage.write(key: _emailKey, value: user["email"]);
+
+      final fullName =
+          "${user["first_name"] ?? ""} ${user["last_name"] ?? ""}".trim();
+
+      await _storage.write(key: _nameKey, value: fullName);
+      await _storage.write(key: _profileKey, value: user["profiles"]);
+      await _storage.write(key: _permissionsKey, value: user["permissions"]);
+
+      /// ⭐ ADD THESE FIELDS
+      await _storage.write(key: "phone_number", value: user["phone_number"]);
+      await _storage.write(key: "address", value: user["address"]);
+      await _storage.write(key: "country", value: user["country"]);
+      await _storage.write(key: "state", value: user["state"]);
+      await _storage.write(key: "city", value: user["city"]);
+      await _storage.write(key: "pos_pin", value: user["pos_pin"].toString());
+
+      /// ⚠️ password hash generally NOT returned by login API
+      /// So only save if backend gives it
+      if (user["password_hash"] != null) {
         await _storage.write(
-          key: _userIdKey,
-          value: user["user_id"].toString(),
-        );
-        await _storage.write(
-          key: _roleIdKey,
-          value: user["role_id"].toString(),
-        );
-        await _storage.write(key: _emailKey, value: user["email"]);
-
-        final fullName =
-            "${user["first_name"] ?? ""} ${user["last_name"] ?? ""}".trim();
-        await _storage.write(key: _nameKey, value: fullName);
-
-        await _storage.write(key: _profileKey, value: user["profiles"]);
-        await _storage.write(key: _permissionsKey, value: user["permissions"]);
+            key: "password_hash", value: user["password_hash"]);
       }
-
-      print("🎉 [TokenStorage] User session saved");
-    } catch (e) {
-      print("❌ [TokenStorage] saveSession failed: $e");
     }
+
+    print("🎉 [TokenStorage] User session saved with full user details");
+  } catch (e) {
+    print("❌ [TokenStorage] saveSession failed: $e");
   }
+}
 
   // 🟣 Save guest session (only access token)
   static Future<void> saveGuestSession(String guestAccessToken) async {
@@ -242,4 +252,37 @@ class TokenStorage {
       return [];
     }
   }
+
+
+static Future<void> saveUpdatedUserDetails({
+  String? firstName,
+  String? lastName,
+  String? email,
+  String? profile,
+}) async {
+  try {
+    if (firstName != null || lastName != null) {
+      final fullName = "${firstName ?? ""} ${lastName ?? ""}".trim();
+      await _storage.write(key: _nameKey, value: fullName);
+    }
+
+    if (email != null) {
+      await _storage.write(key: _emailKey, value: email);
+    }
+
+    if (profile != null) {
+      await _storage.write(key: _profileKey, value: profile);
+    }
+
+    print("✅ [TokenStorage] Updated user data saved locally");
+  } catch (e) {
+    print("❌ [TokenStorage] saveUpdatedUserDetails failed: $e");
+  }
+}
+
+  // ✅ Public generic getter
+static Future<String?> getValue(String key) async {
+  return _readKey(key);
+}
+
 }

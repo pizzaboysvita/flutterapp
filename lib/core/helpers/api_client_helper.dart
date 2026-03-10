@@ -43,7 +43,7 @@ class ApiClient {
     }
   }
 
-    static int getTokenExpiryInSeconds(String token) {
+  static int getTokenExpiryInSeconds(String token) {
     try {
       final expiryDate = JwtDecoder.getExpirationDate(token);
       final now = DateTime.now();
@@ -55,54 +55,56 @@ class ApiClient {
     }
   }
 
-  static final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: "http://78.142.47.247:3003/api/",
-      connectTimeout: const Duration(minutes: 2),
-      receiveTimeout: const Duration(minutes: 2),
-      validateStatus: (status) => true,
-    ),
-  )..interceptors.add(
-  InterceptorsWrapper(
- onRequest: (options, handler) async {
-  final excludedEndpoints = [
-    ApiUrls.loginPost,
-  ];
+  static final Dio dio =
+      Dio(
+          BaseOptions(
+            baseUrl: "http://78.142.47.247:3003/api/",
+            connectTimeout: const Duration(minutes: 2),
+            receiveTimeout: const Duration(minutes: 2),
+            validateStatus: (status) => true,
+          ),
+        )
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) async {
+              final excludedEndpoints = [ApiUrls.loginPost];
 
-  if (excludedEndpoints.any((url) => options.path.contains(url))) {
-    return handler.next(options); 
-  }
+              if (excludedEndpoints.any((url) => options.path.contains(url))) {
+                return handler.next(options);
+              }
 
-  final token = await TokenManager.getValidAccessToken();
+              final token = await TokenManager.getValidAccessToken();
 
-  if (token != null && token.isNotEmpty) {
-    options.headers["Authorization"] = "Bearer $token";
-  }
+              if (token != null && token.isNotEmpty) {
+                options.headers["Authorization"] = "Bearer $token";
+              }
 
-  return handler.next(options);
-},
+              return handler.next(options);
+            },
 
+            onError: (DioError err, handler) async {
+              if (err.response?.statusCode == 401) {
+                print("🔐 [ApiClient] 401 — attempting refresh once");
 
-    onError: (DioError err, handler) async {
-      if (err.response?.statusCode == 401) {
-        print("🔐 [ApiClient] 401 — attempting refresh once");
+                final newToken = await TokenManager.getValidAccessToken();
+                if (newToken != null && newToken.isNotEmpty) {
+                  err.requestOptions.headers["Authorization"] =
+                      "Bearer $newToken";
+                  final retry = await dio.fetch(err.requestOptions);
+                  return handler.resolve(retry);
+                } else {
+                  print("⛔ [ApiClient] Refresh failed, logging out user");
+                  if (NavigatorService.context != null) {
+                    await SessionManager.clearSession(
+                      NavigatorService.context!,
+                    );
+                  }
+                  return handler.next(err);
+                }
+              }
 
-        final newToken = await TokenManager.getValidAccessToken();
-        if (newToken != null && newToken.isNotEmpty) {
-          err.requestOptions.headers["Authorization"] = "Bearer $newToken";
-          final retry = await dio.fetch(err.requestOptions);
-          return handler.resolve(retry);
-        } else {
-          print("⛔ [ApiClient] Refresh failed, logging out user");
-          if (NavigatorService.context != null) {
-            await SessionManager.clearSession(NavigatorService.context!);
-          }
-          return handler.next(err);
-        }
-      }
-
-      return handler.next(err);
-    },
-  ),
-);
+              return handler.next(err);
+            },
+          ),
+        );
 }

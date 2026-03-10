@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:688986546030:android:7753ff7bce0ba3df7a2b7f",
+        "mobilesdk_app_id": "1:688986546030:android:4d5524ce4b5f378f7a2b7f",
         "android_client_info": {
-          "package_name": "com.example.pizza_boys"
+          "package_name": "com.pizzaboyz.app"
         }
       },
       "oauth_client": [],

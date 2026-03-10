@@ -8,18 +8,24 @@ import 'package:pizza_boys/core/bloc/profile/user_state.dart';
 import 'package:pizza_boys/core/constant/app_colors.dart';
 import 'package:pizza_boys/core/session/session_manager.dart';
 import 'package:pizza_boys/core/storage/api_res_storage.dart';
+import 'package:pizza_boys/data/models/user/profile_model.dart';
 import 'package:pizza_boys/data/repositories/profile/user_repo.dart';
+import 'package:pizza_boys/data/services/profile/user_service.dart';
 import 'package:pizza_boys/features/favorites/bloc/fav_bloc.dart';
+import 'package:pizza_boys/features/profile/bloc/user_info_cubit.dart';
 import 'package:pizza_boys/routes/app_routes.dart';
 
 class Profile extends StatelessWidget {
   final ScrollController scrollController;
   const Profile({super.key, required this.scrollController});
 
-  @override
+  @override 
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+    context.read<UserCubit>().loadUser();
+  });
     return BlocProvider(
-      create: (_) => DeleteAccountBloc(UserRepo()),
+      create: (_) => DeleteAccountBloc(UserRepo(UserService())),
       child: Scaffold(
         appBar: AppBar(
           elevation: 0,
@@ -27,7 +33,7 @@ class Profile extends StatelessWidget {
           title: Text.rich(
             TextSpan(
               text: 'User',
-              style: _textStyle(16.sp, FontWeight.w600),
+              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
               children: [
                 TextSpan(
                   text: ' Profile',
@@ -44,20 +50,23 @@ class Profile extends StatelessWidget {
                 color: AppColors.redPrimary,
                 size: 18.sp,
               ),
-              onPressed: () {
-                _showLogoutConfirmationDialog(context);
-              },
+              onPressed: () => _showLogoutConfirmationDialog(context),
             ),
             SizedBox(width: 6.w),
+            BlocBuilder<UserCubit, UserModel>(
+              builder: (context, user) {
+                bool isGuest = user.firstName.isEmpty || user.email.isEmpty;
 
-            Builder(
-              builder: (innerContext) {
-                return IconButton(
-                  icon: const Icon(
-                    Icons.delete_forever,
-                    color: AppColors.redPrimary,
+                if (isGuest) return const SizedBox.shrink();
+
+                return Builder(
+                  builder: (innerContext) => IconButton(
+                    icon: const Icon(
+                      Icons.delete_forever,
+                      color: AppColors.redPrimary,
+                    ),
+                    onPressed: () => _showDeleteAccountSheet(innerContext),
                   ),
-                  onPressed: () => _showDeleteAccountSheet(innerContext),
                 );
               },
             ),
@@ -69,9 +78,9 @@ class Profile extends StatelessWidget {
           controller: scrollController,
           padding: EdgeInsets.all(16.w),
           children: [
-            _buildUserCard(context),
+            _UserCard(),
             SizedBox(height: 20.h),
-            ..._buildProfileOptions(context),
+            ..._ProfileOptions(context),
             SizedBox(height: 20.h),
           ],
         ),
@@ -143,8 +152,6 @@ class Profile extends StatelessWidget {
                       onPressed: () async {
                         Navigator.pop(ctx);
                         await SessionManager.clearSession(context);
-
-                        // Clear logged-in user's favorites in Bloc
                         context.read<FavoriteBloc>().clearFavorites();
                       },
                       style: ElevatedButton.styleFrom(
@@ -172,142 +179,6 @@ class Profile extends StatelessWidget {
     );
   }
 
-  Widget _buildUserCard(BuildContext context) {
-    Future<Map<String, String?>> _loadUserNameEmail() async {
-      final name = await TokenStorage.getName();
-      final email = await TokenStorage.getEmail();
-      return {'name': name, 'email': email};
-    }
-
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: AppColors.redPrimary,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Row(
-        children: [
-          FutureBuilder<String?>(
-            future: TokenStorage.getProfile(),
-            builder: (context, snapshot) {
-              final profileUrl =
-                  snapshot.data ??
-                  "https://i.pravatar.cc/300"; // fallback image
-              return CircleAvatar(
-                radius: 25.r,
-                backgroundImage: NetworkImage(profileUrl),
-              );
-            },
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: FutureBuilder<Map<String, String?>>(
-              future: _loadUserNameEmail(),
-              builder: (context, snapshot) {
-                final name = snapshot.data?['name'] ?? "Guest";
-                final email = snapshot.data?['email'] ?? "guest@gmail.com";
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: _textStyle(14.sp, FontWeight.w800, Colors.white),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      email,
-                      style: _textStyle(
-                        12.sp,
-                        FontWeight.normal,
-                        Colors.white60,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          // InkWell(
-          //   onTap: () => Navigator.pushNamed(context, AppRoutes.profileEdit),
-          //   child: Icon(
-          //     FontAwesomeIcons.edit,
-          //     color: Colors.white,
-          //     size: 16.sp,
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildProfileOptions(BuildContext context) {
-    final options = [
-      _ProfileOption(
-        FontAwesomeIcons.solidClock, // Filled (solid) variant
-        "Order History",
-        "View past orders and reorder quickly",
-        ontap: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.orderHistory,
-            arguments: false,
-          );
-        },
-      ),
-      _ProfileOption(
-        FontAwesomeIcons.solidHeart, // Filled heart for favorites
-        "Wishlist",
-        "View and manage your saved items",
-        ontap: () {
-          Navigator.pushNamed(context, AppRoutes.favorites);
-        },
-      ),
-
-      // _ProfileOption(
-      //   FontAwesomeIcons.locationDot, // Filled (solid)
-      //   "Saved Addresses",
-      //   "Manage your delivery locations",
-      //   ontap: () {
-      //     Navigator.pushNamed(context, AppRoutes.saveAddress);
-      //   },
-      // ),
-      // _ProfileOption(
-      //   FontAwesomeIcons.solidBell, // Filled
-      //   "Notifications",
-      //   "Order updates and exclusive offers",
-      //   ontap: () {
-      //     Navigator.pushNamed(context, AppRoutes.notifications);
-      //   },
-      // ),
-      // _ProfileOption(
-      //   FontAwesomeIcons.solidCreditCard, // Filled
-      //   "Payment Methods",
-      //   "Manage your saved cards",
-      //   ontap: () {
-      //     Navigator.pushNamed(context, AppRoutes.paymentMethods);
-      //   },
-      // ),
-      // _ProfileOption(
-      //   FontAwesomeIcons.solidCircleQuestion, // Filled support/help icon
-      //   "Support",
-      //   "Get help with orders or payments",
-      //   ontap: () {
-      //     Navigator.pushNamed(context, AppRoutes.support);
-      //   },
-      // ),
-      // _ProfileOption(
-      //   FontAwesomeIcons.shieldHalved, // Filled (solid) shield
-      //   "Security Settings",
-      //   "Manage password & login methods",
-      //   ontap: () {
-      //     Navigator.pushNamed(context, AppRoutes.securityAndSetting);
-      //   },
-      // ),
-    ];
-
-    return options.map((e) => _buildListTile(e)).toList();
-  }
-
   void _showDeleteAccountSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -321,19 +192,15 @@ class Profile extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: BlocConsumer<DeleteAccountBloc, DeleteAccountState>(
               listener: (blocContext, state) async {
-                // Capture messenger BEFORE pop
                 final messenger = ScaffoldMessenger.of(context);
 
                 if (state is DeleteAccountSuccess) {
-                  Navigator.pop(ctx); // close bottom sheet
-
+                  Navigator.pop(ctx);
                   await SessionManager.clearSession(context);
-
                   messenger.showSnackBar(
                     SnackBar(content: Text(state.message)),
                   );
                 }
-
                 if (state is DeleteAccountFailure) {
                   messenger.showSnackBar(SnackBar(content: Text(state.error)));
                 }
@@ -356,7 +223,6 @@ class Profile extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
-
                     if (state is DeleteAccountLoading)
                       const CircularProgressIndicator()
                     else
@@ -376,19 +242,15 @@ class Profile extends StatelessWidget {
                               ),
                               onPressed: () async {
                                 final isGuest = await TokenStorage.isGuest();
-
                                 if (isGuest) {
-                                  // 👤 Guest → frontend-only delete
                                   Navigator.pop(ctx);
                                   await SessionManager.clearSession(context);
-
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text("Guest account cleared"),
                                     ),
                                   );
                                 } else {
-                                  // 🔐 Logged-in → API delete via Bloc
                                   context.read<DeleteAccountBloc>().add(
                                     DeleteAccountRequested(),
                                   );
@@ -409,7 +271,108 @@ class Profile extends StatelessWidget {
     );
   }
 
-  Widget _buildListTile(_ProfileOption option) {
+  List<Widget> _ProfileOptions(BuildContext context) {
+    final options = [
+      _ProfileOption(
+        FontAwesomeIcons.solidClock,
+        "Order History",
+        "View past orders and reorder quickly",
+        ontap: () => Navigator.pushNamed(
+          context,
+          AppRoutes.orderHistory,
+          arguments: false,
+        ),
+      ),
+      _ProfileOption(
+        FontAwesomeIcons.solidHeart,
+        "Wishlist",
+        "View and manage your saved items",
+        ontap: () => Navigator.pushNamed(context, AppRoutes.favorites),
+      ),
+    ];
+
+    return options.map((e) => _ProfileListTile(e)).toList();
+  }
+}
+
+// ------------------- USER CARD -------------------
+class _UserCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<UserCubit, UserModel>(
+      builder: (context, user) {
+        print('user.profile: ${user.profile}');
+        bool isGuest = user.firstName.isEmpty || user.email.isEmpty;
+        return Container(
+          padding: EdgeInsets.all(14.w),
+          decoration: BoxDecoration(
+            color: AppColors.redPrimary,
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 25.r,
+                backgroundImage: NetworkImage(
+                  user.profile.isNotEmpty
+                      ? user.profile
+                      : "https://i.pravatar.cc/300",
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.firstName.isNotEmpty && user.lastName.isNotEmpty
+                          ? "${user.firstName} ${user.lastName}"
+                          : "Guest User",
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      user.email.isNotEmpty ? user.email : "guest@gmail.com",
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.normal,
+                        color: Colors.white60,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isGuest)
+                InkWell(
+                  onTap: () async {
+                    await Navigator.pushNamed(context, AppRoutes.profileEdit);
+                    context.read<UserCubit>().loadUser();
+                  },
+                  child: Icon(
+                    FontAwesomeIcons.edit,
+                    color: Colors.white,
+                    size: 16.sp,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ------------------- PROFILE LIST TILE -------------------
+class _ProfileListTile extends StatelessWidget {
+  final _ProfileOption option;
+  const _ProfileListTile(this.option);
+
+  @override
+  Widget build(BuildContext context) {
     return InkWell(
       onTap: option.ontap,
       child: Container(
@@ -421,27 +384,23 @@ class Profile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              option.icon,
-              color: option.title == 'Favorites'
-                  ? AppColors.redAccent
-                  : AppColors.blackColor,
-              size: 20.sp,
-            ),
+            Icon(option.icon, color: AppColors.blackColor, size: 20.sp),
             SizedBox(width: 14.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(option.title, style: _textStyle(14.sp, FontWeight.w500)),
+                  Text(
+                    option.title,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   SizedBox(height: 2.h),
                   Text(
                     option.subtitle,
-                    style: _textStyle(
-                      12.sp,
-                      FontWeight.normal,
-                      Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -452,15 +411,6 @@ class Profile extends StatelessWidget {
       ),
     );
   }
-
-  TextStyle _textStyle(double size, FontWeight weight, [Color? color]) {
-    return TextStyle(
-      fontSize: size,
-      fontWeight: weight,
-      color: color ?? Colors.black,
-      fontFamily: 'Poppins',
-    );
-  }
 }
 
 class _ProfileOption {
@@ -468,6 +418,5 @@ class _ProfileOption {
   final String title;
   final String subtitle;
   final VoidCallback ontap;
-
   _ProfileOption(this.icon, this.title, this.subtitle, {required this.ontap});
 }
