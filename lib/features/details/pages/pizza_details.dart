@@ -41,6 +41,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
   Map<String, int> sauceQuantity = {};
   List<String> selectedIngredients = [];
   bool showBaseError = false;
+  bool isItemAdded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -695,7 +696,7 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
         bottomNavigationBar: BlocBuilder<DishBloc, DishState>(
           builder: (context, dishState) {
             if (dishState is! DishLoaded || dishState.dishes.isEmpty) {
-              return const SizedBox.shrink(); // nothing until loaded
+              return const SizedBox.shrink();
             }
 
             final dish = dishState.dishes.firstWhere(
@@ -707,34 +708,23 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
               builder: (context, detailsState) {
                 final finalState = context.read<PizzaDetailsBloc>().state;
                 final total = _getTotal(finalState, dish);
+                final unitPrice = total / finalState.quantity;
+
+                /// Build options JSON once
+                final optionsJson = {
+                  "size": finalState.selectedSize,
+                  "largeOption": finalState.selectedLargeOption,
+                  "radioOptions": finalState.selectedRadioOptions,
+                  "toppings": finalState.selectedToppings,
+                  "sauces": finalState.sauceQuantities,
+                  "ingredients": finalState.selectedIngredients,
+                  "choices": finalState.selectedChoices,
+                  "base": finalState.selectedBase,
+                };
 
                 return BlocConsumer<CartBloc, CartState>(
                   listener: (context, state) {
-                    if (state is CartSuccess && state.action == "add") {
-                      // ScaffoldMessenger.of(context).showSnackBar(
-                      //   const SnackBar(
-                      //     content: Text("✅ Added to cart successfully!"),
-                      //   ),
-                      // );
-                      final isAlreadyOnCart =
-                          ModalRoute.of(context)?.settings.name ==
-                          AppRoutes.cartView;
-                      print(
-                        "✅ CartBloc → Added to cart: dishId=${dish.id}, quantity=${detailsState.quantity}, total=\$$total",
-                      );
-
-                      if (!isAlreadyOnCart) {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.cartView,
-                          arguments: {
-                            "imageUrl": dish.imageUrl,
-                            "name": dish.name,
-                            "price": total,
-                          },
-                        );
-                      }
-                    } else if (state is CartFailure) {
+                    if (state is CartFailure) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("❌ Failed: ${state.error}")),
                       );
@@ -743,337 +733,235 @@ class _PizzaDetailsViewState extends State<PizzaDetailsView> {
                   builder: (context, state) {
                     return Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: 16.w,
-                        vertical: 12.h,
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.white,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black12,
                             blurRadius: 8,
-                            offset: const Offset(0, -2),
+                            offset: Offset(0, -2),
                           ),
                         ],
                       ),
-                      child: Row(
-                        children: [
-                          // 📦 Quantity Counter
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 8.w,
-                              vertical: 4.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    if (detailsState.quantity > 1) {
-                                      context.read<PizzaDetailsBloc>().add(
-                                        UpdateQuantityEvent(
-                                          detailsState.quantity - 1,
-                                        ),
-                                      );
+                      child: !isItemAdded
+                          ? ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.redPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadiusGeometry.circular(
+                                    8,
+                                  ),
+                                ),
+                              ),
+                              onPressed: () async {
+                                final pizzaState = context
+                                    .read<PizzaDetailsBloc>()
+                                    .state;
+                                final requiredRadioSets = dish.optionSets
+                                    .where(
+                                      (s) =>
+                                          s.optionType.toLowerCase() == "radio",
+                                    )
+                                    .toList();
+                                if (requiredRadioSets.isEmpty) {
+                                  print(
+                                    "🍕 No base/crust radio options → skipping validation",
+                                  );
+                                } else {
+                                  bool allSelected = true;
+                                  for (final set in requiredRadioSets) {
+                                    if (pizzaState.selectedRadioOptions[set
+                                            .name] ==
+                                        null) {
+                                      allSelected = false;
+                                      break;
                                     }
-                                  },
-                                  icon: Icon(
-                                    Icons.remove_circle,
-                                    color: AppColors.redPrimary,
-                                    size: 20.w,
-                                  ),
-                                ),
-                                Text(
-                                  detailsState.quantity.toString(),
-                                  style: TextStyle(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Poppins',
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    context.read<PizzaDetailsBloc>().add(
-                                      UpdateQuantityEvent(
-                                        detailsState.quantity + 1,
+                                  }
+
+                                  if (!allSelected) {
+                                    setState(() => showBaseError = true);
+                                    return;
+                                  }
+                                }
+                                setState(() {
+                                  isItemAdded = true;
+                                });
+
+                                final isGuest = await TokenStorage.isGuest();
+                                final userId = await TokenStorage.getUserId();
+                                final storeId =
+                                    await TokenStorage.getChosenStoreId();
+
+                                if (isGuest) {
+                                  context.read<CartBloc>().add(
+                                    AddGuestToCartEvent(
+                                      GuestCartItemModel(
+                                        dish: dish,
+                                        quantity: 1,
+                                        unitPrice: unitPrice,
+                                        totalPrice: unitPrice,
+                                        options: optionsJson,
                                       ),
-                                    );
-                                  },
-                                  icon: Icon(
-                                    Icons.add_circle,
-                                    color: AppColors.blackColor,
-                                    size: 20.w,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                context.read<CartBloc>().add(
+                                  AddToCartEvent(
+                                    type: "insert",
+                                    userId: int.parse(userId!),
+                                    dishId: dish.id,
+                                    storeId: int.parse(storeId!),
+                                    quantity: 1,
+                                    price: unitPrice,
+                                    optionsJson: jsonEncode(optionsJson),
+                                    dish: dish,
+                                  ),
+                                );
+                              },
+                              child: const Text("Add Item"),
+                            )
+                          : Row(
+                              children: [
+                                /// Quantity Counter
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      /// MINUS
+                                      IconButton(
+                                        icon: const Icon(Icons.remove_circle),
+                                        onPressed: () async {
+                                          final currentQty =
+                                              detailsState.quantity;
+
+                                          final userId =
+                                              await TokenStorage.getUserId();
+                                          final storeId =
+                                              await TokenStorage.getChosenStoreId();
+
+                                          if (currentQty <= 1) {
+                                            context.read<CartBloc>().add(
+                                              RemoveFromCartEvent(
+                                                cartId: dish.id,
+                                                userId: int.parse(userId!),
+                                              ),
+                                            );
+
+                                            setState(() {
+                                              isItemAdded = false;
+                                            });
+
+                                            return;
+                                          }
+                                          final newQty = currentQty - 1;
+                                          context.read<PizzaDetailsBloc>().add(
+                                            UpdateQuantityEvent(newQty),
+                                          );
+
+                                          context.read<CartBloc>().add(
+                                            AddToCartEvent(
+                                              type: "update",
+                                              userId: int.parse(userId!),
+                                              dishId: dish.id,
+                                              storeId: int.parse(storeId!),
+                                              quantity: currentQty - 1,
+                                              price: unitPrice,
+                                              optionsJson: jsonEncode(
+                                                optionsJson,
+                                              ),
+                                              dish: dish,
+                                            ),
+                                          );
+                                        },
+                                      ),
+
+                                      Text(
+                                        detailsState.quantity.toString(),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+
+                                      /// PLUS
+                                      IconButton(
+                                        icon: const Icon(Icons.add_circle),
+                                        onPressed: () async {
+                                          final newQty =
+                                              detailsState.quantity + 1;
+
+                                          context.read<PizzaDetailsBloc>().add(
+                                            UpdateQuantityEvent(newQty),
+                                          );
+
+                                          final userId =
+                                              await TokenStorage.getUserId();
+                                          final storeId =
+                                              await TokenStorage.getChosenStoreId();
+
+                                          context.read<CartBloc>().add(
+                                            AddToCartEvent(
+                                              type: "update",
+                                              userId: int.parse(userId!),
+                                              dishId: dish.id,
+                                              storeId: int.parse(storeId!),
+                                              quantity: 1,
+                                              price: unitPrice,
+                                              optionsJson: jsonEncode(
+                                                optionsJson,
+                                              ),
+                                              dish: dish,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(width: 16),
+
+                                /// CART BUTTON (Navigate Only)
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.redPrimary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadiusGeometry.circular(8),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        AppRoutes.cartView,
+                                      );
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.shopping_cart),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          "\$${total.toStringAsFixed(2)} NZD",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-
-                          SizedBox(width: 16.w),
-
-                          // 🛒 Order Button with Total
-                          Expanded(
-                            child: SizedBox(
-                              // height: 48.h,
-                              child: ElevatedButton(
-                                onPressed: state is CartLoading
-                                    ? null
-                                    : () async {
-                                        final pizzaState = context
-                                            .read<PizzaDetailsBloc>()
-                                            .state;
-
-                                        // ❗ BASE VALIDATION
-                                        // 1️⃣ Find required radio option sets like Base / Crust / Dough etc.
-                                        final requiredRadioSets = dish
-                                            .optionSets
-                                            .where(
-                                              (s) =>
-                                                  s.optionType.toLowerCase() ==
-                                                  "radio",
-                                            )
-                                            .toList();
-
-                                        // 2️⃣ If NO radio sets exist → skip validation completely
-                                        if (requiredRadioSets.isEmpty) {
-                                          // print("🍕 No base/crust radio options → skipping validation");
-                                        } else {
-                                          // 3️⃣ Validate each radio set
-                                          bool allSelected = true;
-                                          for (final set in requiredRadioSets) {
-                                            if (pizzaState
-                                                    .selectedRadioOptions[set
-                                                    .name] ==
-                                                null) {
-                                              allSelected = false;
-                                              break;
-                                            }
-                                          }
-
-                                          // 4️⃣ If any required set missing → show error and stop
-                                          if (!allSelected) {
-                                            setState(
-                                              () => showBaseError = true,
-                                            );
-                                            return;
-                                          }
-                                        }
-
-                                        debugPrint(
-                                          "========== ADD TO CART CLICK ==========",
-                                        );
-
-                                        final isGuest =
-                                            await TokenStorage.isGuest();
-                                        final userId =
-                                            await TokenStorage.getUserId();
-                                        final storeId =
-                                            await TokenStorage.getChosenStoreId();
-
-                                        debugPrint("IsGuest      : $isGuest");
-                                        debugPrint("UserId       : $userId");
-                                        debugPrint("StoreId      : $storeId");
-
-                                        // ✅ Freeze bloc state
-                                        final finalState = context
-                                            .read<PizzaDetailsBloc>()
-                                            .state;
-
-                                        debugPrint("----- PIZZA STATE -----");
-                                        debugPrint(
-                                          "Quantity     : ${finalState.quantity}",
-                                        );
-                                        debugPrint(
-                                          "Size         : ${finalState.selectedSize}",
-                                        );
-                                        debugPrint(
-                                          "LargeOption  : ${finalState.selectedLargeOption}",
-                                        );
-                                        // debugPrint(
-                                        //   "Addons       : ${finalState.selectedAddons}",
-                                        // );
-                                        debugPrint(
-                                          "Choices      : ${finalState.selectedChoices}",
-                                        );
-
-                                        final total = _getTotal(
-                                          finalState,
-                                          dish,
-                                        );
-                                        final unitPrice =
-                                            total / finalState.quantity;
-
-                                        debugPrint("----- PRICE -----");
-                                        debugPrint("Total        : $total");
-                                        debugPrint("Unit Price   : $unitPrice");
-
-                                        debugPrint(
-                                          "============== FINAL UI SELECTION ==============",
-                                        );
-
-                                        debugPrint(
-                                          "Size: ${finalState.selectedSize}",
-                                        );
-                                        debugPrint(
-                                          "Large: ${finalState.selectedLargeOption}",
-                                        );
-
-                                        debugPrint(
-                                          "RADIOS: ${finalState.selectedRadioOptions}",
-                                        );
-                                        debugPrint(
-                                          "BASE: ${finalState.selectedBase}",
-                                        );
-
-                                        debugPrint(
-                                          "TOPPINGS: ${finalState.selectedToppings}",
-                                        );
-                                        debugPrint(
-                                          "SAUCES: ${finalState.sauceQuantities}",
-                                        );
-                                        debugPrint(
-                                          "INGREDIENTS: ${finalState.selectedIngredients}",
-                                        );
-                                        debugPrint(
-                                          "CHOICES: ${finalState.selectedChoices}",
-                                        );
-
-                                        final optionsJson = {
-                                          "size": finalState.selectedSize,
-                                          "largeOption":
-                                              finalState.selectedLargeOption,
-
-                                          "radioOptions":
-                                              finalState.selectedRadioOptions,
-
-                                          "toppings":
-                                              finalState.selectedToppings,
-
-                                          "sauces": finalState.sauceQuantities,
-
-                                          "ingredients":
-                                              finalState.selectedIngredients,
-
-                                          "choices": finalState.selectedChoices,
-
-                                          "base": finalState.selectedBase,
-                                        };
-
-                                        debugPrint("----- OPTIONS JSON -----");
-                                        debugPrint(optionsJson.toString());
-
-                                        debugPrint("----- DISH -----");
-                                        debugPrint("DishId       : ${dish.id}");
-                                        debugPrint(
-                                          "DishName     : ${dish.name}",
-                                        );
-
-                                        // ✅ Guest Flow
-                                        if (isGuest) {
-                                          debugPrint("🔥 ADDING AS GUEST");
-                                          debugPrint(
-                                            "GuestCartItem => qty:${finalState.quantity}, "
-                                            "unit:$unitPrice, total:$total, "
-                                            "options:$optionsJson",
-                                          );
-
-                                          context.read<CartBloc>().add(
-                                            AddGuestToCartEvent(
-                                              GuestCartItemModel(
-                                                dish: dish,
-                                                quantity: finalState.quantity,
-                                                unitPrice: unitPrice,
-                                                totalPrice: total,
-                                                options: optionsJson,
-                                              ),
-                                            ),
-                                          );
-
-                                          return;
-                                        }
-
-                                        // ✅ Logged-in Flow
-                                        debugPrint("🔥 ADDING AS USER");
-                                        debugPrint(
-                                          "Payload => "
-                                          "UserId:$userId, "
-                                          "StoreId:$storeId, "
-                                          "DishId:${dish.id}, "
-                                          "Qty:${finalState.quantity}, "
-                                          "Unit:$unitPrice, "
-                                          "Options:${jsonEncode(optionsJson)}",
-                                        );
-
-                                        context.read<CartBloc>().add(
-                                          AddToCartEvent(
-                                            type: "insert",
-                                            userId: int.parse(userId!),
-                                            dishId: dish.id,
-                                            storeId: int.parse(storeId!),
-                                            quantity: finalState.quantity,
-                                            price: unitPrice,
-                                            optionsJson: jsonEncode(
-                                              optionsJson,
-                                            ),
-                                            dish: dish,
-                                          ),
-                                        );
-                                      },
-
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.redPrimary,
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10.r),
-                                  ),
-                                ),
-
-                                child: state is CartLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.0,
-                                        ),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          // ✅ Cart Icon
-                                          const Icon(
-                                            Icons.shopping_cart,
-                                            size: 22,
-                                            color: Colors.white,
-                                          ),
-
-                                          SizedBox(width: 10.w),
-
-                                          // ✅ Total price only
-                                          Text(
-                                            "\$${total.toStringAsFixed(2)} NZD",
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.w600,
-                                              fontFamily: 'Poppins',
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     );
                   },
                 );
